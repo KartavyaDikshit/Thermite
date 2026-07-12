@@ -1,7 +1,7 @@
 from ._core import ping
 from .preprocessing import StandardScaler, MinMaxScaler, LabelEncoder, OneHotEncoder
 from .model_selection import train_test_split
-from .linear_model import LinearRegression, Ridge, Lasso, LogisticRegression
+from .linear_model import LinearRegression, Ridge, Lasso, LogisticRegression, LinearSVC
 from .metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
     roc_auc_score, mean_squared_error, r2_score
@@ -42,5 +42,6 @@ __all__ = [
     "RandomForestRegressor",
     "GradientBoostingClassifier",
     "GradientBoostingRegressor",
-    "Pipeline"
+    "Pipeline",
+    "LinearSVC"
 ]

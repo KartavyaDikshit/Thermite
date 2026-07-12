@@ -104,29 +104,46 @@ impl KMeans {
         centers
     }
 
-    /// Assign each sample to the nearest cluster center (parallel).
+    /// Assign each sample to the nearest cluster center.
+    /// Uses the identity ||x - c||^2 = ||x||^2 - 2*x.c + ||c||^2
+    /// to compute all distances via a single matrix multiplication.
     fn assign_labels(X: &ArrayView2<f64>, centers: &Array2<f64>) -> (Vec<usize>, f64) {
+        let n_samples = X.nrows();
         let n_clusters = centers.nrows();
 
-        let results: Vec<(usize, f64)> = X
-            .axis_iter(Axis(0))
+        // Precompute ||x||^2 for each sample
+        let x_sq: Vec<f64> = X.axis_iter(Axis(0))
             .into_par_iter()
-            .map(|row| {
-                let row_slice = row.as_slice().unwrap();
+            .map(|row| row.dot(&row))
+            .collect();
+
+        // Precompute ||c||^2 for each center
+        let c_sq: Vec<f64> = (0..n_clusters)
+            .map(|k| centers.row(k).dot(&centers.row(k)))
+            .collect();
+
+        // Compute -2 * X * C^T  (n_samples x n_clusters)
+        let xct = X.dot(&centers.t());
+
+        // For each sample, find the nearest center
+        let results: Vec<(usize, f64)> = (0..n_samples)
+            .into_par_iter()
+            .map(|i| {
                 let mut best_label = 0;
                 let mut best_dist = f64::INFINITY;
                 for k in 0..n_clusters {
-                    let d = euclidean_dist_sq(row_slice, centers.row(k).as_slice().unwrap());
+                    // ||x_i - c_k||^2 = x_sq[i] - 2 * xct[i,k] + c_sq[k]
+                    let d = x_sq[i] - 2.0 * xct[[i, k]] + c_sq[k];
                     if d < best_dist {
                         best_dist = d;
                         best_label = k;
                     }
                 }
-                (best_label, best_dist)
+                (best_label, best_dist.max(0.0))
             })
             .collect();
 
-        let mut labels = Vec::with_capacity(results.len());
+        let mut labels = Vec::with_capacity(n_samples);
         let mut inertia = 0.0;
         for (l, d) in results {
             labels.push(l);
@@ -135,7 +152,7 @@ impl KMeans {
         (labels, inertia)
     }
 
-    /// Recompute cluster centers from assignments.
+    /// Recompute cluster centers from assignments using vectorized row ops.
     fn update_centers(
         X: &ArrayView2<f64>,
         labels: &[usize],
@@ -147,17 +164,15 @@ impl KMeans {
 
         for (i, &label) in labels.iter().enumerate() {
             counts[label] += 1;
-            for j in 0..n_features {
-                centers[[label, j]] += X[[i, j]];
-            }
+            let x_row = X.row(i);
+            let mut c_row = centers.row_mut(label);
+            c_row += &x_row;
         }
 
         for k in 0..n_clusters {
             if counts[k] > 0 {
                 let c = counts[k] as f64;
-                for j in 0..n_features {
-                    centers[[k, j]] /= c;
-                }
+                centers.row_mut(k).mapv_inplace(|v| v / c);
             }
         }
 

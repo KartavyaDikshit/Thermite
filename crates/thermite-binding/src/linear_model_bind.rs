@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 use numpy::{PyArray1, PyArray2, PyReadonlyArray1, PyReadonlyArray2};
-use thermite_core::linear_model::{LinearRegression as CoreLinearRegression, Ridge as CoreRidge, Lasso as CoreLasso, LogisticRegression as CoreLogisticRegression};
+use thermite_core::linear_model::{LinearRegression as CoreLinearRegression, Ridge as CoreRidge, Lasso as CoreLasso, LogisticRegression as CoreLogisticRegression, LinearSVC as CoreLinearSVC};
 
 #[pyclass]
 pub struct LinearRegression {
@@ -167,5 +167,52 @@ pub fn bind_linear_model(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Ridge>()?;
     m.add_class::<Lasso>()?;
     m.add_class::<LogisticRegression>()?;
+    m.add_class::<LinearSVC>()?;
     Ok(())
+}
+
+#[pyclass]
+pub struct LinearSVC {
+    core: CoreLinearSVC,
+}
+
+#[pymethods]
+impl LinearSVC {
+    #[new]
+    #[pyo3(signature = (C=1.0, max_iter=1000, tol=1e-4))]
+    fn new(C: f64, max_iter: usize, tol: f64) -> Self {
+        LinearSVC {
+            core: CoreLinearSVC::new(C, max_iter, tol),
+        }
+    }
+
+    fn fit(&mut self, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>) -> PyResult<()> {
+        self.core.fit(&X.as_array(), &y.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)
+    }
+
+    fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<f64>>> {
+        let preds = self.core.predict(&X.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)?;
+        Ok(PyArray1::from_array_bound(py, &preds))
+    }
+
+    #[getter]
+    fn coef_<'py>(&self, py: Python<'py>) -> PyResult<Option<Bound<'py, PyArray1<f64>>>> {
+        match &self.core.coef_ {
+            Some(c) => Ok(Some(PyArray1::from_array_bound(py, c))),
+            None => Ok(None),
+        }
+    }
+
+    #[getter]
+    fn intercept_<'py>(&self, py: Python<'py>) -> PyResult<Option<Bound<'py, PyArray1<f64>>>> {
+        match &self.core.intercept_ {
+            Some(c) => Ok(Some(PyArray1::from_array_bound(py, c))),
+            None => Ok(None),
+        }
+    }
+
+    #[getter]
+    fn classes_(&self) -> Option<Vec<f64>> {
+        self.core.classes_.clone()
+    }
 }

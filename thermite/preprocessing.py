@@ -146,7 +146,7 @@ class LabelEncoder:
             return np.array(self._encoder.inverse_transform_str(y))
 
 class OneHotEncoder:
-    def __init__(self, *, handle_unknown="error"):
+    def __init__(self, *, categories="auto", drop=None, sparse_output=True, handle_unknown="error", **kwargs):
         if handle_unknown not in ("error", "ignore"):
             raise ValueError("handle_unknown must be 'error' or 'ignore'")
         self._encoder = _core.OneHotEncoder(handle_unknown=handle_unknown)

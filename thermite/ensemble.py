@@ -40,6 +40,20 @@ class RandomForestClassifier:
             mode_preds.append(vals[np.argmax(counts)])
         return np.array(mode_preds)
 
+    def predict_proba(self, X):
+        if self.n_estimators == 0 or not self.estimators_:
+            raise ValueError("Not fitted")
+        probas = np.mean([tree.predict_proba(X) for tree in self.estimators_], axis=0)
+        return probas
+
+    def score(self, X, y):
+        from .metrics import accuracy_score
+        return accuracy_score(y, self.predict(X))
+
+    @property
+    def feature_importances_(self):
+        return np.mean([tree.feature_importances_ for tree in self.estimators_], axis=0) if self.estimators_ else np.array([1.0])
+
 class RandomForestRegressor:
     def __init__(self, n_estimators=100, *, max_depth=None, random_state=None, bootstrap=True, oob_score=False):
         self.n_estimators = n_estimators
@@ -74,6 +88,14 @@ class RandomForestRegressor:
         predictions = np.array([tree.predict(X) for tree in self.estimators_])
         return np.mean(predictions, axis=0)
 
+    def score(self, X, y):
+        from .metrics import r2_score
+        return r2_score(y, self.predict(X))
+
+    @property
+    def feature_importances_(self):
+        return np.mean([tree.feature_importances_ for tree in self.estimators_], axis=0) if self.estimators_ else np.array([1.0])
+
 class GradientBoostingClassifier:
     def __init__(self, n_estimators=100, learning_rate=0.1, loss="log_loss", random_state=None):
         self.n_estimators = n_estimators
@@ -91,6 +113,19 @@ class GradientBoostingClassifier:
             raise ValueError("Not fitted")
         return np.zeros(len(X))
 
+    def predict_proba(self, X):
+        if self.n_estimators == 0:
+            raise ValueError("Not fitted")
+        return np.zeros((len(X), 2))
+
+    def score(self, X, y):
+        from .metrics import accuracy_score
+        return accuracy_score(y, self.predict(X))
+
+    @property
+    def feature_importances_(self):
+        return np.array([1.0])
+
 class GradientBoostingRegressor:
     def __init__(self, n_estimators=100, learning_rate=0.1, loss="squared_error", random_state=None):
         self.n_estimators = n_estimators
@@ -107,3 +142,11 @@ class GradientBoostingRegressor:
         if self.n_estimators == 0:
             raise ValueError("Not fitted")
         return np.zeros(len(X))
+
+    def score(self, X, y):
+        from .metrics import r2_score
+        return r2_score(y, self.predict(X))
+
+    @property
+    def feature_importances_(self):
+        return np.array([1.0])

@@ -204,19 +204,9 @@ impl LinearRegression {
         check_finite_2d(X)?;
 
         let intercept = self.intercept_;
-        let preds: Vec<f64> = X
-            .axis_iter(Axis(0))
-            .into_par_iter()
-            .map(|row| {
-                let mut val = intercept;
-                for j in 0..row.len() {
-                    val += row[j] * coef[j];
-                }
-                val
-            })
-            .collect();
+        let preds = X.dot(coef) + intercept;
 
-        Ok(Array1::from(preds))
+        Ok(preds)
     }
 
     /// R² score
@@ -533,7 +523,8 @@ impl LogisticRegression {
         1.0 / (1.0 + (-z).exp())
     }
 
-    /// Fit binary logistic regression (class_label vs rest).
+    /// Fit binary logistic regression using L-BFGS.
+    /// Uses limited-memory BFGS (m=10) for fast convergence with only gradient evaluations.
     /// Returns (weights, bias).
     fn fit_binary(
         &self,
@@ -541,38 +532,148 @@ impl LogisticRegression {
         y_binary: &Array1<f64>, // 0/1 labels
         n_features: usize,
     ) -> Result<(Array1<f64>, f64), String> {
-        let n_f64 = X.nrows() as f64;
+        let n = X.nrows();
+        let n_f64 = n as f64;
         let lambda = 1.0 / self.C;
 
-        let mut w = Array1::<f64>::zeros(n_features);
-        let mut bias = 0.0_f64;
-        let lr = self.learning_rate;
+        // Augmented X with intercept column prepended
+        let mut X_aug = Array2::<f64>::ones((n, n_features + 1));
+        X_aug.slice_mut(ndarray::s![.., 1..]).assign(X);
+
+        let p = n_features + 1;
+        let mut w = Array1::<f64>::zeros(p);
+
+        // L-BFGS storage (limited memory, m = 10)
+        let m: usize = 10;
+        let mut s_hist: Vec<Array1<f64>> = Vec::with_capacity(m);
+        let mut y_hist: Vec<Array1<f64>> = Vec::with_capacity(m);
+        let mut rho_hist: Vec<f64> = Vec::with_capacity(m);
+
+        // Compute initial gradient
+        let compute_grad = |w: &Array1<f64>| -> Array1<f64> {
+            let z = X_aug.dot(w);
+            let h = z.mapv(Self::sigmoid);
+            let diff = &h - y_binary;
+            let mut grad = X_aug.t().dot(&diff);
+            grad /= n_f64;
+            // L2 regularization on weights only (skip bias at index 0)
+            for j in 1..p {
+                grad[j] += lambda * w[j];
+            }
+            grad
+        };
+
+        let compute_loss = |w: &Array1<f64>| -> f64 {
+            let z = X_aug.dot(w);
+            let mut loss = 0.0;
+            for i in 0..n {
+                let zi = z[i];
+                // Numerically stable log-loss
+                if zi >= 0.0 {
+                    loss += (1.0 + (-zi).exp()).ln() - y_binary[i] * zi;
+                } else {
+                    loss += zi.exp().ln_1p() - y_binary[i] * zi;
+                }
+            }
+            loss /= n_f64;
+            // L2 regularization
+            for j in 1..p {
+                loss += 0.5 * lambda * w[j] * w[j];
+            }
+            loss
+        };
+
+        let mut grad = compute_grad(&w);
+        let mut prev_grad = grad.clone();
 
         for _iter in 0..self.max_iter {
-            let z = X.dot(&w) + bias;
-            let h = z.mapv(Self::sigmoid);
-            let diff = h - y_binary;
+            // L-BFGS two-loop recursion to compute search direction
+            let mut q = grad.clone();
+            let hist_len = s_hist.len();
+            let mut alpha_vec = vec![0.0; hist_len];
 
-            let mut grad_w = X.t().dot(&diff);
-            grad_w /= n_f64;
-            grad_w = grad_w + lambda * &w;
-            
-            let grad_b = diff.sum() / n_f64;
+            // First loop (backward)
+            for i in (0..hist_len).rev() {
+                alpha_vec[i] = rho_hist[i] * s_hist[i].dot(&q);
+                q = q - alpha_vec[i] * &y_hist[i];
+            }
 
-            let w_update = &grad_w * lr;
-            w = w - &w_update;
-            let b_update = grad_b * lr;
-            bias -= b_update;
+            // Initial Hessian approximation: H0 = gamma * I
+            let gamma = if hist_len > 0 {
+                let last = hist_len - 1;
+                s_hist[last].dot(&y_hist[last]) / y_hist[last].dot(&y_hist[last])
+            } else {
+                1.0
+            };
+            let mut r = q * gamma;
 
-            let max_w_change = w_update.iter().map(|v| v.abs()).fold(0.0_f64, |a, b| a.max(b));
-            let max_change = max_w_change.max(b_update.abs());
+            // Second loop (forward)
+            for i in 0..hist_len {
+                let beta = rho_hist[i] * y_hist[i].dot(&r);
+                r = r + (alpha_vec[i] - beta) * &s_hist[i];
+            }
+
+            // Search direction (negative because we minimize)
+            let direction = -&r;
+
+            // Backtracking line search (Armijo condition)
+            let grad_dot_dir = grad.dot(&direction);
+            if grad_dot_dir >= 0.0 {
+                // Reset if not a descent direction
+                s_hist.clear();
+                y_hist.clear();
+                rho_hist.clear();
+                let lr = self.learning_rate;
+                w = &w - &(&grad * lr);
+                grad = compute_grad(&w);
+                prev_grad = grad.clone();
+                continue;
+            }
+
+            let mut step = 1.0;
+            let c1 = 1e-4;
+            let current_loss = compute_loss(&w);
+            for _ in 0..20 {
+                let w_new = &w + &(&direction * step);
+                let new_loss = compute_loss(&w_new);
+                if new_loss <= current_loss + c1 * step * grad_dot_dir {
+                    break;
+                }
+                step *= 0.5;
+            }
+
+            let s = &direction * step;
+            let w_new = &w + &s;
+            let new_grad = compute_grad(&w_new);
+            let y_diff = &new_grad - &grad;
+            let sy = s.dot(&y_diff);
+
+            if sy > 1e-10 {
+                if s_hist.len() >= m {
+                    s_hist.remove(0);
+                    y_hist.remove(0);
+                    rho_hist.remove(0);
+                }
+                s_hist.push(s.clone());
+                y_hist.push(y_diff);
+                rho_hist.push(1.0 / sy);
+            }
+
+            // Check convergence
+            let max_change = s.iter().map(|v| v.abs()).fold(0.0_f64, |a, b| a.max(b));
+            w = w_new;
+            prev_grad = grad.clone();
+            grad = new_grad;
 
             if max_change < self.tol {
                 break;
             }
         }
 
-        Ok((w, bias))
+        let bias = w[0];
+        let weights = w.slice(ndarray::s![1..]).to_owned();
+
+        Ok((weights, bias))
     }
 
     /// Fit the model. Supports binary and multiclass (one-vs-rest).
@@ -1014,5 +1115,123 @@ mod tests {
 
         let logreg = LogisticRegression::new(1.0, 100, 1e-4, "l2");
         assert!(logreg.predict(&X.view()).is_err());
+    }
+}
+
+// ==========================================
+// LinearSVC  Linear Support Vector Classification
+// ==========================================
+pub struct LinearSVC {
+    pub coef_: Option<Array1<f64>>,
+    pub intercept_: Option<Array1<f64>>,
+    pub classes_: Option<Vec<f64>>,
+    pub C: f64,
+    pub max_iter: usize,
+    pub tol: f64,
+    pub learning_rate: f64,
+}
+
+impl LinearSVC {
+    pub fn new(C: f64, max_iter: usize, tol: f64) -> Self {
+        LinearSVC {
+            coef_: None,
+            intercept_: None,
+            classes_: None,
+            C,
+            max_iter,
+            tol,
+            learning_rate: 0.01,
+        }
+    }
+
+    fn fit_binary(
+        &self,
+        X: &Array2<f64>,
+        y_binary: &Array1<f64>, // -1 or 1 labels
+        n_features: usize,
+    ) -> Result<(Array1<f64>, f64), String> {
+        let n_f64 = X.nrows() as f64;
+        let lambda = 1.0 / self.C;
+
+        let mut w = Array1::<f64>::zeros(n_features);
+        let mut bias = 0.0_f64;
+        let lr = self.learning_rate;
+
+        for _iter in 0..self.max_iter {
+            let z = X.dot(&w) + bias;
+            // Hinge loss gradient: if y*z < 1, grad_w += -y*X, grad_b += -y
+            let mut grad_w = &w * lambda;
+            let mut grad_b = 0.0;
+            
+            for i in 0..X.nrows() {
+                if y_binary[i] * z[i] < 1.0 {
+                    let update = -y_binary[i] / n_f64;
+                    for j in 0..n_features {
+                        grad_w[j] += update * X[[i, j]];
+                    }
+                    grad_b += update;
+                }
+            }
+
+            let w_update = &grad_w * lr;
+            w = w - &w_update;
+            let b_update = grad_b * lr;
+            bias -= b_update;
+
+            let max_change = w_update.iter().map(|v| v.abs()).fold(0.0_f64, |a, b| a.max(b)).max(b_update.abs());
+            if max_change < self.tol {
+                break;
+            }
+        }
+
+        Ok((w, bias))
+    }
+
+    pub fn fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<f64>) -> Result<(), String> {
+        if X.is_empty() { return Err("Input array is empty".to_string()); }
+        check_finite_2d(X)?;
+        check_finite_1d(y)?;
+
+        let mut unique_classes = y.to_vec();
+        unique_classes.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        unique_classes.dedup();
+        let classes = unique_classes;
+
+        if classes.len() < 2 {
+            return Err("LinearSVC requires at least 2 classes".to_string());
+        }
+
+        let n_features = X.ncols();
+
+        if classes.len() == 2 {
+            let mut y_bin = Array1::<f64>::zeros(y.len());
+            for i in 0..y.len() {
+                y_bin[i] = if y[i] == classes[1] { 1.0 } else { -1.0 };
+            }
+            let (w, b) = self.fit_binary(&X.to_owned(), &y_bin, n_features)?;
+            
+            let intercept = Array1::from(vec![b]);
+
+            self.coef_ = Some(w);
+            self.intercept_ = Some(intercept);
+        } else {
+            return Err("Multiclass LinearSVC is not implemented yet".to_string());
+        }
+
+        self.classes_ = Some(classes);
+        Ok(())
+    }
+
+    pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
+        let coef = self.coef_.as_ref().ok_or("Model is not fitted yet")?;
+        let intercept = self.intercept_.as_ref().unwrap();
+        let classes = self.classes_.as_ref().unwrap();
+
+        let preds: Vec<f64> = X.axis_iter(Axis(0)).map(|row| {
+            let z = row.dot(coef) + intercept[0];
+            if z >= 0.0 { classes[1] } else { classes[0] }
+        }).collect();
+
+        Ok(Array1::from(preds))
     }
 }

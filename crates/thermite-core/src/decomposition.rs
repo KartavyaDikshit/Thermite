@@ -51,80 +51,87 @@ impl PCA {
         Array1::from(means)
     }
 
-    /// Center X by subtracting the mean row-wise.
+    /// Center X by subtracting the mean row-wise (vectorized broadcast).
     fn center(X: &ArrayView2<f64>, mean: &Array1<f64>) -> Array2<f64> {
         let mut X_centered = X.to_owned();
-        X_centered
-            .axis_iter_mut(Axis(0))
-            .into_par_iter()
-            .for_each(|mut row| {
-                for j in 0..row.len() {
-                    row[j] -= mean[j];
-                }
-            });
+        X_centered -= mean;
         X_centered
     }
 
-    /// Power iteration to find the dominant eigenvector of a symmetric matrix A.
-    /// Returns (eigenvalue, eigenvector).
-    fn power_iteration(
+    /// Modified Gram-Schmidt orthogonalization on column vectors.
+    /// V is (n x k), orthogonalizes columns in-place.
+    fn gram_schmidt(V: &mut Array2<f64>) {
+        let k = V.ncols();
+        for j in 0..k {
+            // Normalize column j
+            let norm: f64 = V.column(j).dot(&V.column(j)).sqrt();
+            if norm > 1e-15 {
+                V.column_mut(j).mapv_inplace(|x| x / norm);
+            }
+            // Subtract projection of later columns onto column j
+            for l in (j + 1)..k {
+                let proj = V.column(l).dot(&V.column(j));
+                let vj = V.column(j).to_owned();
+                V.column_mut(l).scaled_add(-proj, &vj);
+            }
+        }
+    }
+
+    /// Simultaneous subspace iteration to find top-k eigenvalues/eigenvectors.
+    /// Much faster than sequential power iteration + deflation.
+    fn subspace_iteration(
         A: &Array2<f64>,
+        k: usize,
         rng: &mut SmallRng,
         max_iter: usize,
         tol: f64,
-    ) -> (f64, Array1<f64>) {
+    ) -> (Array1<f64>, Array2<f64>) {
         let n = A.nrows();
-        let mut v = Array1::zeros(n);
-        for i in 0..n {
-            v[i] = rng.gen::<f64>() - 0.5;
-        }
-        // Normalize
-        let norm = v.dot(&v).sqrt();
-        if norm > 0.0 {
-            v.mapv_inplace(|x| x / norm);
-        }
 
-        let mut eigenvalue = 0.0;
+        // Initialize random matrix V of shape (n, k)
+        let mut V = Array2::<f64>::zeros((n, k));
+        for i in 0..n {
+            for j in 0..k {
+                V[[i, j]] = rng.gen::<f64>() - 0.5;
+            }
+        }
+        Self::gram_schmidt(&mut V);
+
+        let mut eigenvalues = Array1::<f64>::zeros(k);
 
         for _ in 0..max_iter {
-            // w = A * v
-            let w = A.dot(&v);
-            let new_eigenvalue = v.dot(&w);
-            let w_norm = w.dot(&w).sqrt();
+            // W = A * V  (n x k)
+            let W = A.dot(&V);
 
-            if w_norm < 1e-15 {
-                break;
+            // Orthogonalize W via Gram-Schmidt
+            let mut W_orth = W.clone();
+            Self::gram_schmidt(&mut W_orth);
+
+            // Check convergence: how much did the subspace change
+            let mut max_change = 0.0_f64;
+            for j in 0..k {
+                // Eigenvalue estimate: Rayleigh quotient
+                let av = A.dot(&W_orth.column(j));
+                let new_eigenvalue = W_orth.column(j).dot(&av);
+                let diff = (new_eigenvalue - eigenvalues[j]).abs();
+                max_change = max_change.max(diff);
+                eigenvalues[j] = new_eigenvalue;
             }
 
-            let new_v = &w / w_norm;
+            V = W_orth;
 
-            // Check convergence
-            let diff: f64 = new_v
-                .iter()
-                .zip(v.iter())
-                .map(|(&a, &b)| (a - b).powi(2))
-                .sum::<f64>()
-                .sqrt();
-
-            v = new_v;
-            eigenvalue = new_eigenvalue;
-
-            if diff < tol {
+            if max_change < tol {
                 break;
             }
         }
 
-        (eigenvalue, v)
-    }
-
-    /// Deflate matrix: A' = A - eigenvalue * v * v^T
-    fn deflate(A: &mut Array2<f64>, eigenvalue: f64, v: &Array1<f64>) {
-        let n = A.nrows();
-        for i in 0..n {
-            for j in 0..n {
-                A[[i, j]] -= eigenvalue * v[i] * v[j];
-            }
+        // Return eigenvalues and eigenvectors as rows (k x n)
+        let mut components = Array2::<f64>::zeros((k, n));
+        for j in 0..k {
+            components.row_mut(j).assign(&V.column(j));
         }
+
+        (eigenvalues, components)
     }
 
     pub fn fit(&mut self, X: &ArrayView2<f64>) -> Result<(), String> {
@@ -158,17 +165,12 @@ impl PCA {
         // Total variance for ratio computation
         let total_variance: f64 = (0..n_features).map(|i| cov[[i, i]]).sum();
 
-        // Extract top-k eigenvalues/vectors via power iteration + deflation
+        // Extract top-k eigenvalues/vectors via simultaneous subspace iteration
         let mut rng = SmallRng::seed_from_u64(self.random_state.unwrap_or(0));
-        let mut components = Array2::zeros((self.n_components, n_features));
-        let mut explained_variance = Array1::zeros(self.n_components);
+        let (explained_variance, components) = Self::subspace_iteration(
+            &cov, self.n_components, &mut rng, 1000, 1e-10
+        );
 
-        for k in 0..self.n_components {
-            let (eigenvalue, eigenvector) = Self::power_iteration(&cov, &mut rng, 1000, 1e-10);
-            explained_variance[k] = eigenvalue;
-            components.row_mut(k).assign(&eigenvector);
-            Self::deflate(&mut cov, eigenvalue, &eigenvector);
-        }
 
         // Compute explained variance ratio
         let explained_variance_ratio = if total_variance > 0.0 {
