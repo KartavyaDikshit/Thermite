@@ -416,6 +416,7 @@ pub mod tree_bind;
 pub mod cluster_bind;
 pub mod decomposition_bind;
 pub mod neighbors_bind;
+pub mod ensemble_bind;
 
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -431,5 +432,6 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     cluster_bind::bind_cluster(m)?;
     decomposition_bind::bind_decomposition(m)?;
     neighbors_bind::bind_neighbors(m)?;
+    ensemble_bind::bind_ensemble(m)?;
     Ok(())
 }

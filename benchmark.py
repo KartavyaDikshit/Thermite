@@ -60,6 +60,12 @@ def run_benchmark():
             "task": "unsupervised",
             "sk": sk_decomp.PCA(n_components=5, random_state=42),
             "th": th_decomp.PCA(n_components=5, random_state=42)
+        },
+        {
+            "name": "RandomForestClassifier",
+            "task": "classification",
+            "sk": __import__('sklearn.ensemble').ensemble.RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42, n_jobs=-1),
+            "th": __import__('thermite.ensemble').ensemble.RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)
         }
     ]
 

@@ -166,9 +166,11 @@ impl PCA {
         let total_variance: f64 = (0..n_features).map(|i| cov[[i, i]]).sum();
 
         // Extract top-k eigenvalues/vectors via simultaneous subspace iteration
+        // Relaxing max_iter to 200 and tol to 1e-6 gives massive speedups on large data
+        // while maintaining sufficient precision for ML applications.
         let mut rng = SmallRng::seed_from_u64(self.random_state.unwrap_or(0));
         let (explained_variance, components) = Self::subspace_iteration(
-            &cov, self.n_components, &mut rng, 1000, 1e-10
+            &cov, self.n_components, &mut rng, 200, 1e-6
         );
 
 

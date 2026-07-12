@@ -1,11 +1,12 @@
 pub mod preprocessing;
-pub mod model_selection;
 pub mod linear_model;
-pub mod metrics;
 pub mod tree;
 pub mod cluster;
+pub mod metrics;
+pub mod model_selection;
 pub mod decomposition;
 pub mod neighbors;
+pub mod ensemble;
 
 pub fn core_ping() -> &'static str {
     "core_pong"
