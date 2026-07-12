@@ -24,7 +24,7 @@ impl GaussianNB {
         }
     }
 
-    pub fn fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<f64>) -> Result<(), String> {
+    pub fn partial_fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<f64>, classes: Option<Vec<f64>>) -> Result<(), String> {
         let n_samples = X.nrows();
         let n_features = X.ncols();
         
@@ -32,16 +32,30 @@ impl GaussianNB {
             return Err("X and y sample counts do not match".to_string());
         }
 
-        let mut classes = y.to_vec();
-        classes.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        classes.dedup();
-        
-        let n_classes = classes.len();
-        let mut class_count = Array1::<f64>::zeros(n_classes);
-        let mut theta = Array2::<f64>::zeros((n_classes, n_features));
-        let mut var = Array2::<f64>::zeros((n_classes, n_features));
+        // Setup classes if not initialized
+        if self.classes_.is_none() {
+            if let Some(c) = classes {
+                self.classes_ = Some(c);
+            } else {
+                let mut unique_classes = y.to_vec();
+                unique_classes.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                unique_classes.dedup();
+                self.classes_ = Some(unique_classes);
+            }
+            let n_classes = self.classes_.as_ref().unwrap().len();
+            self.class_count_ = Some(Array1::<f64>::zeros(n_classes));
+            self.theta_ = Some(Array2::<f64>::zeros((n_classes, n_features)));
+            self.var_ = Some(Array2::<f64>::zeros((n_classes, n_features)));
+        }
 
-        // Global variance max for epsilon smoothing
+        let model_classes = self.classes_.as_ref().unwrap().clone();
+        let n_classes = model_classes.len();
+        
+        let mut class_count = self.class_count_.as_ref().unwrap().clone();
+        let mut theta = self.theta_.as_ref().unwrap().clone();
+        let mut var = self.var_.as_ref().unwrap().clone();
+
+        // Calculate global epsilon
         let mut global_var = 0.0;
         for j in 0..n_features {
             let col = X.column(j);
@@ -55,45 +69,89 @@ impl GaussianNB {
                 global_var = v;
             }
         }
-        self.epsilon_ = global_var * 1e-9;
+        let batch_epsilon = global_var * 1e-9;
+        if batch_epsilon > self.epsilon_ {
+            self.epsilon_ = batch_epsilon;
+        }
 
-        for (c_idx, &cls) in classes.iter().enumerate() {
-            let mut count = 0.0;
-            for i in 0..n_samples {
-                if (y[i] - cls).abs() < f64::EPSILON {
-                    count += 1.0;
-                    for j in 0..n_features {
-                        theta[[c_idx, j]] += X[[i, j]];
-                    }
-                }
-            }
-            class_count[c_idx] = count;
+        for (c_idx, &cls) in model_classes.iter().enumerate() {
+            let mut batch_count = 0.0;
+            let mut batch_theta = Array1::<f64>::zeros(n_features);
             
-            for j in 0..n_features {
-                theta[[c_idx, j]] /= count;
-            }
-
             for i in 0..n_samples {
                 if (y[i] - cls).abs() < f64::EPSILON {
+                    batch_count += 1.0;
                     for j in 0..n_features {
-                        var[[c_idx, j]] += (X[[i, j]] - theta[[c_idx, j]]).powi(2);
+                        batch_theta[j] += X[[i, j]];
                     }
                 }
             }
-            for j in 0..n_features {
-                var[[c_idx, j]] = (var[[c_idx, j]] / count) + self.epsilon_;
+
+            if batch_count > 0.0 {
+                batch_theta /= batch_count;
+                let mut batch_var = Array1::<f64>::zeros(n_features);
+                for i in 0..n_samples {
+                    if (y[i] - cls).abs() < f64::EPSILON {
+                        for j in 0..n_features {
+                            batch_var[j] += (X[[i, j]] - batch_theta[j]).powi(2);
+                        }
+                    }
+                }
+                batch_var /= batch_count;
+
+                let prev_count = class_count[c_idx];
+                let new_count = prev_count + batch_count;
+
+                for j in 0..n_features {
+                    let prev_t = theta[[c_idx, j]];
+                    let prev_v = var[[c_idx, j]]; // this already has epsilon added, we must remove it for true var
+                    
+                    // remove epsilon if count > 0
+                    let mut raw_prev_v = 0.0;
+                    if prev_count > 0.0 {
+                        raw_prev_v = prev_v - self.epsilon_;
+                    }
+
+                    // Parallel variance update formula
+                    let new_t = (prev_count * prev_t + batch_count * batch_theta[j]) / new_count;
+                    
+                    let s_prev = raw_prev_v * prev_count;
+                    let s_batch = batch_var[j] * batch_count;
+                    let s_new = s_prev + s_batch + (prev_count * batch_count / new_count) * (prev_t - batch_theta[j]).powi(2);
+                    
+                    theta[[c_idx, j]] = new_t;
+                    var[[c_idx, j]] = (s_new / new_count) + self.epsilon_;
+                }
+                class_count[c_idx] = new_count;
+            } else {
+                // Ensure epsilon is updated even if count doesn't change
+                if class_count[c_idx] > 0.0 {
+                    for j in 0..n_features {
+                        var[[c_idx, j]] = (var[[c_idx, j]] - self.epsilon_).max(0.0) + self.epsilon_;
+                    }
+                }
             }
         }
 
-        let class_prior = &class_count / (n_samples as f64);
+        let total_count = class_count.sum();
+        let class_prior = &class_count / total_count;
 
-        self.classes_ = Some(classes);
         self.class_count_ = Some(class_count);
         self.class_prior_ = Some(class_prior);
         self.theta_ = Some(theta);
         self.var_ = Some(var);
 
         Ok(())
+    }
+
+    pub fn fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<f64>) -> Result<(), String> {
+        self.classes_ = None;
+        self.class_count_ = None;
+        self.class_prior_ = None;
+        self.theta_ = None;
+        self.var_ = None;
+        self.epsilon_ = 1e-9;
+        self.partial_fit(X, y, None)
     }
 
     pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
