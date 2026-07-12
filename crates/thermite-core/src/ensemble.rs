@@ -18,6 +18,7 @@ pub struct RandomForestClassifier {
     pub random_state: Option<u64>,
     pub estimators_: Vec<DecisionTreeClassifier>,
     pub classes_: Option<Vec<f64>>,
+    pub categorical_features: Vec<usize>,
 }
 
 impl RandomForestClassifier {
@@ -38,6 +39,7 @@ impl RandomForestClassifier {
             random_state,
             estimators_: Vec::new(),
             classes_: None,
+            categorical_features: Vec::new(),
         }
     }
 
@@ -76,6 +78,7 @@ impl RandomForestClassifier {
                     Some(max_feat),
                     Some(seed),
                 );
+                tree.categorical_features = self.categorical_features.clone();
                 
                 tree.fit(&X_boot.view(), y_boot.as_slice().unwrap());
                 tree
@@ -127,6 +130,7 @@ pub struct RandomForestRegressor {
     pub max_features: Option<usize>, // defaults to n_features
     pub random_state: Option<u64>,
     pub estimators_: Vec<DecisionTreeRegressor>,
+    pub categorical_features: Vec<usize>,
 }
 
 impl RandomForestRegressor {
@@ -146,6 +150,7 @@ impl RandomForestRegressor {
             max_features,
             random_state,
             estimators_: Vec::new(),
+            categorical_features: Vec::new(),
         }
     }
 
@@ -179,6 +184,7 @@ impl RandomForestRegressor {
                     Some(max_feat),
                     Some(seed),
                 );
+                tree.categorical_features = self.categorical_features.clone();
                 
                 tree.fit(&X_boot.view(), y_boot.as_slice().unwrap());
                 tree
@@ -227,6 +233,7 @@ pub struct GradientBoostingRegressor {
     pub random_state: Option<u64>,
     pub initial_prediction_: f64,
     pub estimators_: Vec<DecisionTreeRegressor>,
+    pub categorical_features: Vec<usize>,
 }
 
 impl GradientBoostingRegressor {
@@ -243,6 +250,7 @@ impl GradientBoostingRegressor {
             random_state,
             initial_prediction_: 0.0,
             estimators_: Vec::new(),
+            categorical_features: Vec::new(),
         }
     }
 
@@ -269,6 +277,7 @@ impl GradientBoostingRegressor {
                 None, // Use all features
                 Some(seed),
             );
+            tree.categorical_features = self.categorical_features.clone();
 
             tree.fit(&X.view(), residuals.as_slice().unwrap());
 
@@ -313,6 +322,7 @@ pub struct GradientBoostingClassifier {
     pub initial_prediction_: f64,
     pub classes_: Option<Vec<f64>>,
     pub estimators_: Vec<DecisionTreeRegressor>, // uses regressor to predict residuals
+    pub categorical_features: Vec<usize>,
 }
 
 impl GradientBoostingClassifier {
@@ -330,6 +340,7 @@ impl GradientBoostingClassifier {
             initial_prediction_: 0.0,
             classes_: None,
             estimators_: Vec::new(),
+            categorical_features: Vec::new(),
         }
     }
 
@@ -384,6 +395,7 @@ impl GradientBoostingClassifier {
                 None, // Use all features
                 Some(seed),
             );
+            tree.categorical_features = self.categorical_features.clone();
 
             tree.fit(&X.view(), residuals.as_slice().unwrap());
 

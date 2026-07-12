@@ -29,11 +29,17 @@ impl DecisionTreeClassifier {
         }
     }
 
-    fn fit(&mut self, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>) -> PyResult<()> {
+    #[pyo3(signature = (X, y, categorical_features=None))]
+    fn fit(&mut self, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>, categorical_features: Option<Vec<usize>>) -> PyResult<()> {
         let y_slice = match y.as_slice() {
             Ok(s) => s,
             Err(_) => return Err(pyo3::exceptions::PyValueError::new_err("y must be contiguous")),
         };
+        if let Some(cf) = categorical_features {
+            self.core.categorical_features = cf;
+        } else {
+            self.core.categorical_features = Vec::new();
+        }
         self.core.fit(&X.as_array(), y_slice);
         Ok(())
     }
@@ -76,11 +82,17 @@ impl DecisionTreeRegressor {
         }
     }
 
-    fn fit(&mut self, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>) -> PyResult<()> {
+    #[pyo3(signature = (X, y, categorical_features=None))]
+    fn fit(&mut self, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>, categorical_features: Option<Vec<usize>>) -> PyResult<()> {
         let y_slice = match y.as_slice() {
             Ok(s) => s,
             Err(_) => return Err(pyo3::exceptions::PyValueError::new_err("y must be contiguous")),
         };
+        if let Some(cf) = categorical_features {
+            self.core.categorical_features = cf;
+        } else {
+            self.core.categorical_features = Vec::new();
+        }
         self.core.fit(&X.as_array(), y_slice);
         Ok(())
     }

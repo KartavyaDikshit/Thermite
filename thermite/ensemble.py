@@ -19,14 +19,14 @@ class RandomForestClassifier:
             random_state=random_state,
         )
 
-    def fit(self, X, y):
+    def fit(self, X, y, categorical_features=None):
         X = np.asarray(X, dtype=np.float64)
         y = np.asarray(y, dtype=np.float64)
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
             raise ValueError("Expected 1D array for y")
-        self._model.fit(X, y)
+        self._model.fit(X, y, categorical_features)
         return self
 
     def predict(self, X):
@@ -61,14 +61,14 @@ class RandomForestRegressor:
             random_state=random_state,
         )
 
-    def fit(self, X, y):
+    def fit(self, X, y, categorical_features=None):
         X = np.asarray(X, dtype=np.float64)
         y = np.asarray(y, dtype=np.float64)
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
             raise ValueError("Expected 1D array for y")
-        self._model.fit(X, y)
+        self._model.fit(X, y, categorical_features)
         return self
 
     def predict(self, X):
@@ -98,14 +98,14 @@ class GradientBoostingClassifier:
             random_state=random_state,
         )
 
-    def fit(self, X, y):
+    def fit(self, X, y, categorical_features=None):
         X = np.asarray(X, dtype=np.float64)
         y = np.asarray(y, dtype=np.float64)
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
             raise ValueError("Expected 1D array for y")
-        self._model.fit(X, y)
+        self._model.fit(X, y, categorical_features)
         return self
 
     def predict(self, X):
@@ -137,14 +137,14 @@ class GradientBoostingRegressor:
             random_state=random_state,
         )
 
-    def fit(self, X, y):
+    def fit(self, X, y, categorical_features=None):
         X = np.asarray(X, dtype=np.float64)
         y = np.asarray(y, dtype=np.float64)
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
             raise ValueError("Expected 1D array for y")
-        self._model.fit(X, y)
+        self._model.fit(X, y, categorical_features)
         return self
 
     def predict(self, X):
