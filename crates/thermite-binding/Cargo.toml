@@ -1,0 +1,16 @@
+[package]
+name = "thermite-binding"
+version = "0.1.0"
+edition = "2021"
+description = "PyO3 bindings for Thermite"
+
+[lib]
+name = "_core"
+crate-type = ["cdylib"]
+test = false
+
+[dependencies]
+thermite-core = { path = "../thermite-core" }
+pyo3 = { workspace = true }
+numpy = { workspace = true }
+ndarray = { workspace = true }

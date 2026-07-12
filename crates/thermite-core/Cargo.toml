@@ -1,0 +1,10 @@
+[package]
+name = "thermite-core"
+version = "0.1.0"
+edition = "2021"
+description = "Core Rust implementation of Thermite machine learning algorithms"
+
+[dependencies]
+ndarray = { workspace = true }
+rayon = { workspace = true }
+rand = { workspace = true }
