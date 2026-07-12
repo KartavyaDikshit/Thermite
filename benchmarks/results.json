@@ -1,0 +1,162 @@
+[
+  {
+    "size": 10000,
+    "model": "LinearRegression",
+    "sk_train_time": 0.001967906951904297,
+    "th_train_time": 0.0014209747314453125,
+    "sk_infer_time": 0.0001399517059326172,
+    "th_infer_time": 0.000415802001953125,
+    "sk_metric": 1.0,
+    "th_metric": 1.0
+  },
+  {
+    "size": 10000,
+    "model": "LogisticRegression",
+    "sk_train_time": 0.002846240997314453,
+    "th_train_time": 0.0034999847412109375,
+    "sk_infer_time": 0.00013494491577148438,
+    "th_infer_time": 0.0007028579711914062,
+    "sk_metric": 0.8892,
+    "th_metric": 0.8747
+  },
+  {
+    "size": 10000,
+    "model": "RandomForestClassifier",
+    "sk_train_time": 0.5645592212677002,
+    "th_train_time": 0.3058149814605713,
+    "sk_infer_time": 0.017087936401367188,
+    "th_infer_time": 0.003984212875366211,
+    "sk_metric": 0.9504,
+    "th_metric": 0.9493
+  },
+  {
+    "size": 10000,
+    "model": "GradientBoostingRegressor",
+    "sk_train_time": 2.3472580909729004,
+    "th_train_time": 0.9417600631713867,
+    "sk_infer_time": 0.0076711177825927734,
+    "th_infer_time": 0.008796215057373047,
+    "sk_metric": 0.9594536002115218,
+    "th_metric": 0.9594536002115218
+  },
+  {
+    "size": 10000,
+    "model": "HistGradientBoostingClassifier",
+    "sk_train_time": 0.21234822273254395,
+    "th_train_time": 0.3404428958892822,
+    "sk_infer_time": 0.0038726329803466797,
+    "th_infer_time": 0.0060939788818359375,
+    "sk_metric": 0.9548,
+    "th_metric": 0.9231
+  },
+  {
+    "size": 10000,
+    "model": "KMeans",
+    "sk_train_time": 0.0531468391418457,
+    "th_train_time": 0.004206180572509766,
+    "sk_infer_time": 0.00037026405334472656,
+    "th_infer_time": 0.0002739429473876953,
+    "sk_metric": 0.0,
+    "th_metric": 0.0
+  },
+  {
+    "size": 10000,
+    "model": "MiniBatchKMeans",
+    "sk_train_time": 0.010715007781982422,
+    "th_train_time": 0.03385305404663086,
+    "sk_infer_time": 0.0003299713134765625,
+    "th_infer_time": 0.00018286705017089844,
+    "sk_metric": 0.0,
+    "th_metric": 0.0
+  },
+  {
+    "size": 10000,
+    "model": "pairwise_distances",
+    "sk_train_time": 0.2554609775543213,
+    "th_train_time": 0.8259179592132568,
+    "sk_infer_time": 0,
+    "th_infer_time": 0,
+    "sk_metric": 0,
+    "th_metric": 0
+  },
+  {
+    "size": 100000,
+    "model": "LinearRegression",
+    "sk_train_time": 0.014634132385253906,
+    "th_train_time": 0.014990806579589844,
+    "sk_infer_time": 0.0005958080291748047,
+    "th_infer_time": 0.006685972213745117,
+    "sk_metric": 1.0,
+    "th_metric": 1.0
+  },
+  {
+    "size": 100000,
+    "model": "LogisticRegression",
+    "sk_train_time": 0.012142181396484375,
+    "th_train_time": 0.056493282318115234,
+    "sk_infer_time": 0.0008389949798583984,
+    "th_infer_time": 0.007749080657958984,
+    "sk_metric": 0.86802,
+    "th_metric": 0.86133
+  },
+  {
+    "size": 100000,
+    "model": "RandomForestClassifier",
+    "sk_train_time": 7.139019012451172,
+    "th_train_time": 10.303725004196167,
+    "sk_infer_time": 0.15755176544189453,
+    "th_infer_time": 0.040358781814575195,
+    "sk_metric": 0.88004,
+    "th_metric": 0.87949
+  },
+  {
+    "size": 100000,
+    "model": "GradientBoostingRegressor",
+    "sk_train_time": 27.915425062179565,
+    "th_train_time": 16.358572006225586,
+    "sk_infer_time": 0.07035613059997559,
+    "th_infer_time": 0.09051704406738281,
+    "sk_metric": 0.9285849647327135,
+    "th_metric": 0.9285849460473273
+  },
+  {
+    "size": 100000,
+    "model": "HistGradientBoostingClassifier",
+    "sk_train_time": 0.3108100891113281,
+    "th_train_time": 3.6970131397247314,
+    "sk_infer_time": 0.02680206298828125,
+    "th_infer_time": 0.07560968399047852,
+    "sk_metric": 0.87697,
+    "th_metric": 0.86979
+  },
+  {
+    "size": 100000,
+    "model": "KMeans",
+    "sk_train_time": 0.016036033630371094,
+    "th_train_time": 0.006975889205932617,
+    "sk_infer_time": 0.0012450218200683594,
+    "th_infer_time": 0.0017900466918945312,
+    "sk_metric": 0.0,
+    "th_metric": 0.0
+  },
+  {
+    "size": 100000,
+    "model": "MiniBatchKMeans",
+    "sk_train_time": 0.01276707649230957,
+    "th_train_time": 0.33809590339660645,
+    "sk_infer_time": 0.0016598701477050781,
+    "th_infer_time": 0.001825094223022461,
+    "sk_metric": 0.0,
+    "th_metric": 0.0
+  },
+  {
+    "size": 10000,
+    "model": "pairwise_distances",
+    "sk_train_time": 0.2911369800567627,
+    "th_train_time": 0.7922482490539551,
+    "sk_infer_time": 0,
+    "th_infer_time": 0,
+    "sk_metric": 0,
+    "th_metric": 0
+  }
+]
