@@ -55,3 +55,23 @@ def r2_score(y_true, y_pred):
     y_true = np.asarray(y_true, dtype=np.float64)
     y_pred = np.asarray(y_pred, dtype=np.float64)
     return _core.r2_score(y_true, y_pred)
+
+def log_loss(y_true, y_pred):
+    y_true = np.asarray(y_true, dtype=np.float64)
+    y_pred = np.asarray(y_pred, dtype=np.float64)
+    return _core.log_loss(y_true, y_pred)
+
+def mean_absolute_percentage_error(y_true, y_pred):
+    y_true = np.asarray(y_true, dtype=np.float64)
+    y_pred = np.asarray(y_pred, dtype=np.float64)
+    return _core.mean_absolute_percentage_error(y_true, y_pred)
+
+def pairwise_distances(X, Y, metric="cosine"):
+    X = np.ascontiguousarray(X, dtype=np.float64)
+    Y = np.ascontiguousarray(Y, dtype=np.float64)
+    if X.ndim == 1:
+        X = X.reshape(1, -1)
+    if Y.ndim == 1:
+        Y = Y.reshape(1, -1)
+    return _core.pairwise_distances(X, Y, metric)
+

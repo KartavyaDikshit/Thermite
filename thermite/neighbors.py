@@ -52,3 +52,18 @@ class KNeighborsClassifier:
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         return self._model.predict_proba(X)
+
+class LocalOutlierFactor:
+    def __init__(self, n_neighbors=20, *, contamination=0.1):
+        self.n_neighbors = n_neighbors
+        self.contamination = contamination
+        self._model = _core.LocalOutlierFactor(
+            n_neighbors=n_neighbors, contamination=contamination
+        )
+
+    @_catch_panic
+    def fit_predict(self, X, y=None):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        if X.ndim != 2:
+            raise ValueError("Expected 2D array for X")
+        return self._model.fit_predict(X)

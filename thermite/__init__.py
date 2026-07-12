@@ -4,15 +4,17 @@ from .model_selection import train_test_split, GridSearchCV, KFold, SuccessiveHa
 from .linear_model import LinearRegression, Ridge, Lasso, LogisticRegression, LinearSVC
 from .metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
-    roc_auc_score, mean_squared_error, r2_score
+    roc_auc_score, mean_squared_error, r2_score,
+    log_loss, mean_absolute_percentage_error, pairwise_distances
 )
 from .tree import DecisionTreeClassifier, DecisionTreeRegressor
-from .cluster import KMeans, DBSCAN
+from .cluster import KMeans, DBSCAN, SpectralClustering
+from .manifold import TSNE, UMAP
 from .decomposition import PCA
-from .neighbors import KNeighborsClassifier
+from .neighbors import KNeighborsClassifier, LocalOutlierFactor
 from .text import CountVectorizer, TfidfVectorizer, Word2Vec
 from .impute import IterativeImputer
-from .ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier, GradientBoostingRegressor, HistGradientBoostingClassifier, HistGradientBoostingRegressor
+from .ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier, GradientBoostingRegressor, HistGradientBoostingClassifier, HistGradientBoostingRegressor, IsolationForest
 from .pipeline import Pipeline, ColumnTransformer
 from .naive_bayes import GaussianNB
 from .svm import SVC
@@ -31,7 +33,7 @@ from .survival import SurvivalForest
 from .multi_output import MultiOutputRegressor
 from .graph import Node2Vec
 
-__version__ = "1.5.0"
+__version__ = "1.6.0"
 __all__ = [
     "ping",
     "StandardScaler",
@@ -50,18 +52,26 @@ __all__ = [
     "roc_auc_score",
     "mean_squared_error",
     "r2_score",
+    "log_loss",
+    "mean_absolute_percentage_error",
+    "pairwise_distances",
     "DecisionTreeClassifier",
     "DecisionTreeRegressor",
     "KMeans",
     "DBSCAN",
+    "SpectralClustering",
+    "TSNE",
+    "UMAP",
     "PCA",
     "KNeighborsClassifier",
+    "LocalOutlierFactor",
     "RandomForestClassifier",
     "RandomForestRegressor",
     "GradientBoostingClassifier",
     "GradientBoostingRegressor",
     "HistGradientBoostingClassifier",
     "HistGradientBoostingRegressor",
+    "IsolationForest",
     "Pipeline",
     "LinearSVC",
     "ColumnTransformer",

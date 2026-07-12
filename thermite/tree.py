@@ -63,6 +63,10 @@ class DecisionTreeClassifier:
         except:
             return np.array([1.0])
 
+    @property
+    def tree_(self):
+        return self._model.tree_
+
 
 class DecisionTreeRegressor:
     def __init__(self, *, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None):
@@ -96,4 +100,8 @@ class DecisionTreeRegressor:
             return self._model.feature_importances_()
         except:
             return np.array([1.0])
+
+    @property
+    def tree_(self):
+        return self._model.tree_
 

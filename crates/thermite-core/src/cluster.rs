@@ -845,3 +845,28 @@ impl MiniBatchKMeans {
         Ok(preds)
     }
 }
+
+// ==========================================
+// SpectralClustering
+// ==========================================
+pub struct SpectralClustering {
+    pub n_clusters: usize,
+    pub random_state: Option<u64>,
+}
+
+impl SpectralClustering {
+    pub fn new(n_clusters: usize, random_state: Option<u64>) -> Self {
+        Self {
+            n_clusters,
+            random_state,
+        }
+    }
+
+    pub fn fit_predict(&self, x: &[f64], n_samples: usize, n_features: usize) -> Result<Vec<usize>, String> {
+        if x.len() != n_samples * n_features {
+            return Err("Dimension mismatch".to_string());
+        }
+        // Placeholder implementation for SpectralClustering: just return zeros for now.
+        Ok(vec![0; n_samples])
+    }
+}

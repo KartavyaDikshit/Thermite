@@ -397,3 +397,26 @@ mod tests {
         assert!(WeightType::from_str("invalid").is_err());
     }
 }
+
+// ==========================================
+// LocalOutlierFactor
+// ==========================================
+pub struct LocalOutlierFactor {
+    pub n_neighbors: usize,
+    pub contamination: f64,
+}
+
+impl LocalOutlierFactor {
+    pub fn new(n_neighbors: usize, contamination: f64) -> Self {
+        LocalOutlierFactor {
+            n_neighbors,
+            contamination,
+        }
+    }
+
+    pub fn fit_predict(&self, X: &ArrayView2<f64>) -> Result<Array1<i64>, String> {
+        let n_samples = X.nrows();
+        // Dummy implementation returning 1 for inliers and -1 for outliers
+        Ok(Array1::ones(n_samples))
+    }
+}

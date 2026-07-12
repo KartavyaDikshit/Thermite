@@ -7,6 +7,7 @@ use thermite_core::ensemble::{
     GradientBoostingRegressor as CoreGradientBoostingRegressor,
     HistGradientBoostingClassifier as CoreHistGradientBoostingClassifier,
     HistGradientBoostingRegressor as CoreHistGradientBoostingRegressor,
+    IsolationForest as CoreIsolationForest,
 };
 use thermite_gpu::DeviceKind;
 
@@ -157,7 +158,40 @@ impl RandomForestClassifier {
         Ok(PyArray1::from_array_bound(py, &preds))
     }
 
+    #[getter]
+    fn estimators_(&self) -> PyResult<Vec<crate::tree_bind::PyTree>> {
+        let mut res = Vec::with_capacity(self.core.estimators_.len());
+        for est in &self.core.estimators_ {
+            let n = est.nodes.len();
+            let mut children_left = Vec::with_capacity(n);
+            let mut children_right = Vec::with_capacity(n);
+            let mut feature = Vec::with_capacity(n);
+            let mut threshold = Vec::with_capacity(n);
 
+            for node in &est.nodes {
+                if node.is_leaf() {
+                    children_left.push(-1);
+                    children_right.push(-1);
+                    feature.push(-2);
+                    threshold.push(-2.0);
+                } else {
+                    children_left.push(node.left as isize);
+                    children_right.push(node.right as isize);
+                    feature.push(node.feature_idx as isize);
+                    threshold.push(node.threshold);
+                }
+            }
+
+            res.push(crate::tree_bind::PyTree {
+                node_count: n,
+                children_left,
+                children_right,
+                feature,
+                threshold,
+            });
+        }
+        Ok(res)
+    }
 }
 
 #[pyclass]
@@ -223,7 +257,40 @@ impl RandomForestRegressor {
         Ok(PyArray1::from_array_bound(py, &preds))
     }
 
+    #[getter]
+    fn estimators_(&self) -> PyResult<Vec<crate::tree_bind::PyTree>> {
+        let mut res = Vec::with_capacity(self.core.estimators_.len());
+        for est in &self.core.estimators_ {
+            let n = est.nodes.len();
+            let mut children_left = Vec::with_capacity(n);
+            let mut children_right = Vec::with_capacity(n);
+            let mut feature = Vec::with_capacity(n);
+            let mut threshold = Vec::with_capacity(n);
 
+            for node in &est.nodes {
+                if node.is_leaf() {
+                    children_left.push(-1);
+                    children_right.push(-1);
+                    feature.push(-2);
+                    threshold.push(-2.0);
+                } else {
+                    children_left.push(node.left as isize);
+                    children_right.push(node.right as isize);
+                    feature.push(node.feature_idx as isize);
+                    threshold.push(node.threshold);
+                }
+            }
+
+            res.push(crate::tree_bind::PyTree {
+                node_count: n,
+                children_left,
+                children_right,
+                feature,
+                threshold,
+            });
+        }
+        Ok(res)
+    }
 }
 
 pub fn bind_ensemble(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -233,7 +300,32 @@ pub fn bind_ensemble(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<GradientBoostingRegressor>()?;
     m.add_class::<HistGradientBoostingClassifier>()?;
     m.add_class::<HistGradientBoostingRegressor>()?;
+    m.add_class::<IsolationForest>()?;
     Ok(())
+}
+
+#[pyclass]
+pub struct IsolationForest {
+    core: CoreIsolationForest,
+}
+
+#[pymethods]
+impl IsolationForest {
+    #[new]
+    #[pyo3(signature = (n_estimators=100, random_state=None))]
+    fn new(n_estimators: usize, random_state: Option<u64>) -> Self {
+        IsolationForest {
+            core: CoreIsolationForest::new(n_estimators, random_state),
+        }
+    }
+
+    fn fit_predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<i64>>> {
+        let x_arr = X.as_array();
+        let preds = py.allow_threads(|| {
+            self.core.fit_predict(&x_arr).map_err(pyo3::exceptions::PyValueError::new_err)
+        })?;
+        Ok(PyArray1::from_array_bound(py, &preds))
+    }
 }
 
 #[pyclass]

@@ -165,3 +165,18 @@ class MiniBatchKMeans:
     @property
     def cluster_centers_(self):
         return self._model.cluster_centers_
+
+class SpectralClustering:
+    def __init__(self, n_clusters=8, *, random_state=None):
+        self.n_clusters = n_clusters
+        self.random_state = random_state
+        self._model = _core.SpectralClustering(
+            n_clusters=n_clusters, random_state=random_state
+        )
+
+    @_catch_panic
+    def fit_predict(self, X, y=None):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        if X.ndim != 2:
+            raise ValueError("Expected 2D array for X")
+        return self._model.fit_predict(X)

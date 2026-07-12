@@ -409,6 +409,127 @@ pub fn r2_score(y_true: &[f64], y_pred: &[f64]) -> Result<f64, String> {
 }
 
 // ==========================================
+// Log Loss
+// ==========================================
+pub fn log_loss(y_true: &[f64], y_pred: &[f64]) -> Result<f64, String> {
+    if y_true.len() != y_pred.len() {
+        return Err(format!(
+            "Length mismatch: y_true has {} elements, y_pred has {}",
+            y_true.len(),
+            y_pred.len()
+        ));
+    }
+    if y_true.is_empty() {
+        return Err("Input arrays are empty".to_string());
+    }
+    let eps = 1e-15;
+    let loss: f64 = y_true
+        .iter()
+        .zip(y_pred.iter())
+        .map(|(&t, &p)| {
+            let p_clip = p.clamp(eps, 1.0 - eps);
+            if (t - 1.0).abs() < f64::EPSILON {
+                -p_clip.ln()
+            } else if t.abs() < f64::EPSILON {
+                -(1.0 - p_clip).ln()
+            } else {
+                -(t * p_clip.ln() + (1.0 - t) * (1.0 - p_clip).ln())
+            }
+        })
+        .sum();
+    Ok(loss / y_true.len() as f64)
+}
+
+// ==========================================
+// Mean Absolute Percentage Error
+// ==========================================
+pub fn mean_absolute_percentage_error(y_true: &[f64], y_pred: &[f64]) -> Result<f64, String> {
+    if y_true.len() != y_pred.len() {
+        return Err(format!(
+            "Length mismatch: y_true has {} elements, y_pred has {}",
+            y_true.len(),
+            y_pred.len()
+        ));
+    }
+    if y_true.is_empty() {
+        return Err("Input arrays are empty".to_string());
+    }
+    let eps = f64::EPSILON;
+    let mape: f64 = y_true
+        .iter()
+        .zip(y_pred.iter())
+        .map(|(&t, &p)| {
+            if t.abs() < eps {
+                ((t - p).abs() / eps.max(t.abs()))
+            } else {
+                ((t - p) / t).abs()
+            }
+        })
+        .sum();
+    Ok(mape / y_true.len() as f64)
+}
+
+// ==========================================
+// Pairwise Distances
+// ==========================================
+pub fn pairwise_distances(
+    x: &[f64],
+    n_samples_x: usize,
+    y: &[f64],
+    n_samples_y: usize,
+    n_features: usize,
+    metric: &str,
+) -> Result<Vec<f64>, String> {
+    if x.len() != n_samples_x * n_features || y.len() != n_samples_y * n_features {
+        return Err("Dimensions do not match".to_string());
+    }
+    let mut distances = Vec::with_capacity(n_samples_x * n_samples_y);
+    for i in 0..n_samples_x {
+        let x_row = &x[i * n_features..(i + 1) * n_features];
+        for j in 0..n_samples_y {
+            let y_row = &y[j * n_features..(j + 1) * n_features];
+            match metric {
+                "cosine" => {
+                    let mut dot = 0.0;
+                    let mut norm_x = 0.0;
+                    let mut norm_y = 0.0;
+                    for (&xi, &yi) in x_row.iter().zip(y_row.iter()) {
+                        dot += xi * yi;
+                        norm_x += xi * xi;
+                        norm_y += yi * yi;
+                    }
+                    if norm_x == 0.0 || norm_y == 0.0 {
+                        distances.push(1.0);
+                    } else {
+                        distances.push(1.0 - (dot / (norm_x.sqrt() * norm_y.sqrt())));
+                    }
+                }
+                "manhattan" => {
+                    let dist: f64 = x_row.iter().zip(y_row.iter()).map(|(xi, yi)| (xi - yi).abs()).sum();
+                    distances.push(dist);
+                }
+                "haversine" => {
+                    if n_features != 2 {
+                        return Err("Haversine requires exactly 2 dimensions".to_string());
+                    }
+                    let lat1 = x_row[0];
+                    let lon1 = x_row[1];
+                    let lat2 = y_row[0];
+                    let lon2 = y_row[1];
+                    let dlat = lat2 - lat1;
+                    let dlon = lon2 - lon1;
+                    let a = (dlat / 2.0).sin().powi(2) + lat1.cos() * lat2.cos() * (dlon / 2.0).sin().powi(2);
+                    let c = 2.0 * a.sqrt().asin();
+                    distances.push(c);
+                }
+                _ => return Err(format!("Unsupported metric: {}", metric))
+            }
+        }
+    }
+    Ok(distances)
+}
+
+// ==========================================
 // Tests
 // ==========================================
 #[cfg(test)]

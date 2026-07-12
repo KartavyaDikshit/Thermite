@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
-use numpy::{PyArray1, PyArray2, PyReadonlyArray1, PyReadonlyArray2};
-use thermite_core::cluster::{KMeans as CoreKMeans, DBSCAN as CoreDBSCAN};
+use numpy::{PyArray1, PyArray2, PyReadonlyArray1, PyReadonlyArray2, PyUntypedArrayMethods};
+use thermite_core::cluster::{KMeans as CoreKMeans, DBSCAN as CoreDBSCAN, SpectralClustering as CoreSpectralClustering};
 use thermite_core::sparse::build_csr;
 #[pyclass]
 pub struct KMeans {
@@ -156,6 +156,7 @@ pub fn bind_cluster(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<KMeans>()?;
     m.add_class::<DBSCAN>()?;
     m.add_class::<MiniBatchKMeans>()?;
+    m.add_class::<SpectralClustering>()?;
     Ok(())
 }
 use thermite_core::cluster::MiniBatchKMeans as CoreMiniBatchKMeans;
@@ -205,3 +206,29 @@ impl MiniBatchKMeans {
         }
     }
 }
+
+#[pyclass]
+pub struct SpectralClustering {
+    core: CoreSpectralClustering,
+}
+
+#[pymethods]
+impl SpectralClustering {
+    #[new]
+    #[pyo3(signature = (n_clusters=8, random_state=None))]
+    fn new(n_clusters: usize, random_state: Option<u64>) -> Self {
+        SpectralClustering {
+            core: CoreSpectralClustering::new(n_clusters, random_state),
+        }
+    }
+
+    fn fit_predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<usize>>> {
+        let x_shape = X.shape();
+        let x_slice = X.as_slice().map_err(|_| pyo3::exceptions::PyValueError::new_err("X must be contiguous"))?;
+        let preds = py.allow_threads(|| {
+            self.core.fit_predict(x_slice, x_shape[0], x_shape[1]).map_err(pyo3::exceptions::PyValueError::new_err)
+        })?;
+        Ok(PyArray1::from_vec_bound(py, preds))
+    }
+}
+

@@ -429,6 +429,7 @@ pub mod survival_bind;
 pub mod multi_output_bind;
 pub mod graph_bind;
 pub mod hyperband_bind;
+pub mod manifold_bind;
 
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -457,6 +458,7 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     multi_output_bind::bind_multi_output(m)?;
     graph_bind::bind_graph(m)?;
     hyperband_bind::bind_hyperband(m)?;
+    manifold_bind::bind_manifold(m)?;
     Ok(())
 }
 

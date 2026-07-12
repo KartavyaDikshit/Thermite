@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 use numpy::{PyArray1, PyArray2, PyReadonlyArray1, PyReadonlyArray2};
-use thermite_core::neighbors::{KNeighborsClassifier as CoreKNeighborsClassifier, WeightType};
+use thermite_core::neighbors::{KNeighborsClassifier as CoreKNeighborsClassifier, LocalOutlierFactor as CoreLocalOutlierFactor, WeightType};
 
 #[pyclass]
 pub struct KNeighborsClassifier {
@@ -36,5 +36,30 @@ impl KNeighborsClassifier {
 
 pub fn bind_neighbors(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<KNeighborsClassifier>()?;
+    m.add_class::<LocalOutlierFactor>()?;
     Ok(())
+}
+
+#[pyclass]
+pub struct LocalOutlierFactor {
+    core: CoreLocalOutlierFactor,
+}
+
+#[pymethods]
+impl LocalOutlierFactor {
+    #[new]
+    #[pyo3(signature = (n_neighbors=20, contamination=0.1))]
+    fn new(n_neighbors: usize, contamination: f64) -> Self {
+        LocalOutlierFactor {
+            core: CoreLocalOutlierFactor::new(n_neighbors, contamination),
+        }
+    }
+
+    fn fit_predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<i64>>> {
+        let x_arr = X.as_array();
+        let preds = py.allow_threads(|| {
+            self.core.fit_predict(&x_arr).map_err(pyo3::exceptions::PyValueError::new_err)
+        })?;
+        Ok(PyArray1::from_array_bound(py, &preds))
+    }
 }

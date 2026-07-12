@@ -67,6 +67,10 @@ class RandomForestClassifier:
     def feature_importances_(self):
         return self._model.feature_importances_
 
+    @property
+    def estimators_(self):
+        return self._model.estimators_
+
 class RandomForestRegressor:
     def __init__(self, n_estimators=100, *, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, n_jobs=None, device='cpu'):
         self.n_estimators = n_estimators
@@ -112,6 +116,10 @@ class RandomForestRegressor:
     @property
     def feature_importances_(self):
         return self._model.feature_importances_
+
+    @property
+    def estimators_(self):
+        return self._model.estimators_
 
 class GradientBoostingClassifier:
     def __init__(self, n_estimators=100, learning_rate=0.1, *, max_depth=3, random_state=None):
@@ -268,3 +276,17 @@ class HistGradientBoostingRegressor:
         from .metrics import r2_score
         return r2_score(y, self.predict(X))
 
+class IsolationForest:
+    def __init__(self, n_estimators=100, *, random_state=None):
+        self.n_estimators = n_estimators
+        self.random_state = random_state
+        self._model = _core.IsolationForest(
+            n_estimators=n_estimators, random_state=random_state
+        )
+
+    @_catch_panic
+    def fit_predict(self, X, y=None):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        if X.ndim != 2:
+            raise ValueError("Expected 2D array for X")
+        return self._model.fit_predict(X)

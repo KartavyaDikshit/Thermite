@@ -3,6 +3,20 @@ use numpy::{PyArray1, PyArray2, PyReadonlyArray1, PyReadonlyArray2};
 use thermite_core::tree::{DecisionTreeClassifier as CoreDecisionTreeClassifier, DecisionTreeRegressor as CoreDecisionTreeRegressor};
 
 #[pyclass]
+pub struct PyTree {
+    #[pyo3(get)]
+    pub node_count: usize,
+    #[pyo3(get)]
+    pub children_left: Vec<isize>,
+    #[pyo3(get)]
+    pub children_right: Vec<isize>,
+    #[pyo3(get)]
+    pub feature: Vec<isize>,
+    #[pyo3(get)]
+    pub threshold: Vec<f64>,
+}
+
+#[pyclass]
 pub struct DecisionTreeClassifier {
     core: CoreDecisionTreeClassifier,
 }
@@ -78,6 +92,37 @@ impl DecisionTreeClassifier {
         std::fs::write(filepath, dummy_onnx).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
         Ok(())
     }
+
+    #[getter]
+    fn tree_(&self) -> PyResult<PyTree> {
+        let n = self.core.nodes.len();
+        let mut children_left = Vec::with_capacity(n);
+        let mut children_right = Vec::with_capacity(n);
+        let mut feature = Vec::with_capacity(n);
+        let mut threshold = Vec::with_capacity(n);
+
+        for node in &self.core.nodes {
+            if node.is_leaf() {
+                children_left.push(-1);
+                children_right.push(-1);
+                feature.push(-2); // TREE_UNDEFINED
+                threshold.push(-2.0);
+            } else {
+                children_left.push(node.left as isize);
+                children_right.push(node.right as isize);
+                feature.push(node.feature_idx as isize);
+                threshold.push(node.threshold);
+            }
+        }
+
+        Ok(PyTree {
+            node_count: n,
+            children_left,
+            children_right,
+            feature,
+            threshold,
+        })
+    }
 }
 
 #[pyclass]
@@ -141,9 +186,41 @@ impl DecisionTreeRegressor {
         });
         Ok(PyArray1::from_vec_bound(py, preds))
     }
+
+    #[getter]
+    fn tree_(&self) -> PyResult<PyTree> {
+        let n = self.core.nodes.len();
+        let mut children_left = Vec::with_capacity(n);
+        let mut children_right = Vec::with_capacity(n);
+        let mut feature = Vec::with_capacity(n);
+        let mut threshold = Vec::with_capacity(n);
+
+        for node in &self.core.nodes {
+            if node.is_leaf() {
+                children_left.push(-1);
+                children_right.push(-1);
+                feature.push(-2); // TREE_UNDEFINED
+                threshold.push(-2.0);
+            } else {
+                children_left.push(node.left as isize);
+                children_right.push(node.right as isize);
+                feature.push(node.feature_idx as isize);
+                threshold.push(node.threshold);
+            }
+        }
+
+        Ok(PyTree {
+            node_count: n,
+            children_left,
+            children_right,
+            feature,
+            threshold,
+        })
+    }
 }
 
 pub fn bind_tree(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<PyTree>()?;
     m.add_class::<DecisionTreeClassifier>()?;
     m.add_class::<DecisionTreeRegressor>()?;
     Ok(())

@@ -143,7 +143,7 @@ While scikit-learn dominates the ML ecosystem (with over 100+ algorithms and ext
    - **Advanced Feature Selection:** `RFE` (Recursive Feature Elimination) implemented in Rust for high performance feature pruning.
    - **Time Series & Survival Analysis:** Natively baked in `AutoRegressive` forecasting and `SurvivalForest`.
    - **Native ONNX Export:** Export trained core models directly to ONNX binaries with `.to_onnx()` without overhead.
-6. **Scale-up Milestones v1.5.0:**
+6. **Scale-up Milestones v1.6.0:**
    - **Multi-Output & Multi-Target Models:** `MultiOutputRegressor` wrapper that efficiently scales any base estimator natively across multiple output dimensions.
    - **Graph Machine Learning:** High-speed network embeddings with `Node2Vec` built on Rust's native memory structures.
    - **Expanded Text & NLP:** `Word2Vec` embeddings natively integrated alongside `TfidfVectorizer` for comprehensive NLP workflows.

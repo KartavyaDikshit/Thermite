@@ -636,3 +636,26 @@ impl HistGradientBoostingClassifier {
         self.core.predict_proba(&X_binned.view())
     }
 }
+
+// ==========================================
+// IsolationForest
+// ==========================================
+pub struct IsolationForest {
+    pub n_estimators: usize,
+    pub random_state: Option<u64>,
+}
+
+impl IsolationForest {
+    pub fn new(n_estimators: usize, random_state: Option<u64>) -> Self {
+        IsolationForest {
+            n_estimators,
+            random_state,
+        }
+    }
+
+    pub fn fit_predict(&self, X: &ArrayView2<f64>) -> Result<Array1<i64>, String> {
+        let n_samples = X.nrows();
+        // Dummy implementation returning 1 for inliers and -1 for outliers
+        Ok(Array1::ones(n_samples))
+    }
+}

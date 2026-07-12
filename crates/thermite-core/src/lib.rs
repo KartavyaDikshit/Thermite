@@ -22,6 +22,7 @@ pub mod svm;
 pub mod text;
 pub mod tree;
 pub mod impute;
+pub mod manifold;
 pub mod neural_network;
 pub mod feature_selection;
 pub mod time_series;
