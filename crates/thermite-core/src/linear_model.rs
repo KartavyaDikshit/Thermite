@@ -974,6 +974,111 @@ impl LogisticRegression {
         Ok(())
     }
 
+    pub fn partial_fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<f64>, classes_opt: Option<Vec<f64>>) -> Result<(), String> {
+        if X.nrows() == 0 || X.ncols() == 0 {
+            return Err("Input array is empty".to_string());
+        }
+        if X.nrows() != y.len() {
+            return Err("Sample count mismatch".to_string());
+        }
+        check_finite_2d(X)?;
+        check_finite_1d(y)?;
+
+        let n_features = X.ncols();
+        let lambda = 1.0 / self.C;
+        let lr = self.learning_rate;
+        let n_f64 = X.nrows() as f64;
+
+        if self.classes_.is_none() {
+            if let Some(c) = classes_opt {
+                self.classes_ = Some(c);
+            } else {
+                let mut c: Vec<f64> = y.iter().cloned().collect();
+                c.sort_unstable_by(|a, b| a.total_cmp(b));
+                c.dedup();
+                self.classes_ = Some(c);
+            }
+            let classes = self.classes_.as_ref().unwrap();
+            let n_classes = classes.len();
+            if n_classes == 2 {
+                self.coef_ = Some(Array2::<f64>::zeros((1, n_features)));
+                self.intercept_ = Some(Array1::<f64>::zeros(1));
+            } else {
+                self.coef_ = Some(Array2::<f64>::zeros((n_classes, n_features)));
+                self.intercept_ = Some(Array1::<f64>::zeros(n_classes));
+            }
+        }
+
+        let classes = self.classes_.as_ref().unwrap();
+        let mut coef = self.coef_.as_ref().unwrap().clone();
+        let mut intercept = self.intercept_.as_ref().unwrap().clone();
+
+        if classes.len() == 2 {
+            let pos = classes[1];
+            let y_binary = Array1::from(
+                y.iter()
+                    .map(|&v| if (v - pos).abs() < f64::EPSILON { 1.0 } else { 0.0 })
+                    .collect::<Vec<f64>>(),
+            );
+            
+            let mut w_feat = coef.row(0).to_owned();
+            let mut bias = intercept[0];
+
+            let z = X.dot(&w_feat) + bias;
+            let h = z.mapv(Self::sigmoid);
+            let diff = &h - &y_binary;
+
+            bias -= lr * (diff.sum() / n_f64);
+            
+            let mut grad_feat = X.t().dot(&diff);
+            grad_feat /= n_f64;
+            
+            for j in 0..n_features {
+                grad_feat[j] += lambda * w_feat[j];
+                w_feat[j] -= lr * grad_feat[j];
+            }
+            
+            coef.row_mut(0).assign(&w_feat);
+            intercept[0] = bias;
+
+        } else {
+            let n_classes = classes.len();
+            for c_idx in 0..n_classes {
+                let cls = classes[c_idx];
+                let y_binary = Array1::from(
+                    y.iter()
+                        .map(|&v| if (v - cls).abs() < f64::EPSILON { 1.0 } else { 0.0 })
+                        .collect::<Vec<f64>>(),
+                );
+                
+                let mut w_feat = coef.row(c_idx).to_owned();
+                let mut bias = intercept[c_idx];
+
+                let z = X.dot(&w_feat) + bias;
+                let h = z.mapv(Self::sigmoid);
+                let diff = &h - &y_binary;
+
+                bias -= lr * (diff.sum() / n_f64);
+                
+                let mut grad_feat = X.t().dot(&diff);
+                grad_feat /= n_f64;
+                
+                for j in 0..n_features {
+                    grad_feat[j] += lambda * w_feat[j];
+                    w_feat[j] -= lr * grad_feat[j];
+                }
+                
+                coef.row_mut(c_idx).assign(&w_feat);
+                intercept[c_idx] = bias;
+            }
+        }
+
+        self.coef_ = Some(coef);
+        self.intercept_ = Some(intercept);
+
+        Ok(())
+    }
+
     /// Predict class labels.
     pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
         let coef = self.coef_.as_ref().ok_or("Model is not fitted yet")?;

@@ -126,6 +126,17 @@ class LogisticRegression:
             self._model.fit(X, y)
         return self
 
+    def partial_fit(self, X, y, classes=None):
+        """Incremental fit with SGD - for streaming out-of-core learning."""
+        y = np.asarray(y, dtype=np.float64)
+        X = np.asarray(X, dtype=np.float64)
+        if X.ndim != 2:
+            raise ValueError("Expected 2D array for X")
+        if y.ndim != 1:
+            raise ValueError("Expected 1D array for y")
+        self._model.partial_fit(X, y, classes)
+        return self
+
     def predict(self, X):
         import scipy.sparse
         if scipy.sparse.issparse(X):

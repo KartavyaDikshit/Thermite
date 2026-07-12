@@ -161,6 +161,15 @@ impl LogisticRegression {
         })
     }
 
+    #[pyo3(signature = (X, y, classes=None))]
+    fn partial_fit(&mut self, py: Python<'_>, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>, classes: Option<Vec<f64>>) -> PyResult<()> {
+        let x_view = X.as_array();
+        let y_view = y.as_array();
+        py.allow_threads(|| {
+            self.core.partial_fit(&x_view, &y_view, classes).map_err(pyo3::exceptions::PyValueError::new_err)
+        })
+    }
+
     #[pyo3(signature = (data, indices, indptr, rows, cols, y))]
     fn fit_sparse(
         &mut self,

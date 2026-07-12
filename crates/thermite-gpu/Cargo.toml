@@ -1,0 +1,16 @@
+[package]
+name = "thermite-gpu"
+version = "0.1.0"
+edition = "2021"
+description = "GPU acceleration backend for Thermite via wgpu"
+
+[features]
+default = []
+wgpu = ["dep:wgpu", "dep:bytemuck", "dep:pollster"]
+
+[dependencies]
+ndarray = { workspace = true }
+rayon = { workspace = true }
+bytemuck = { workspace = true, optional = true }
+pollster = { workspace = true, optional = true }
+wgpu = { version = "0.19", optional = true }

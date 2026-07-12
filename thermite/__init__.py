@@ -13,6 +13,7 @@ from .neighbors import KNeighborsClassifier
 from .ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier, GradientBoostingRegressor
 from .pipeline import Pipeline, ColumnTransformer
 from .naive_bayes import GaussianNB
+from .device import validate_device, is_gpu, DEVICE_CPU, DEVICE_GPU, DEVICE_CUDA
 
 __version__ = "0.1.0"
 __all__ = [
