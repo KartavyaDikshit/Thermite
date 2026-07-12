@@ -2077,3 +2077,120 @@ impl LinearSVC {
         Ok(Array1::from(preds))
     }
 }
+
+// ==========================================
+// SGDClassifier
+// ==========================================
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct SGDClassifier {
+    pub loss: String,
+    pub penalty: String,
+    pub alpha: f64,
+    pub l1_ratio: f64,
+    pub fit_intercept: bool,
+    pub max_iter: usize,
+    pub tol: f64,
+    pub learning_rate: f64,
+    pub coef_: Option<Array2<f64>>,
+    pub intercept_: Option<Array1<f64>>,
+    pub classes_: Option<Vec<f64>>,
+}
+
+impl SGDClassifier {
+    pub fn new(loss: &str, penalty: &str, alpha: f64, l1_ratio: f64, fit_intercept: bool, max_iter: usize, tol: f64, learning_rate: f64) -> Self {
+        SGDClassifier {
+            loss: loss.to_string(),
+            penalty: penalty.to_string(),
+            alpha,
+            l1_ratio,
+            fit_intercept,
+            max_iter,
+            tol,
+            learning_rate,
+            coef_: None,
+            intercept_: None,
+            classes_: None,
+        }
+    }
+
+    pub fn partial_fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<f64>, classes: Option<Vec<f64>>) -> Result<(), String> {
+        let mut n_classes = 2;
+        if let Some(c) = classes.as_ref() {
+            n_classes = c.len();
+            if self.classes_.is_none() {
+                self.classes_ = Some(c.clone());
+            }
+        } else if self.classes_.is_none() {
+            // Default classes if none provided
+            self.classes_ = Some(vec![0.0, 1.0]);
+        }
+        
+        let n_features = X.ncols();
+        let mut coef = self.coef_.take().unwrap_or_else(|| Array2::<f64>::zeros((n_classes.max(2), n_features)));
+        let mut intercept = self.intercept_.take().unwrap_or_else(|| Array1::<f64>::zeros(n_classes.max(2)));
+        let actual_classes = self.classes_.as_ref().unwrap();
+        
+        let lr = self.learning_rate;
+        for i in 0..X.nrows() {
+            let row = X.row(i);
+            let yi = y[i];
+            
+            for c in 0..actual_classes.len() {
+                let y_c = if (yi - actual_classes[c]).abs() < 1e-6 { 1.0 } else { 0.0 };
+                let mut z = intercept[c];
+                for j in 0..n_features {
+                    z += coef[[c, j]] * row[j];
+                }
+                let h = 1.0 / (1.0 + (-z).exp());
+                let err = h - y_c;
+                
+                intercept[c] -= lr * err;
+                for j in 0..n_features {
+                    coef[[c, j]] -= lr * err * row[j] + self.alpha * coef[[c, j]];
+                }
+            }
+        }
+        
+        self.coef_ = Some(coef);
+        self.intercept_ = Some(intercept);
+        Ok(())
+    }
+
+    pub fn fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<f64>) -> Result<(), String> {
+        self.coef_ = None;
+        self.intercept_ = None;
+        let mut unique_classes = std::collections::HashSet::new();
+        for &val in y.iter() {
+            unique_classes.insert(val.to_bits());
+        }
+        let mut classes: Vec<f64> = unique_classes.into_iter().map(f64::from_bits).collect();
+        classes.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        self.partial_fit(X, y, Some(classes))
+    }
+    
+    pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
+        let coef = self.coef_.as_ref().ok_or("Not fitted")?;
+        let intercept = self.intercept_.as_ref().unwrap();
+        let n = X.nrows();
+        let mut preds = Array1::<f64>::zeros(n);
+        let classes = self.classes_.as_ref().unwrap();
+        
+        for i in 0..n {
+            let row = X.row(i);
+            let mut best_c = 0;
+            let mut best_score = f64::NEG_INFINITY;
+            for c in 0..classes.len() {
+                let mut z = intercept[c];
+                for j in 0..X.ncols() {
+                    z += coef[[c, j]] * row[j];
+                }
+                if z > best_score {
+                    best_score = z;
+                    best_c = c;
+                }
+            }
+            preds[i] = classes[best_c];
+        }
+        Ok(preds)
+    }
+}

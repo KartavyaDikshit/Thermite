@@ -25,7 +25,11 @@ from .distributed import get_backend
 from .automl import BayesianOptimizer
 from .neural_network import MLPClassifier
 
-__version__ = "1.3.0"
+from .feature_selection import RFE
+from .time_series import AutoRegressive
+from .survival import SurvivalForest
+
+__version__ = "1.4.0"
 __all__ = [
     "ping",
     "StandardScaler",
@@ -69,5 +73,8 @@ __all__ = [
     "TfidfVectorizer",
     "IterativeImputer",
     "MLPClassifier",
+    "RFE",
+    "AutoRegressive",
+    "SurvivalForest",
 ]
 

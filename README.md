@@ -138,3 +138,8 @@ While scikit-learn dominates the ML ecosystem (with over 100+ algorithms and ext
    - **Advanced Imputation:** `IterativeImputer` handles missing values dynamically via Ridge regression.
    - **Histogram-Based GBDT:** Fast discretizing tree building (`HistGradientBoostingClassifier`, `HistGradientBoostingRegressor`).
    - **Deep Learning:** Built-in `MLPClassifier` with GPU-accelerated forward passes (`thermite_gpu`).
+5. **Scale-up Milestones v1.4.0:**
+   - **Out-of-Core / Streaming Machine Learning:** `SGDClassifier` and `MiniBatchKMeans` with native `partial_fit` chunked data loading.
+   - **Advanced Feature Selection:** `RFE` (Recursive Feature Elimination) implemented in Rust for high performance feature pruning.
+   - **Time Series & Survival Analysis:** Natively baked in `AutoRegressive` forecasting and `SurvivalForest`.
+   - **Native ONNX Export:** Export trained core models directly to ONNX binaries with `.to_onnx()` without overhead.

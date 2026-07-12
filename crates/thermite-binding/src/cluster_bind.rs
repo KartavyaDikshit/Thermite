@@ -155,5 +155,53 @@ impl DBSCAN {
 pub fn bind_cluster(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<KMeans>()?;
     m.add_class::<DBSCAN>()?;
+    m.add_class::<MiniBatchKMeans>()?;
     Ok(())
+}
+use thermite_core::cluster::MiniBatchKMeans as CoreMiniBatchKMeans;
+
+#[pyclass]
+pub struct MiniBatchKMeans {
+    core: CoreMiniBatchKMeans,
+}
+
+#[pymethods]
+impl MiniBatchKMeans {
+    #[new]
+    #[pyo3(signature = (n_clusters=8, max_iter=100, batch_size=1024, tol=0.0))]
+    fn new(n_clusters: usize, max_iter: usize, batch_size: usize, tol: f64) -> Self {
+        MiniBatchKMeans {
+            core: CoreMiniBatchKMeans::new(n_clusters, max_iter, batch_size, tol),
+        }
+    }
+
+    fn fit(&mut self, py: Python<'_>, X: PyReadonlyArray2<f64>) -> PyResult<()> {
+        let x_view = X.as_array();
+        py.allow_threads(|| {
+            self.core.fit(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })
+    }
+
+    fn partial_fit(&mut self, py: Python<'_>, X: PyReadonlyArray2<f64>) -> PyResult<()> {
+        let x_view = X.as_array();
+        py.allow_threads(|| {
+            self.core.partial_fit(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })
+    }
+
+    fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<f64>>> {
+        let x_view = X.as_array();
+        let preds = py.allow_threads(|| {
+            self.core.predict(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })?;
+        Ok(PyArray1::from_array_bound(py, &preds))
+    }
+
+    #[getter]
+    fn cluster_centers_<'py>(&self, py: Python<'py>) -> PyResult<Option<Bound<'py, PyArray2<f64>>>> {
+        match &self.core.cluster_centers_ {
+            Some(c) => Ok(Some(PyArray2::from_array_bound(py, c))),
+            None => Ok(None),
+        }
+    }
 }

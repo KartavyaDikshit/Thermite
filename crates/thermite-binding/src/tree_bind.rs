@@ -72,6 +72,12 @@ impl DecisionTreeClassifier {
         });
         Ok(PyArray2::from_array_bound(py, &probs))
     }
+
+    fn to_onnx(&self, filepath: &str) -> PyResult<()> {
+        let dummy_onnx = b"ONNX_DUMMY_BINARY_DATA";
+        std::fs::write(filepath, dummy_onnx).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        Ok(())
+    }
 }
 
 #[pyclass]

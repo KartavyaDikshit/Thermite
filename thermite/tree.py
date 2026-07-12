@@ -52,6 +52,10 @@ class DecisionTreeClassifier:
         from .metrics import accuracy_score
         return accuracy_score(y, self.predict(X))
 
+    @_catch_panic
+    def to_onnx(self, filepath: str):
+        self._model.to_onnx(filepath)
+
     @property
     def feature_importances_(self):
         try:

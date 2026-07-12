@@ -423,6 +423,9 @@ pub mod automl_bind;
 pub mod text_bind;
 pub mod impute_bind;
 pub mod neural_network_bind;
+pub mod feature_selection_bind;
+pub mod time_series_bind;
+pub mod survival_bind;
 
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -445,6 +448,9 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     text_bind::bind_text(m)?;
     impute_bind::bind_impute(m)?;
     neural_network_bind::bind_neural_network(m)?;
+    feature_selection_bind::bind_feature_selection(m)?;
+    time_series_bind::bind_time_series(m)?;
+    survival_bind::bind_survival(m)?;
     Ok(())
 }
 

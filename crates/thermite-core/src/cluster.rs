@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-use ndarray::{Array2, ArrayView2, Axis};
+use ndarray::{Array1, Array2, ArrayView2, Axis};
 use rand::prelude::*;
 use rand::rngs::SmallRng;
 use rayon::prelude::*;
@@ -740,5 +740,108 @@ mod tests {
         let first = labels[0];
         assert!(first >= 0);
         assert!(labels.iter().all(|&l| l == first));
+    }
+}
+
+// ==========================================
+// MiniBatchKMeans
+// ==========================================
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct MiniBatchKMeans {
+    pub n_clusters: usize,
+    pub max_iter: usize,
+    pub batch_size: usize,
+    pub tol: f64,
+    pub cluster_centers_: Option<Array2<f64>>,
+    pub counts: Option<Array1<f64>>,
+}
+
+impl MiniBatchKMeans {
+    pub fn new(n_clusters: usize, max_iter: usize, batch_size: usize, tol: f64) -> Self {
+        MiniBatchKMeans {
+            n_clusters,
+            max_iter,
+            batch_size,
+            tol,
+            cluster_centers_: None,
+            counts: None,
+        }
+    }
+    
+    pub fn partial_fit(&mut self, X: &ArrayView2<f64>) -> Result<(), String> {
+        let n_features = X.ncols();
+        if self.cluster_centers_.is_none() {
+            let mut centers = Array2::<f64>::zeros((self.n_clusters, n_features));
+            for i in 0..self.n_clusters {
+                for j in 0..n_features {
+                    centers[[i, j]] = X[[i % X.nrows(), j]];
+                }
+            }
+            self.cluster_centers_ = Some(centers);
+            self.counts = Some(Array1::<f64>::zeros(self.n_clusters));
+        }
+        
+        let centers = self.cluster_centers_.as_mut().unwrap();
+        let counts = self.counts.as_mut().unwrap();
+        
+        for i in 0..X.nrows() {
+            let row = X.row(i);
+            let mut best_k = 0;
+            let mut min_dist = f64::INFINITY;
+            for k in 0..self.n_clusters {
+                let mut dist = 0.0;
+                for j in 0..n_features {
+                    let d = row[j] - centers[[k, j]];
+                    dist += d * d;
+                }
+                if dist < min_dist {
+                    min_dist = dist;
+                    best_k = k;
+                }
+            }
+            
+            counts[best_k] += 1.0;
+            let lr = 1.0 / counts[best_k];
+            for j in 0..n_features {
+                centers[[best_k, j]] = (1.0 - lr) * centers[[best_k, j]] + lr * row[j];
+            }
+        }
+        
+        Ok(())
+    }
+
+    pub fn fit(&mut self, X: &ArrayView2<f64>) -> Result<(), String> {
+        self.cluster_centers_ = None;
+        self.counts = None;
+        for _ in 0..self.max_iter {
+            self.partial_fit(X)?;
+        }
+        Ok(())
+    }
+    
+    pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
+        let centers = self.cluster_centers_.as_ref().ok_or("Not fitted")?;
+        let n = X.nrows();
+        let mut preds = Array1::<f64>::zeros(n);
+        let n_features = X.ncols();
+        
+        for i in 0..n {
+            let row = X.row(i);
+            let mut best_k = 0;
+            let mut min_dist = f64::INFINITY;
+            for k in 0..self.n_clusters {
+                let mut dist = 0.0;
+                for j in 0..n_features {
+                    let d = row[j] - centers[[k, j]];
+                    dist += d * d;
+                }
+                if dist < min_dist {
+                    min_dist = dist;
+                    best_k = k;
+                }
+            }
+            preds[i] = best_k as f64;
+        }
+        Ok(preds)
     }
 }

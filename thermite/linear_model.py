@@ -52,6 +52,10 @@ class LinearRegression:
     def intercept_(self):
         return self._model.intercept_
 
+    @_catch_panic
+    def to_onnx(self, filepath: str):
+        self._model.to_onnx(filepath)
+
 
 class Ridge:
     def __init__(self, alpha=1.0, *, fit_intercept=True):
@@ -270,6 +274,62 @@ class LinearSVC:
             if X.ndim != 2:
                 raise ValueError("Expected 2D array for X")
             return self._model.predict(X)
+
+    @property
+    def coef_(self):
+        return self._model.coef_
+
+    @property
+    def intercept_(self):
+        return self._model.intercept_
+
+    @property
+    def classes_(self):
+        return self._model.classes_
+
+class SGDClassifier:
+    def __init__(self, loss='log', penalty='l2', alpha=0.0001, l1_ratio=0.15, fit_intercept=True, max_iter=1000, tol=1e-3, learning_rate=0.01):
+        self.loss = loss
+        self.penalty = penalty
+        self.alpha = alpha
+        self.l1_ratio = l1_ratio
+        self.fit_intercept = fit_intercept
+        self.max_iter = max_iter
+        self.tol = tol
+        self.learning_rate = learning_rate
+        self._model = _core.SGDClassifier(
+            loss=loss, penalty=penalty, alpha=alpha, l1_ratio=l1_ratio,
+            fit_intercept=fit_intercept, max_iter=max_iter, tol=tol, learning_rate=learning_rate
+        )
+
+    @_catch_panic
+    def fit(self, X, y):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
+        if X.ndim != 2:
+            raise ValueError("Expected 2D array for X")
+        if y.ndim != 1:
+            raise ValueError("Expected 1D array for y")
+        self._model.fit(X, y)
+        return self
+
+    @_catch_panic
+    def partial_fit(self, X, y, classes=None):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
+        if X.ndim != 2:
+            raise ValueError("Expected 2D array for X")
+        if y.ndim != 1:
+            raise ValueError("Expected 1D array for y")
+        self._model.partial_fit(X, y, classes)
+        return self
+
+    @_catch_panic
+    def predict(self, X):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        if X.ndim != 2:
+            raise ValueError("Expected 2D array for X")
+        return self._model.predict(X)
 
     @property
     def coef_(self):

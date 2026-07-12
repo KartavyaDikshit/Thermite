@@ -123,3 +123,45 @@ class DBSCAN:
     @property
     def core_sample_indices_(self):
         return self._model.core_sample_indices_
+
+class MiniBatchKMeans:
+    def __init__(self, n_clusters=8, *, max_iter=100, batch_size=1024, tol=0.0):
+        self.n_clusters = n_clusters
+        self.max_iter = max_iter
+        self.batch_size = batch_size
+        self.tol = tol
+        self._model = _core.MiniBatchKMeans(
+            n_clusters=n_clusters, max_iter=max_iter, batch_size=batch_size, tol=tol
+        )
+
+    @_catch_panic
+    def fit(self, X, y=None):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        if X.ndim != 2:
+            raise ValueError("Expected 2D array for X")
+        self._model.fit(X)
+        return self
+
+    @_catch_panic
+    def partial_fit(self, X, y=None):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        if X.ndim != 2:
+            raise ValueError("Expected 2D array for X")
+        self._model.partial_fit(X)
+        return self
+
+    @_catch_panic
+    def predict(self, X):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        if X.ndim != 2:
+            raise ValueError("Expected 2D array for X")
+        return self._model.predict(X)
+
+    @_catch_panic
+    def fit_predict(self, X, y=None):
+        self.fit(X, y)
+        return self.predict(X)
+
+    @property
+    def cluster_centers_(self):
+        return self._model.cluster_centers_

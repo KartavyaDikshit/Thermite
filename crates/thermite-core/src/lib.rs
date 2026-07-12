@@ -23,7 +23,9 @@ pub mod text;
 pub mod tree;
 pub mod impute;
 pub mod neural_network;
-
+pub mod feature_selection;
+pub mod time_series;
+pub mod survival;
 pub fn core_ping() -> &'static str {
     "core_pong"
 }
