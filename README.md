@@ -133,5 +133,8 @@ While scikit-learn dominates the ML ecosystem (with over 100+ algorithms and ext
 1. **Rust-Native & Zero-Copy:** While similar projects like `Intel(R) Extension for Scikit-learn` try to accelerate operations by monkey-patching Cython with daal4py, Thermite is rewritten ground-up in Rust. We achieve true zero-copy data transmission for Apache Arrow/Polars AND Deep Learning frameworks (PyTorch/JAX via `DLPack`).
 2. **Distributed Computing Preparedness:** Thermite's Rust estimators derive `Serde` enabling high-speed `bincode` serialization out-of-the-box. This natively plugs into distributed execution engines like `Ray` and `Dask` without the heavy overhead of Python's standard `pickle`.
 3. **Rust AutoML:** Instead of looping cross-validation in Python, Thermite provides a fast native `BayesianOptimizer`.
-4. **Scale-up Gaps:** Future gaps to address for mass adoption include complex missing data strategies (`IterativeImputer`), adding more robust tree ensemble variants (like Histogram-based GBDT), and comprehensive categorical missing value handling.
-
+4. **Scale-up Milestones v1.3.0:**
+   - **Text Preprocessing:** Blazing fast `CountVectorizer` and `TfidfVectorizer` utilizing Rust's hash maps.
+   - **Advanced Imputation:** `IterativeImputer` handles missing values dynamically via Ridge regression.
+   - **Histogram-Based GBDT:** Fast discretizing tree building (`HistGradientBoostingClassifier`, `HistGradientBoostingRegressor`).
+   - **Deep Learning:** Built-in `MLPClassifier` with GPU-accelerated forward passes (`thermite_gpu`).

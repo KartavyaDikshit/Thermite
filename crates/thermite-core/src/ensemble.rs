@@ -495,3 +495,144 @@ impl GradientBoostingClassifier {
         Ok(proba)
     }
 }
+// ... appended to ensemble.rs
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct HistGradientBoostingRegressor {
+    pub core: GradientBoostingRegressor,
+    pub mins: Vec<f64>,
+    pub maxs: Vec<f64>,
+    pub bins: usize,
+}
+
+impl HistGradientBoostingRegressor {
+    pub fn new(
+        n_estimators: usize,
+        learning_rate: f64,
+        max_depth: Option<usize>,
+        random_state: Option<u64>,
+    ) -> Self {
+        HistGradientBoostingRegressor {
+            core: GradientBoostingRegressor::new(n_estimators, learning_rate, max_depth, random_state),
+            mins: Vec::new(),
+            maxs: Vec::new(),
+            bins: 255,
+        }
+    }
+
+    fn discretize(&self, X: &ArrayView2<f64>) -> Array2<f64> {
+        let n = X.nrows();
+        let p = X.ncols();
+        let mut X_binned = Array2::<f64>::zeros((n, p));
+        for j in 0..p {
+            let min_val = self.mins[j];
+            let max_val = self.maxs[j];
+            let width = if max_val > min_val { (max_val - min_val) / (self.bins as f64) } else { 1.0 };
+            for i in 0..n {
+                let val = X[[i, j]];
+                if val <= min_val {
+                    X_binned[[i, j]] = 0.0;
+                } else if val >= max_val {
+                    X_binned[[i, j]] = (self.bins - 1) as f64;
+                } else {
+                    let mut bin = ((val - min_val) / width).floor() as usize;
+                    if bin >= self.bins { bin = self.bins - 1; }
+                    X_binned[[i, j]] = bin as f64;
+                }
+            }
+        }
+        X_binned
+    }
+
+    pub fn fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<f64>) -> Result<(), String> {
+        let p = X.ncols();
+        self.mins = vec![std::f64::MAX; p];
+        self.maxs = vec![std::f64::MIN; p];
+        for j in 0..p {
+            for i in 0..X.nrows() {
+                let val = X[[i, j]];
+                if val < self.mins[j] { self.mins[j] = val; }
+                if val > self.maxs[j] { self.maxs[j] = val; }
+            }
+        }
+        let X_binned = self.discretize(X);
+        self.core.fit(&X_binned.view(), y)
+    }
+
+    pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
+        let X_binned = self.discretize(X);
+        self.core.predict(&X_binned.view())
+    }
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct HistGradientBoostingClassifier {
+    pub core: GradientBoostingClassifier,
+    pub mins: Vec<f64>,
+    pub maxs: Vec<f64>,
+    pub bins: usize,
+}
+
+impl HistGradientBoostingClassifier {
+    pub fn new(
+        n_estimators: usize,
+        learning_rate: f64,
+        max_depth: Option<usize>,
+        random_state: Option<u64>,
+    ) -> Self {
+        HistGradientBoostingClassifier {
+            core: GradientBoostingClassifier::new(n_estimators, learning_rate, max_depth, random_state),
+            mins: Vec::new(),
+            maxs: Vec::new(),
+            bins: 255,
+        }
+    }
+
+    fn discretize(&self, X: &ArrayView2<f64>) -> Array2<f64> {
+        let n = X.nrows();
+        let p = X.ncols();
+        let mut X_binned = Array2::<f64>::zeros((n, p));
+        for j in 0..p {
+            let min_val = self.mins[j];
+            let max_val = self.maxs[j];
+            let width = if max_val > min_val { (max_val - min_val) / (self.bins as f64) } else { 1.0 };
+            for i in 0..n {
+                let val = X[[i, j]];
+                if val <= min_val {
+                    X_binned[[i, j]] = 0.0;
+                } else if val >= max_val {
+                    X_binned[[i, j]] = (self.bins - 1) as f64;
+                } else {
+                    let mut bin = ((val - min_val) / width).floor() as usize;
+                    if bin >= self.bins { bin = self.bins - 1; }
+                    X_binned[[i, j]] = bin as f64;
+                }
+            }
+        }
+        X_binned
+    }
+
+    pub fn fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<f64>) -> Result<(), String> {
+        let p = X.ncols();
+        self.mins = vec![std::f64::MAX; p];
+        self.maxs = vec![std::f64::MIN; p];
+        for j in 0..p {
+            for i in 0..X.nrows() {
+                let val = X[[i, j]];
+                if val < self.mins[j] { self.mins[j] = val; }
+                if val > self.maxs[j] { self.maxs[j] = val; }
+            }
+        }
+        let X_binned = self.discretize(X);
+        self.core.fit(&X_binned.view(), y)
+    }
+
+    pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
+        let X_binned = self.discretize(X);
+        self.core.predict(&X_binned.view())
+    }
+
+    pub fn predict_proba(&self, X: &ArrayView2<f64>) -> Result<Array2<f64>, String> {
+        let X_binned = self.discretize(X);
+        self.core.predict_proba(&X_binned.view())
+    }
+}

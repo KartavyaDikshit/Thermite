@@ -19,7 +19,10 @@ pub mod neighbors;
 pub mod preprocessing;
 pub mod sparse;
 pub mod svm;
+pub mod text;
 pub mod tree;
+pub mod impute;
+pub mod neural_network;
 
 pub fn core_ping() -> &'static str {
     "core_pong"

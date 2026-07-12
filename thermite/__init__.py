@@ -10,7 +10,9 @@ from .tree import DecisionTreeClassifier, DecisionTreeRegressor
 from .cluster import KMeans, DBSCAN
 from .decomposition import PCA
 from .neighbors import KNeighborsClassifier
-from .ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier, GradientBoostingRegressor
+from .text import CountVectorizer, TfidfVectorizer
+from .impute import IterativeImputer
+from .ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier, GradientBoostingRegressor, HistGradientBoostingClassifier, HistGradientBoostingRegressor
 from .pipeline import Pipeline, ColumnTransformer
 from .naive_bayes import GaussianNB
 from .svm import SVC
@@ -21,8 +23,9 @@ from .polars_compat import from_polars, from_polars_X, from_polars_y, make_polar
 from .deep_learning import to_pytorch, to_jax
 from .distributed import get_backend
 from .automl import BayesianOptimizer
+from .neural_network import MLPClassifier
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 __all__ = [
     "ping",
     "StandardScaler",
@@ -51,6 +54,8 @@ __all__ = [
     "RandomForestRegressor",
     "GradientBoostingClassifier",
     "GradientBoostingRegressor",
+    "HistGradientBoostingClassifier",
+    "HistGradientBoostingRegressor",
     "Pipeline",
     "LinearSVC",
     "ColumnTransformer",
@@ -60,5 +65,9 @@ __all__ = [
     "to_jax",
     "get_backend",
     "BayesianOptimizer",
+    "CountVectorizer",
+    "TfidfVectorizer",
+    "IterativeImputer",
+    "MLPClassifier",
 ]
 

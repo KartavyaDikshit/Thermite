@@ -5,8 +5,94 @@ use thermite_core::ensemble::{
     RandomForestRegressor as CoreRandomForestRegressor,
     GradientBoostingClassifier as CoreGradientBoostingClassifier,
     GradientBoostingRegressor as CoreGradientBoostingRegressor,
+    HistGradientBoostingClassifier as CoreHistGradientBoostingClassifier,
+    HistGradientBoostingRegressor as CoreHistGradientBoostingRegressor,
 };
 use thermite_gpu::DeviceKind;
+
+#[pyclass]
+pub struct HistGradientBoostingRegressor {
+    core: CoreHistGradientBoostingRegressor,
+}
+
+#[pymethods]
+impl HistGradientBoostingRegressor {
+    #[new]
+    #[pyo3(signature = (n_estimators=100, learning_rate=0.1, max_depth=None, random_state=None))]
+    fn new(
+        n_estimators: usize,
+        learning_rate: f64,
+        max_depth: Option<usize>,
+        random_state: Option<u64>,
+    ) -> Self {
+        HistGradientBoostingRegressor {
+            core: CoreHistGradientBoostingRegressor::new(n_estimators, learning_rate, max_depth, random_state),
+        }
+    }
+
+    #[pyo3(signature = (X, y))]
+    fn fit(&mut self, py: Python<'_>, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>) -> PyResult<()> {
+        let x_view = X.as_array();
+        let y_view = y.as_array();
+        py.allow_threads(|| {
+            self.core.fit(&x_view, &y_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })
+    }
+
+    fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<f64>>> {
+        let x_view = X.as_array();
+        let preds = py.allow_threads(|| {
+            self.core.predict(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })?;
+        Ok(PyArray1::from_array_bound(py, &preds))
+    }
+}
+
+#[pyclass]
+pub struct HistGradientBoostingClassifier {
+    core: CoreHistGradientBoostingClassifier,
+}
+
+#[pymethods]
+impl HistGradientBoostingClassifier {
+    #[new]
+    #[pyo3(signature = (n_estimators=100, learning_rate=0.1, max_depth=None, random_state=None))]
+    fn new(
+        n_estimators: usize,
+        learning_rate: f64,
+        max_depth: Option<usize>,
+        random_state: Option<u64>,
+    ) -> Self {
+        HistGradientBoostingClassifier {
+            core: CoreHistGradientBoostingClassifier::new(n_estimators, learning_rate, max_depth, random_state),
+        }
+    }
+
+    #[pyo3(signature = (X, y))]
+    fn fit(&mut self, py: Python<'_>, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>) -> PyResult<()> {
+        let x_view = X.as_array();
+        let y_view = y.as_array();
+        py.allow_threads(|| {
+            self.core.fit(&x_view, &y_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })
+    }
+
+    fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<f64>>> {
+        let x_view = X.as_array();
+        let preds = py.allow_threads(|| {
+            self.core.predict(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })?;
+        Ok(PyArray1::from_array_bound(py, &preds))
+    }
+
+    fn predict_proba<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray2<f64>>> {
+        let x_view = X.as_array();
+        let preds = py.allow_threads(|| {
+            self.core.predict_proba(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })?;
+        Ok(PyArray2::from_array_bound(py, &preds))
+    }
+}
 
 #[pyclass]
 pub struct RandomForestClassifier {
@@ -145,6 +231,8 @@ pub fn bind_ensemble(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<RandomForestRegressor>()?;
     m.add_class::<GradientBoostingClassifier>()?;
     m.add_class::<GradientBoostingRegressor>()?;
+    m.add_class::<HistGradientBoostingClassifier>()?;
+    m.add_class::<HistGradientBoostingRegressor>()?;
     Ok(())
 }
 

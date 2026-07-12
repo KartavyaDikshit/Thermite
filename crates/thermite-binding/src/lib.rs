@@ -420,6 +420,9 @@ pub mod ensemble_bind;
 pub mod naive_bayes_bind;
 pub mod svm_bind;
 pub mod automl_bind;
+pub mod text_bind;
+pub mod impute_bind;
+pub mod neural_network_bind;
 
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -439,6 +442,9 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     naive_bayes_bind::bind_naive_bayes(m)?;
     svm_bind::bind_svm(m)?;
     automl_bind::bind_automl(m)?;
+    text_bind::bind_text(m)?;
+    impute_bind::bind_impute(m)?;
+    neural_network_bind::bind_neural_network(m)?;
     Ok(())
 }
 

@@ -189,3 +189,82 @@ class GradientBoostingRegressor:
     def score(self, X, y):
         from .metrics import r2_score
         return r2_score(y, self.predict(X))
+
+
+class HistGradientBoostingClassifier:
+    def __init__(self, n_estimators=100, learning_rate=0.1, *, max_depth=3, random_state=None):
+        self.n_estimators = n_estimators
+        self.learning_rate = learning_rate
+        self.max_depth = max_depth
+        self.random_state = random_state
+        self._model = _core.HistGradientBoostingClassifier(
+            n_estimators=n_estimators,
+            learning_rate=learning_rate,
+            max_depth=max_depth,
+            random_state=random_state,
+        )
+
+    @_catch_panic
+    def fit(self, X, y):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
+        if X.ndim != 2:
+            raise ValueError("Expected 2D array for X")
+        if y.ndim != 1:
+            raise ValueError("Expected 1D array for y")
+        self._model.fit(X, y)
+        return self
+
+    @_catch_panic
+    def predict(self, X):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        if X.ndim != 2:
+            raise ValueError("Expected 2D array for X")
+        return self._model.predict(X)
+
+    @_catch_panic
+    def predict_proba(self, X):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        if X.ndim != 2:
+            raise ValueError("Expected 2D array for X")
+        return self._model.predict_proba(X)
+
+    def score(self, X, y):
+        from .metrics import accuracy_score
+        return accuracy_score(y, self.predict(X))
+
+class HistGradientBoostingRegressor:
+    def __init__(self, n_estimators=100, learning_rate=0.1, *, max_depth=3, random_state=None):
+        self.n_estimators = n_estimators
+        self.learning_rate = learning_rate
+        self.max_depth = max_depth
+        self.random_state = random_state
+        self._model = _core.HistGradientBoostingRegressor(
+            n_estimators=n_estimators,
+            learning_rate=learning_rate,
+            max_depth=max_depth,
+            random_state=random_state,
+        )
+
+    @_catch_panic
+    def fit(self, X, y):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
+        if X.ndim != 2:
+            raise ValueError("Expected 2D array for X")
+        if y.ndim != 1:
+            raise ValueError("Expected 1D array for y")
+        self._model.fit(X, y)
+        return self
+
+    @_catch_panic
+    def predict(self, X):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        if X.ndim != 2:
+            raise ValueError("Expected 2D array for X")
+        return self._model.predict(X)
+
+    def score(self, X, y):
+        from .metrics import r2_score
+        return r2_score(y, self.predict(X))
+
