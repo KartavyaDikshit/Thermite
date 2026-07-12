@@ -1,0 +1,20 @@
+# Generated
+/target/
+/dist/
+*.so
+*.dylib
+*.pyd
+__pycache__/
+*.pyc
+*.egg-info/
+.eggs/
+*.whl
+.venv/
+.env
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
