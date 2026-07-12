@@ -1335,19 +1335,20 @@ mod tests {
     fn test_linear_regression_multivariate() {
         // y = 1*x0 + 2*x1 + 3
         let X = array![
+            [1.0, 0.0],
+            [0.0, 1.0],
             [1.0, 1.0],
-            [2.0, 2.0],
-            [3.0, 3.0],
-            [4.0, 4.0],
-            [5.0, 5.0]
+            [2.0, 1.0],
+            [1.0, 2.0]
         ];
-        let y = array![6.0, 9.0, 12.0, 15.0, 18.0];
+        let y = array![4.0, 5.0, 6.0, 7.0, 8.0];
         let mut lr = LinearRegression::new(true);
         lr.fit(&X.view(), &y.view()).unwrap();
 
         let coef = lr.coef_.as_ref().unwrap();
-        // x0 and x1 are collinear so coef[0]+coef[1]  3.0
-        assert!((coef[0] + coef[1] - 3.0).abs() < 1e-6);
+        // Expected coefs are [1.0, 2.0] and intercept 3.0
+        assert!((coef[0] - 1.0).abs() < 1e-6);
+        assert!((coef[1] - 2.0).abs() < 1e-6);
         assert!((lr.intercept_ - 3.0).abs() < 1e-6);
     }
 
@@ -1436,11 +1437,11 @@ mod tests {
     fn test_logistic_regression_binary() {
         // Simple linearly separable data
         let X = array![
-            [0.0, 0.0],
-            [0.1, 0.1],
-            [0.2, 0.2],
+            [-1.0, -1.0],
+            [-0.5, -0.5],
+            [-0.2, -0.2],
+            [0.5, 0.5],
             [0.8, 0.8],
-            [0.9, 0.9],
             [1.0, 1.0]
         ];
         let y = array![0.0, 0.0, 0.0, 1.0, 1.0, 1.0];

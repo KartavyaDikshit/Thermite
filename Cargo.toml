@@ -7,7 +7,7 @@ members = [
 ]
 
 [workspace.dependencies]
-ndarray = { version = "0.15", features = ["rayon", "blas"] }
+ndarray = { version = "0.15", features = ["rayon"] }
 rayon = "1.8"
 rand = { version = "0.8", features = ["small_rng"] }
 pyo3 = { version = "0.21", features = ["extension-module", "abi3-py38"] }

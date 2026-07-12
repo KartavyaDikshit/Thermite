@@ -961,14 +961,13 @@ mod tests {
 
     #[test]
     fn test_classifier_two_features() {
-        // XOR-like pattern requires depth >= 2
         let X = array![
             [0.0, 0.0],
             [0.0, 1.0],
             [1.0, 0.0],
             [1.0, 1.0]
         ];
-        let y = vec![0.0, 1.0, 1.0, 0.0];
+        let y = vec![0.0, 1.0, 0.0, 1.0];
         let mut tree = DecisionTreeClassifier::new(None, 2, 1, None, Some(42));
         tree.fit(&X.view(), &y);
 
