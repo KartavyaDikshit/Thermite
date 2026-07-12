@@ -18,7 +18,11 @@ from .device import validate_device, is_gpu, DEVICE_CPU, DEVICE_GPU, DEVICE_CUDA
 
 from .polars_compat import from_polars, from_polars_X, from_polars_y, make_polars_pipeline
 
-__version__ = "0.2.0"
+from .deep_learning import to_pytorch, to_jax
+from .distributed import get_backend
+from .automl import BayesianOptimizer
+
+__version__ = "1.2.0"
 __all__ = [
     "ping",
     "StandardScaler",
@@ -52,5 +56,9 @@ __all__ = [
     "ColumnTransformer",
     "GaussianNB",
     "SVC",
+    "to_pytorch",
+    "to_jax",
+    "get_backend",
+    "BayesianOptimizer",
 ]
 
