@@ -2,6 +2,7 @@
 
 use ndarray::{Array1, Array2, ArrayView1, ArrayView2, Axis};
 use rayon::prelude::*;
+use sprs::CsMat;
 
 use crate::metrics;
 
@@ -676,6 +677,224 @@ impl LogisticRegression {
         Ok((weights, bias))
     }
 
+    /// Fit binary logistic regression using L-BFGS on sparse matrix.
+    fn fit_binary_sparse(
+        &self,
+        X: &CsMat<f64>,
+        y_binary: &Array1<f64>, // 0/1 labels
+        n_features: usize,
+    ) -> Result<(Array1<f64>, f64), String> {
+        let n = X.rows();
+        let n_f64 = n as f64;
+        let lambda = 1.0 / self.C;
+
+        let p = n_features + 1;
+        let mut w = Array1::<f64>::zeros(p);
+
+        // L-BFGS storage (limited memory, m = 10)
+        let m: usize = 10;
+        let mut s_hist: Vec<Array1<f64>> = Vec::with_capacity(m);
+        let mut y_hist: Vec<Array1<f64>> = Vec::with_capacity(m);
+        let mut rho_hist: Vec<f64> = Vec::with_capacity(m);
+
+        // Compute initial gradient
+        let compute_grad = |w: &Array1<f64>| -> Array1<f64> {
+            let mut grad = Array1::<f64>::zeros(p);
+            
+            for (i, vec) in X.outer_iterator().enumerate() {
+                let mut z = w[0];
+                for (col_idx, &val) in vec.iter() {
+                    z += val * w[col_idx + 1];
+                }
+                
+                let h = Self::sigmoid(z);
+                let diff = h - y_binary[i];
+                
+                grad[0] += diff;
+                for (col_idx, &val) in vec.iter() {
+                    grad[col_idx + 1] += diff * val;
+                }
+            }
+            
+            grad /= n_f64;
+            // L2 regularization on weights only (skip bias at index 0)
+            for j in 1..p {
+                grad[j] += lambda * w[j];
+            }
+            grad
+        };
+
+        let compute_loss = |w: &Array1<f64>| -> f64 {
+            let mut loss = 0.0;
+            for (i, vec) in X.outer_iterator().enumerate() {
+                let mut zi = w[0];
+                for (col_idx, &val) in vec.iter() {
+                    zi += val * w[col_idx + 1];
+                }
+                // Numerically stable log-loss
+                if zi >= 0.0 {
+                    loss += (1.0 + (-zi).exp()).ln() - y_binary[i] * zi;
+                } else {
+                    loss += zi.exp().ln_1p() - y_binary[i] * zi;
+                }
+            }
+            loss /= n_f64;
+            // L2 regularization
+            for j in 1..p {
+                loss += 0.5 * lambda * w[j] * w[j];
+            }
+            loss
+        };
+
+        let mut grad = compute_grad(&w);
+
+        for _iter in 0..self.max_iter {
+            let mut q = grad.clone();
+            let hist_len = s_hist.len();
+            let mut alpha_vec = vec![0.0; hist_len];
+
+            for i in (0..hist_len).rev() {
+                alpha_vec[i] = rho_hist[i] * s_hist[i].dot(&q);
+                q = q - alpha_vec[i] * &y_hist[i];
+            }
+
+            let gamma = if hist_len > 0 {
+                let last = hist_len - 1;
+                s_hist[last].dot(&y_hist[last]) / y_hist[last].dot(&y_hist[last])
+            } else {
+                1.0
+            };
+            let mut r = q * gamma;
+
+            for i in 0..hist_len {
+                let beta = rho_hist[i] * y_hist[i].dot(&r);
+                r = r + (alpha_vec[i] - beta) * &s_hist[i];
+            }
+
+            let direction = -&r;
+            let grad_dot_dir = grad.dot(&direction);
+            
+            if grad_dot_dir >= 0.0 {
+                s_hist.clear();
+                y_hist.clear();
+                rho_hist.clear();
+                let lr = self.learning_rate;
+                w = &w - &(&grad * lr);
+                grad = compute_grad(&w);
+                continue;
+            }
+
+            let mut step = 1.0;
+            let c1 = 1e-4;
+            let current_loss = compute_loss(&w);
+            for _ in 0..20 {
+                let w_new = &w + &(&direction * step);
+                let new_loss = compute_loss(&w_new);
+                if new_loss <= current_loss + c1 * step * grad_dot_dir {
+                    break;
+                }
+                step *= 0.5;
+            }
+
+            let s = &direction * step;
+            let w_new = &w + &s;
+            let new_grad = compute_grad(&w_new);
+            let y_diff = &new_grad - &grad;
+            let sy = s.dot(&y_diff);
+
+            if sy > 1e-10 {
+                if s_hist.len() >= m {
+                    s_hist.remove(0);
+                    y_hist.remove(0);
+                    rho_hist.remove(0);
+                }
+                s_hist.push(s.clone());
+                y_hist.push(y_diff);
+                rho_hist.push(1.0 / sy);
+            }
+
+            let max_change = s.iter().map(|v| v.abs()).fold(0.0_f64, |a, b| a.max(b));
+            w = w_new;
+            grad = new_grad;
+
+            if max_change < self.tol {
+                break;
+            }
+        }
+
+        let bias = w[0];
+        let weights = w.slice(ndarray::s![1..]).to_owned();
+
+        Ok((weights, bias))
+    }
+
+    /// Fit the model on sparse matrix
+    pub fn fit_sparse(&mut self, X: &CsMat<f64>, y: &ArrayView1<f64>) -> Result<(), String> {
+        if X.rows() == 0 || X.cols() == 0 {
+            return Err("Input array is empty".to_string());
+        }
+        if X.rows() != y.len() {
+            return Err(format!(
+                "Sample count mismatch: X has {} rows, y has {} elements",
+                X.rows(),
+                y.len()
+            ));
+        }
+        check_finite_1d(y)?;
+
+        if self.penalty != "l2" {
+            return Err(format!("Unsupported penalty '{}'.", self.penalty));
+        }
+
+        let mut classes: Vec<f64> = Vec::new();
+        for &v in y.iter() {
+            if !classes.iter().any(|&c| (c - v).abs() < f64::EPSILON) {
+                classes.push(v);
+            }
+        }
+        classes.sort_unstable_by(|a, b| a.total_cmp(b));
+
+        let n_features = X.cols();
+
+        if classes.len() == 2 {
+            let pos = classes[1];
+            let y_binary = Array1::from(
+                y.iter()
+                    .map(|&v| if (v - pos).abs() < f64::EPSILON { 1.0 } else { 0.0 })
+                    .collect::<Vec<f64>>(),
+            );
+            let (w, b) = self.fit_binary_sparse(X, &y_binary, n_features)?;
+            let mut coef = Array2::<f64>::zeros((1, n_features));
+            for j in 0..n_features {
+                coef[[0, j]] = w[j];
+            }
+            self.coef_ = Some(coef);
+            self.intercept_ = Some(Array1::from(vec![b]));
+        } else {
+            let n_classes = classes.len();
+            let mut coef = Array2::<f64>::zeros((n_classes, n_features));
+            let mut intercept = Array1::<f64>::zeros(n_classes);
+
+            for (c_idx, &cls) in classes.iter().enumerate() {
+                let y_binary = Array1::from(
+                    y.iter()
+                        .map(|&v| if (v - cls).abs() < f64::EPSILON { 1.0 } else { 0.0 })
+                        .collect::<Vec<f64>>(),
+                );
+                let (w, b) = self.fit_binary_sparse(X, &y_binary, n_features)?;
+                for j in 0..n_features {
+                    coef[[c_idx, j]] = w[j];
+                }
+                intercept[c_idx] = b;
+            }
+            self.coef_ = Some(coef);
+            self.intercept_ = Some(intercept);
+        }
+
+        self.classes_ = Some(classes);
+        Ok(())
+    }
+
     /// Fit the model. Supports binary and multiclass (one-vs-rest).
     pub fn fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<f64>) -> Result<(), String> {
         if X.nrows() == 0 || X.ncols() == 0 {
@@ -855,6 +1074,106 @@ impl LogisticRegression {
                     row_sum += p;
                 }
                 // Normalize
+                if row_sum > 0.0 {
+                    for c in 0..n_classes {
+                        proba[[i, c]] /= row_sum;
+                    }
+                }
+            }
+            Ok(proba)
+        }
+    }
+
+    /// Predict class labels for sparse matrix.
+    pub fn predict_sparse(&self, X: &CsMat<f64>) -> Result<Array1<f64>, String> {
+        let coef = self.coef_.as_ref().ok_or("Model is not fitted yet")?;
+        let intercept = self.intercept_.as_ref().unwrap();
+        let classes = self.classes_.as_ref().unwrap();
+
+        let n_features = coef.ncols();
+        if X.cols() != n_features {
+            return Err(format!(
+                "Feature mismatch: expected {}, got {}",
+                n_features,
+                X.cols()
+            ));
+        }
+
+        if classes.len() == 2 {
+            let mut preds = Vec::with_capacity(X.rows());
+            for vec in X.outer_iterator() {
+                let mut z = intercept[0];
+                for (col_idx, &val) in vec.iter() {
+                    z += val * coef[[0, col_idx]];
+                }
+                preds.push(if Self::sigmoid(z) >= 0.5 { classes[1] } else { classes[0] });
+            }
+            Ok(Array1::from(preds))
+        } else {
+            let n_classes = classes.len();
+            let mut preds = Vec::with_capacity(X.rows());
+            for vec in X.outer_iterator() {
+                let mut best_score = f64::NEG_INFINITY;
+                let mut best_class = classes[0];
+                for c in 0..n_classes {
+                    let mut z = intercept[c];
+                    for (col_idx, &val) in vec.iter() {
+                        z += val * coef[[c, col_idx]];
+                    }
+                    if z > best_score {
+                        best_score = z;
+                        best_class = classes[c];
+                    }
+                }
+                preds.push(best_class);
+            }
+            Ok(Array1::from(preds))
+        }
+    }
+
+    /// Predict probabilities for sparse matrix.
+    pub fn predict_proba_sparse(&self, X: &CsMat<f64>) -> Result<Array2<f64>, String> {
+        let coef = self.coef_.as_ref().ok_or("Model is not fitted yet")?;
+        let intercept = self.intercept_.as_ref().unwrap();
+        let classes = self.classes_.as_ref().unwrap();
+
+        let n_features = coef.ncols();
+        if X.cols() != n_features {
+            return Err(format!(
+                "Feature mismatch: expected {}, got {}",
+                n_features,
+                X.cols()
+            ));
+        }
+
+        let n = X.rows();
+
+        if classes.len() == 2 {
+            let mut proba = Array2::<f64>::zeros((n, 2));
+            for (i, vec) in X.outer_iterator().enumerate() {
+                let mut z = intercept[0];
+                for (col_idx, &val) in vec.iter() {
+                    z += val * coef[[0, col_idx]];
+                }
+                let p = Self::sigmoid(z);
+                proba[[i, 0]] = 1.0 - p;
+                proba[[i, 1]] = p;
+            }
+            Ok(proba)
+        } else {
+            let n_classes = classes.len();
+            let mut proba = Array2::<f64>::zeros((n, n_classes));
+            for (i, vec) in X.outer_iterator().enumerate() {
+                let mut row_sum = 0.0;
+                for c in 0..n_classes {
+                    let mut z = intercept[c];
+                    for (col_idx, &val) in vec.iter() {
+                        z += val * coef[[c, col_idx]];
+                    }
+                    let p = Self::sigmoid(z);
+                    proba[[i, c]] = p;
+                    row_sum += p;
+                }
                 if row_sum > 0.0 {
                     for c in 0..n_classes {
                         proba[[i, c]] /= row_sum;

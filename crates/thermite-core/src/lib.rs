@@ -7,6 +7,7 @@ pub mod model_selection;
 pub mod decomposition;
 pub mod neighbors;
 pub mod ensemble;
+pub mod sparse;
 
 pub fn core_ping() -> &'static str {
     "core_pong"

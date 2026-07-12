@@ -14,3 +14,4 @@ thermite-core = { path = "../thermite-core" }
 pyo3 = { workspace = true }
 numpy = { workspace = true }
 ndarray = { workspace = true }
+sprs = "0.11.4"

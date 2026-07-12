@@ -16,8 +16,8 @@ scikit-learn is the most widely-used ML library in the world (40M+ monthly downl
 
 **Thermite** rewrites the compute-heavy core in Rust and exposes the same Python API you already know. No new syntax. No migration guide. Just `import thermite` instead of `import sklearn`.
 
-### Supported Models & Tools (Phase 1)
-- **Linear Models**: LinearRegression, Ridge, Lasso, LogisticRegression (Binary & Multiclass OvR), LinearSVC (Binary & Multiclass OvR)
+### Supported Models & Tools (Phase 1 & 2)
+- **Linear Models**: LinearRegression, Ridge, Lasso, LogisticRegression (Binary & Multiclass OvR, Native Sparse CSR support), LinearSVC (Binary & Multiclass OvR)
 - **Tree & Ensemble Models**: DecisionTreeClassifier, DecisionTreeRegressor, RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier, GradientBoostingRegressor
 - **Clustering**: KMeans
 - **Decomposition**: PCA (Subspace iteration optimized)

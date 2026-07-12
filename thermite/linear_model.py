@@ -93,26 +93,61 @@ class LogisticRegression:
         self._model = _core.LogisticRegression(C=C, max_iter=max_iter, tol=tol, penalty=penalty)
 
     def fit(self, X, y):
-        X = np.asarray(X, dtype=np.float64)
+        import scipy.sparse
         y = np.asarray(y, dtype=np.float64)
-        if X.ndim != 2:
-            raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
             raise ValueError("Expected 1D array for y")
-        self._model.fit(X, y)
+            
+        if scipy.sparse.issparse(X):
+            X_csr = X.tocsr()
+            self._model.fit_sparse(
+                X_csr.data.astype(np.float64),
+                X_csr.indices.astype(np.uintp),
+                X_csr.indptr.astype(np.uintp),
+                X_csr.shape[0],
+                X_csr.shape[1],
+                y
+            )
+        else:
+            X = np.asarray(X, dtype=np.float64)
+            if X.ndim != 2:
+                raise ValueError("Expected 2D array for X")
+            self._model.fit(X, y)
         return self
 
     def predict(self, X):
-        X = np.asarray(X, dtype=np.float64)
-        if X.ndim != 2:
-            raise ValueError("Expected 2D array for X")
-        return self._model.predict(X)
+        import scipy.sparse
+        if scipy.sparse.issparse(X):
+            X_csr = X.tocsr()
+            return self._model.predict_sparse(
+                X_csr.data.astype(np.float64),
+                X_csr.indices.astype(np.uintp),
+                X_csr.indptr.astype(np.uintp),
+                X_csr.shape[0],
+                X_csr.shape[1]
+            )
+        else:
+            X = np.asarray(X, dtype=np.float64)
+            if X.ndim != 2:
+                raise ValueError("Expected 2D array for X")
+            return self._model.predict(X)
 
     def predict_proba(self, X):
-        X = np.asarray(X, dtype=np.float64)
-        if X.ndim != 2:
-            raise ValueError("Expected 2D array for X")
-        return self._model.predict_proba(X)
+        import scipy.sparse
+        if scipy.sparse.issparse(X):
+            X_csr = X.tocsr()
+            return self._model.predict_proba_sparse(
+                X_csr.data.astype(np.float64),
+                X_csr.indices.astype(np.uintp),
+                X_csr.indptr.astype(np.uintp),
+                X_csr.shape[0],
+                X_csr.shape[1]
+            )
+        else:
+            X = np.asarray(X, dtype=np.float64)
+            if X.ndim != 2:
+                raise ValueError("Expected 2D array for X")
+            return self._model.predict_proba(X)
 
     @property
     def coef_(self):
