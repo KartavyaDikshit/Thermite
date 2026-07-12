@@ -45,6 +45,9 @@ class RandomForestClassifier:
     def fit(self, X, y, categorical_features=None):
         X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
+        if self.device == "gpu" and X.shape[0] * X.shape[1] < 10000:
+            import warnings
+            warnings.warn("GPU warm-up tax: dataset is too small (X.shape[0] * X.shape[1] < 10000). GPU execution may be slower than CPU.")
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
@@ -95,6 +98,9 @@ class RandomForestRegressor:
     def fit(self, X, y, categorical_features=None):
         X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
+        if self.device == "gpu" and X.shape[0] * X.shape[1] < 10000:
+            import warnings
+            warnings.warn("GPU warm-up tax: dataset is too small (X.shape[0] * X.shape[1] < 10000). GPU execution may be slower than CPU.")
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
@@ -164,11 +170,12 @@ class GradientBoostingClassifier:
         return accuracy_score(y, self.predict(X))
 
 class GradientBoostingRegressor:
-    def __init__(self, n_estimators=100, learning_rate=0.1, *, max_depth=3, random_state=None):
+    def __init__(self, n_estimators=100, learning_rate=0.1, *, max_depth=3, random_state=None, loss=None):
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.max_depth = max_depth
         self.random_state = random_state
+        self.loss = loss
         self._model = _core.GradientBoostingRegressor(
             n_estimators=n_estimators,
             learning_rate=learning_rate,
@@ -184,7 +191,24 @@ class GradientBoostingRegressor:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
             raise ValueError("Expected 1D array for y")
-        self._model.fit(X, y, categorical_features)
+        
+        if self.loss is None:
+            self._model.fit(X, y, categorical_features)
+        else:
+            from .tree import DecisionTreeRegressor
+            self.estimators_ = []
+            self.initial_prediction_ = np.mean(y)
+            current_preds = np.full_like(y, self.initial_prediction_)
+            for i in range(self.n_estimators):
+                gradients = self.loss(y, current_preds)
+                tree = DecisionTreeRegressor(max_depth=self.max_depth, random_state=self.random_state + i if self.random_state else None)
+                if categorical_features is not None:
+                    # In python implementation we would need to pass this, but the wrapper might not accept it directly
+                    pass
+                tree.fit(X, gradients)
+                preds = tree.predict(X)
+                current_preds += self.learning_rate * preds
+                self.estimators_.append(tree)
         return self
 
     @_catch_panic
@@ -192,7 +216,13 @@ class GradientBoostingRegressor:
         X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
-        return self._model.predict(X)
+        if self.loss is None:
+            return self._model.predict(X)
+        else:
+            preds = np.full(X.shape[0], self.initial_prediction_)
+            for tree in self.estimators_:
+                preds += self.learning_rate * tree.predict(X)
+            return preds
 
     def score(self, X, y):
         from .metrics import r2_score

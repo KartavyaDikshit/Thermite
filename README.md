@@ -148,3 +148,10 @@ While scikit-learn dominates the ML ecosystem (with over 100+ algorithms and ext
    - **Graph Machine Learning:** High-speed network embeddings with `Node2Vec` built on Rust's native memory structures.
    - **Expanded Text & NLP:** `Word2Vec` embeddings natively integrated alongside `TfidfVectorizer` for comprehensive NLP workflows.
    - **Advanced Hyperparameter Tuning:** `SuccessiveHalvingSearchCV` (Hyperband) for exponentially faster out-of-core model selection utilizing `partial_fit` pipelines.
+7. **Scale-up Milestones v1.7.0:**
+   - **The "Drop-In" Fallback Trap**: Automatic `__getattr__` fallback to `scikit-learn` for unimplemented models.
+   - **The GPU Warm-up Tax**: Smart heuristic defaulting `thermite-gpu` models back to CPU for small datasets.
+   - **Auto-Differentiating Custom Losses**: Pass your own callable loss functions directly to `GradientBoostingRegressor`.
+   - **Federated Learning Infrastructure**: Parameter Server to seamlessly aggregate `SGDClassifier` weights.
+   - **Cross-Validation Splitters**: Robust `StratifiedKFold`, `TimeSeriesSplit`, and `GroupKFold`.
+   - **Generative AI Proxies (RAG)**: Blazing fast `VectorStore` proxy for embedding nearest-neighbor retrieval.

@@ -416,7 +416,7 @@ use thermite_core::linear_model::SGDClassifier as CoreSGDClassifier;
 
 #[pyclass]
 pub struct SGDClassifier {
-    core: CoreSGDClassifier,
+    pub core: CoreSGDClassifier,
 }
 
 #[pymethods]

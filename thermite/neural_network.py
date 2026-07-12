@@ -17,6 +17,9 @@ class MLPClassifier:
     def fit(self, X, y):
         X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
+        if self.device == "gpu" and X.shape[0] * X.shape[1] < 10000:
+            import warnings
+            warnings.warn("GPU warm-up tax: dataset is too small (X.shape[0] * X.shape[1] < 10000). GPU execution may be slower than CPU.")
         self._model.fit(X, y)
         return self
 

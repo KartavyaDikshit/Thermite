@@ -30,6 +30,8 @@ pub mod survival;
 pub mod multi_output;
 pub mod graph;
 pub mod hyperband;
+pub mod federated;
+pub mod rag;
 pub fn core_ping() -> &'static str {
     "core_pong"
 }

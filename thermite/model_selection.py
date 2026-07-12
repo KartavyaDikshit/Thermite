@@ -70,6 +70,40 @@ class KFold:
             yield train_indices, test_indices
             current = stop
 
+class StratifiedKFold:
+    def __init__(self, n_splits=5, shuffle=False, random_state=None):
+        self.n_splits = n_splits
+        self.shuffle = shuffle
+        self.random_state = random_state
+        self._core = _core.StratifiedKFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state)
+
+    def split(self, X, y, groups=None):
+        y = np.asarray(y, dtype=np.int64)
+        for train, test in self._core.split(X, y):
+            yield train, test
+
+class TimeSeriesSplit:
+    def __init__(self, n_splits=5):
+        self.n_splits = n_splits
+        self._core = _core.TimeSeriesSplit(n_splits=n_splits)
+
+    def split(self, X, y=None, groups=None):
+        for train, test in self._core.split(X):
+            yield train, test
+
+class GroupKFold:
+    def __init__(self, n_splits=5):
+        self.n_splits = n_splits
+        self._core = _core.GroupKFold(n_splits=n_splits)
+
+    def split(self, X, y=None, groups=None):
+        if groups is None:
+            raise ValueError("The 'groups' parameter should not be None.")
+        groups = np.asarray(groups, dtype=np.int64)
+        for train, test in self._core.split(X, y, groups):
+            yield train, test
+
+
 class GridSearchCV:
     def __init__(self, estimator, param_grid, cv=5, n_jobs=None):
         self.estimator = estimator

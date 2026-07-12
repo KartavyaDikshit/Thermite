@@ -1,6 +1,6 @@
 from ._core import ping
 from .preprocessing import StandardScaler, MinMaxScaler, LabelEncoder, OneHotEncoder
-from .model_selection import train_test_split, GridSearchCV, KFold, SuccessiveHalvingSearchCV
+from .model_selection import train_test_split, GridSearchCV, KFold, SuccessiveHalvingSearchCV, StratifiedKFold, TimeSeriesSplit, GroupKFold
 from .linear_model import LinearRegression, Ridge, Lasso, LogisticRegression, LinearSVC
 from .metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
@@ -33,7 +33,7 @@ from .survival import SurvivalForest
 from .multi_output import MultiOutputRegressor
 from .graph import Node2Vec
 
-__version__ = "1.6.0"
+__version__ = "1.7.0"
 __all__ = [
     "ping",
     "StandardScaler",
@@ -92,5 +92,23 @@ __all__ = [
     "Node2Vec",
     "Word2Vec",
     "SuccessiveHalvingSearchCV",
+    "StratifiedKFold",
+    "TimeSeriesSplit",
+    "GroupKFold",
 ]
+
+def __getattr__(name):
+    import warnings
+    import importlib
+    try:
+        sklearn_module = importlib.import_module("sklearn")
+        if hasattr(sklearn_module, name):
+            attr = getattr(sklearn_module, name)
+            warnings.warn(f"'{name}' not found in thermite. Falling back to sklearn.")
+            return attr
+        submodule = importlib.import_module(f"sklearn.{name}")
+        warnings.warn(f"'{name}' not found in thermite. Falling back to sklearn.{name}.")
+        return submodule
+    except ImportError:
+        raise AttributeError(f"module 'thermite' has no attribute '{name}'")
 

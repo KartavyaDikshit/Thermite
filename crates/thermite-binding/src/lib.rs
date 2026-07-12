@@ -430,6 +430,9 @@ pub mod multi_output_bind;
 pub mod graph_bind;
 pub mod hyperband_bind;
 pub mod manifold_bind;
+pub mod federated_bind;
+pub mod model_selection_bind;
+pub mod rag_bind;
 
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -459,6 +462,9 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     graph_bind::bind_graph(m)?;
     hyperband_bind::bind_hyperband(m)?;
     manifold_bind::bind_manifold(m)?;
+    federated_bind::bind_federated(m)?;
+    model_selection_bind::bind_model_selection(m)?;
+    rag_bind::bind_rag(m)?;
     Ok(())
 }
 

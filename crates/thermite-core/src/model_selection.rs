@@ -234,6 +234,142 @@ fn determine_split_sizes(
     Ok((n_train, n_test))
 }
 
+pub struct StratifiedKFold {
+    pub n_splits: usize,
+    pub shuffle: bool,
+    pub random_state: Option<u64>,
+}
+
+impl StratifiedKFold {
+    pub fn split(&self, y: &[i64]) -> Result<Vec<SplitIndices>, String> {
+        if self.n_splits < 2 {
+            return Err("n_splits must be at least 2".to_string());
+        }
+
+        let mut class_indices: std::collections::HashMap<i64, Vec<usize>> = std::collections::HashMap::new();
+        for (i, &label) in y.iter().enumerate() {
+            class_indices.entry(label).or_default().push(i);
+        }
+
+        let mut rng = match self.random_state {
+            Some(seed) => rand::rngs::SmallRng::seed_from_u64(seed),
+            None => rand::rngs::SmallRng::from_entropy(),
+        };
+
+        if self.shuffle {
+            for indices in class_indices.values_mut() {
+                indices.shuffle(&mut rng);
+            }
+        }
+
+        let mut folds = vec![Vec::new(); self.n_splits];
+        
+        for indices in class_indices.values() {
+            let mut current_fold = 0;
+            for &idx in indices {
+                folds[current_fold].push(idx);
+                current_fold = (current_fold + 1) % self.n_splits;
+            }
+        }
+
+        let mut splits = Vec::with_capacity(self.n_splits);
+        for i in 0..self.n_splits {
+            let mut test_indices = Vec::new();
+            let mut train_indices = Vec::new();
+
+            for j in 0..self.n_splits {
+                if i == j {
+                    test_indices.extend_from_slice(&folds[j]);
+                } else {
+                    train_indices.extend_from_slice(&folds[j]);
+                }
+            }
+            splits.push(SplitIndices { train_indices, test_indices });
+        }
+
+        Ok(splits)
+    }
+}
+
+pub struct TimeSeriesSplit {
+    pub n_splits: usize,
+}
+
+impl TimeSeriesSplit {
+    pub fn split(&self, n_samples: usize) -> Result<Vec<SplitIndices>, String> {
+        if self.n_splits < 2 {
+            return Err("n_splits must be at least 2".to_string());
+        }
+        if n_samples < self.n_splits + 1 {
+            return Err("n_samples must be greater than n_splits".to_string());
+        }
+
+        let fold_size = n_samples / (self.n_splits + 1);
+        let remainder = n_samples % (self.n_splits + 1);
+        
+        let mut splits = Vec::with_capacity(self.n_splits);
+        let mut offset = remainder;
+
+        for i in 1..=self.n_splits {
+            let train_end = offset + i * fold_size;
+            let test_end = train_end + fold_size;
+
+            let train_indices = (0..train_end).collect();
+            let test_indices = (train_end..test_end).collect();
+
+            splits.push(SplitIndices { train_indices, test_indices });
+        }
+        
+        Ok(splits)
+    }
+}
+
+pub struct GroupKFold {
+    pub n_splits: usize,
+}
+
+impl GroupKFold {
+    pub fn split(&self, groups: &[i64]) -> Result<Vec<SplitIndices>, String> {
+        if self.n_splits < 2 {
+            return Err("n_splits must be at least 2".to_string());
+        }
+
+        let mut group_to_indices: std::collections::HashMap<i64, Vec<usize>> = std::collections::HashMap::new();
+        for (i, &g) in groups.iter().enumerate() {
+            group_to_indices.entry(g).or_default().push(i);
+        }
+        
+        let unique_groups: Vec<i64> = group_to_indices.keys().copied().collect();
+        if unique_groups.len() < self.n_splits {
+            return Err("n_splits cannot be greater than the number of groups".to_string());
+        }
+
+        let mut group_folds = vec![Vec::new(); self.n_splits];
+        for (i, g) in unique_groups.iter().enumerate() {
+            group_folds[i % self.n_splits].push(*g);
+        }
+
+        let mut splits = Vec::with_capacity(self.n_splits);
+        for i in 0..self.n_splits {
+            let mut test_indices = Vec::new();
+            let mut train_indices = Vec::new();
+
+            for j in 0..self.n_splits {
+                for g in &group_folds[j] {
+                    if i == j {
+                        test_indices.extend_from_slice(&group_to_indices[g]);
+                    } else {
+                        train_indices.extend_from_slice(&group_to_indices[g]);
+                    }
+                }
+            }
+            splits.push(SplitIndices { train_indices, test_indices });
+        }
+
+        Ok(splits)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
