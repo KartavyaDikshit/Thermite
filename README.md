@@ -53,16 +53,36 @@ from thermite.ensemble import RandomForestClassifier
 from thermite.model_selection import train_test_split
 from thermite.preprocessing import StandardScaler
 
-# Same API you already know
+# Same API you already know, but faster
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
-clf = RandomForestClassifier(n_estimators=100, n_jobs=-1)
+# Hardware acceleration with `device='cuda'` or `device='gpu'`
+clf = RandomForestClassifier(n_estimators=100, n_jobs=-1, device='gpu')
 clf.fit(X_train, y_train)
 print(f"Accuracy: {clf.score(X_test, y_test):.4f}")
+```
+
+### Zero-copy Polars Integration
+
+Thermite natively supports `polars` DataFrames via Apache Arrow memory formats without copying data (where `dtype` allows):
+
+```python
+import polars as pl
+from thermite.linear_model import LogisticRegression
+from thermite.polars_compat import make_polars_pipeline, from_polars
+
+df = pl.read_csv("large_dataset.csv")
+
+# Extract features and target without copying
+X, y = from_polars(df, target_col="target")
+
+# Or wrap the model to ingest DataFrames directly
+model = make_polars_pipeline(LogisticRegression())
+model.fit(df.select(pl.exclude("target")), df["target"])
 ```
 
 ## Architecture
@@ -90,9 +110,9 @@ thermite/
 ## How It Works
 
 1. **Rust core** (`thermite-core`): All ML algorithms implemented in pure Rust with Rayon for automatic parallelism
-2. **PyO3 bindings** (`python/thermite`): Thin Python layer that accepts numpy arrays, calls Rust, returns numpy arrays
-3. **API compatibility**: Same `fit()`, `predict()`, `transform()`, `fit_transform()` interface as scikit-learn
-4. **Zero-copy where possible**: Numpy arrays passed directly to Rust without copying via `numpy` PyO3 bindings
+2. **GPU Backend** (`thermite-gpu`): Hardware acceleration for massive matrices using wgpu/WGSL compute shaders
+3. **PyO3 bindings** (`thermite-binding`): Thin Python layer that bridges Numpy/Polars to Rust zero-copy
+4. **API compatibility**: Same `fit()`, `predict()`, `transform()`, `partial_fit()` interface as scikit-learn
 
 ## Built With
 

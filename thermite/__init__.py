@@ -14,8 +14,9 @@ from .ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoo
 from .pipeline import Pipeline, ColumnTransformer
 from .naive_bayes import GaussianNB
 from .device import validate_device, is_gpu, DEVICE_CPU, DEVICE_GPU, DEVICE_CUDA
+from .polars_compat import from_polars, from_polars_X, from_polars_y, make_polars_pipeline
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = [
     "ping",
     "StandardScaler",
