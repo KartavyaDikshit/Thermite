@@ -105,3 +105,56 @@ impl TfidfVectorizer {
         self.transform(docs)
     }
 }
+
+pub struct Word2Vec {
+    pub vector_size: usize,
+    pub window: usize,
+    pub min_count: usize,
+    pub embeddings: Option<HashMap<String, Vec<f64>>>,
+}
+
+impl Word2Vec {
+    pub fn new(vector_size: usize, window: usize, min_count: usize) -> Self {
+        Word2Vec {
+            vector_size,
+            window,
+            min_count,
+            embeddings: None,
+        }
+    }
+
+    pub fn fit(&mut self, sentences: &[Vec<String>]) -> Result<(), String> {
+        let mut counts: HashMap<String, usize> = HashMap::new();
+        for sentence in sentences {
+            for word in sentence {
+                *counts.entry(word.clone()).or_insert(0) += 1;
+            }
+        }
+
+        let vocab: Vec<String> = counts.into_iter()
+            .filter(|(_, c)| *c >= self.min_count)
+            .map(|(w, _)| w)
+            .collect();
+
+        if vocab.is_empty() {
+            return Err("Empty vocabulary".to_string());
+        }
+
+        // Simplified placeholder: random embeddings
+        let mut embeddings = HashMap::new();
+        for word in vocab {
+            let mut vec = vec![0.0; self.vector_size];
+            for v in &mut vec {
+                *v = (rand::random::<f64>() * 2.0) - 1.0;
+            }
+            embeddings.insert(word, vec);
+        }
+        self.embeddings = Some(embeddings);
+
+        Ok(())
+    }
+
+    pub fn get_embeddings(&self) -> Result<HashMap<String, Vec<f64>>, String> {
+        self.embeddings.clone().ok_or_else(|| "Model not fitted".to_string())
+    }
+}

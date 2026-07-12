@@ -185,3 +185,38 @@ class GridSearchCV:
     @_catch_panic
     def predict(self, X):
         return self.best_estimator_.predict(X)
+
+class SuccessiveHalvingSearchCV:
+    def __init__(self, estimator, param_grid, min_resources=10, factor=3):
+        self.estimator = estimator
+        self.param_grid = param_grid
+        self.min_resources = min_resources
+        self.factor = factor
+        
+        # param_grid is a dict or list of dicts. If it's a dict, convert to list of dicts for combinations
+        if isinstance(param_grid, dict):
+            keys, values = zip(*param_grid.items())
+            self._param_list = [dict(zip(keys, v)) for v in itertools.product(*values)]
+        else:
+            self._param_list = param_grid
+            
+        self._model = _core.SuccessiveHalvingSearchCV(
+            self.estimator,
+            self._param_list,
+            self.min_resources,
+            self.factor
+        )
+
+    def fit(self, X, y):
+        X = np.asarray(X, dtype=np.float64)
+        y = np.asarray(y, dtype=np.float64)
+        self._model.fit(X, y)
+        return self
+
+    @property
+    def best_estimator_(self):
+        return self._model.best_estimator_
+
+    @property
+    def best_score_(self):
+        return self._model.best_score_

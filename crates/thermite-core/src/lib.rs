@@ -26,6 +26,9 @@ pub mod neural_network;
 pub mod feature_selection;
 pub mod time_series;
 pub mod survival;
+pub mod multi_output;
+pub mod graph;
+pub mod hyperband;
 pub fn core_ping() -> &'static str {
     "core_pong"
 }

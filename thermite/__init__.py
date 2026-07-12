@@ -1,6 +1,6 @@
 from ._core import ping
 from .preprocessing import StandardScaler, MinMaxScaler, LabelEncoder, OneHotEncoder
-from .model_selection import train_test_split, GridSearchCV, KFold
+from .model_selection import train_test_split, GridSearchCV, KFold, SuccessiveHalvingSearchCV
 from .linear_model import LinearRegression, Ridge, Lasso, LogisticRegression, LinearSVC
 from .metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
@@ -10,7 +10,7 @@ from .tree import DecisionTreeClassifier, DecisionTreeRegressor
 from .cluster import KMeans, DBSCAN
 from .decomposition import PCA
 from .neighbors import KNeighborsClassifier
-from .text import CountVectorizer, TfidfVectorizer
+from .text import CountVectorizer, TfidfVectorizer, Word2Vec
 from .impute import IterativeImputer
 from .ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier, GradientBoostingRegressor, HistGradientBoostingClassifier, HistGradientBoostingRegressor
 from .pipeline import Pipeline, ColumnTransformer
@@ -28,8 +28,10 @@ from .neural_network import MLPClassifier
 from .feature_selection import RFE
 from .time_series import AutoRegressive
 from .survival import SurvivalForest
+from .multi_output import MultiOutputRegressor
+from .graph import Node2Vec
 
-__version__ = "1.4.0"
+__version__ = "1.5.0"
 __all__ = [
     "ping",
     "StandardScaler",
@@ -76,5 +78,9 @@ __all__ = [
     "RFE",
     "AutoRegressive",
     "SurvivalForest",
+    "MultiOutputRegressor",
+    "Node2Vec",
+    "Word2Vec",
+    "SuccessiveHalvingSearchCV",
 ]
 

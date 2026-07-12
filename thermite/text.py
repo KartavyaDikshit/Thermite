@@ -42,3 +42,19 @@ class TfidfVectorizer:
     @property
     def idf_(self):
         return self._core.idf
+
+class Word2Vec:
+    def __init__(self, vector_size: int = 100, window: int = 5, min_count: int = 5):
+        from thermite._core import Word2Vec as _Word2Vec
+        self._core = _Word2Vec(vector_size, window, min_count)
+        self.vector_size = vector_size
+        self.window = window
+        self.min_count = min_count
+
+    def fit(self, sentences):
+        self._core.fit(sentences)
+        return self
+
+    @property
+    def embeddings_(self):
+        return self._core.embeddings

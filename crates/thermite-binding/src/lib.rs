@@ -426,6 +426,9 @@ pub mod neural_network_bind;
 pub mod feature_selection_bind;
 pub mod time_series_bind;
 pub mod survival_bind;
+pub mod multi_output_bind;
+pub mod graph_bind;
+pub mod hyperband_bind;
 
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -451,6 +454,9 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     feature_selection_bind::bind_feature_selection(m)?;
     time_series_bind::bind_time_series(m)?;
     survival_bind::bind_survival(m)?;
+    multi_output_bind::bind_multi_output(m)?;
+    graph_bind::bind_graph(m)?;
+    hyperband_bind::bind_hyperband(m)?;
     Ok(())
 }
 
