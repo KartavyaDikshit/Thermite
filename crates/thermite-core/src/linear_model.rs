@@ -1506,6 +1506,52 @@ impl LinearSVC {
         Ok((w, bias))
     }
 
+    fn fit_binary_sparse(
+        &self,
+        X: &CsMat<f64>,
+        y_binary: &Array1<f64>, // -1 or 1 labels
+        n_features: usize,
+    ) -> Result<(Array1<f64>, f64), String> {
+        let n_f64 = X.rows() as f64;
+        let lambda = 1.0 / self.C;
+
+        let mut w = Array1::<f64>::zeros(n_features);
+        let mut bias = 0.0_f64;
+        let lr = self.learning_rate;
+
+        for _iter in 0..self.max_iter {
+            let mut grad_w = &w * lambda;
+            let mut grad_b = 0.0;
+            
+            for (i, vec) in X.outer_iterator().enumerate() {
+                let mut z = bias;
+                for (col_idx, &val) in vec.iter() {
+                    z += val * w[col_idx];
+                }
+                
+                if y_binary[i] * z < 1.0 {
+                    let update = -y_binary[i] / n_f64;
+                    for (col_idx, &val) in vec.iter() {
+                        grad_w[col_idx] += update * val;
+                    }
+                    grad_b += update;
+                }
+            }
+
+            let w_update = &grad_w * lr;
+            w = w - &w_update;
+            let b_update = grad_b * lr;
+            bias -= b_update;
+
+            let max_change = w_update.iter().map(|v| v.abs()).fold(0.0_f64, |a, b| a.max(b)).max(b_update.abs());
+            if max_change < self.tol {
+                break;
+            }
+        }
+
+        Ok((w, bias))
+    }
+
     pub fn fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<f64>) -> Result<(), String> {
         if X.is_empty() { return Err("Input array is empty".to_string()); }
         check_finite_2d(X)?;
@@ -1562,6 +1608,61 @@ impl LinearSVC {
         Ok(())
     }
 
+    pub fn fit_sparse(&mut self, X: &CsMat<f64>, y: &ArrayView1<f64>) -> Result<(), String> {
+        if X.rows() == 0 || X.cols() == 0 { return Err("Input array is empty".to_string()); }
+        check_finite_1d(y)?;
+
+        let mut unique_classes = y.to_vec();
+        unique_classes.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        unique_classes.dedup();
+        let classes = unique_classes;
+
+        if classes.len() < 2 {
+            return Err("LinearSVC requires at least 2 classes".to_string());
+        }
+
+        let n_features = X.cols();
+
+        if classes.len() == 2 {
+            let mut y_bin = Array1::<f64>::zeros(y.len());
+            for i in 0..y.len() {
+                y_bin[i] = if (y[i] - classes[1]).abs() < f64::EPSILON { 1.0 } else { -1.0 };
+            }
+            let (w, b) = self.fit_binary_sparse(X, &y_bin, n_features)?;
+            
+            let intercept = Array1::from(vec![b]);
+            let mut coef = Array2::<f64>::zeros((1, n_features));
+            for j in 0..n_features {
+                coef[[0, j]] = w[j];
+            }
+
+            self.coef_ = Some(coef);
+            self.intercept_ = Some(intercept);
+        } else {
+            // Multiclass: one-vs-rest
+            let n_classes = classes.len();
+            let mut coef = Array2::<f64>::zeros((n_classes, n_features));
+            let mut intercept = Array1::<f64>::zeros(n_classes);
+
+            for (c_idx, &cls) in classes.iter().enumerate() {
+                let mut y_bin = Array1::<f64>::zeros(y.len());
+                for i in 0..y.len() {
+                    y_bin[i] = if (y[i] - cls).abs() < f64::EPSILON { 1.0 } else { -1.0 };
+                }
+                let (w, b) = self.fit_binary_sparse(X, &y_bin, n_features)?;
+                for j in 0..n_features {
+                    coef[[c_idx, j]] = w[j];
+                }
+                intercept[c_idx] = b;
+            }
+            self.coef_ = Some(coef);
+            self.intercept_ = Some(intercept);
+        }
+
+        self.classes_ = Some(classes);
+        Ok(())
+    }
+
     pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
         let coef = self.coef_.as_ref().ok_or("Model is not fitted yet")?;
         let intercept = self.intercept_.as_ref().unwrap();
@@ -1587,6 +1688,44 @@ impl LinearSVC {
                     let mut z = intercept[c];
                     for j in 0..X.ncols() {
                         z += X[[i, j]] * coef[[c, j]];
+                    }
+                    if z > max_z {
+                        max_z = z;
+                        best_class = c;
+                    }
+                }
+                preds[i] = classes[best_class];
+            }
+        }
+
+        Ok(Array1::from(preds))
+    }
+
+    pub fn predict_sparse(&self, X: &CsMat<f64>) -> Result<Array1<f64>, String> {
+        let coef = self.coef_.as_ref().ok_or("Model is not fitted yet")?;
+        let intercept = self.intercept_.as_ref().unwrap();
+        let classes = self.classes_.as_ref().unwrap();
+
+        let n_samples = X.rows();
+        let mut preds = Array1::<f64>::zeros(n_samples);
+
+        if classes.len() == 2 {
+            for (i, vec) in X.outer_iterator().enumerate() {
+                let mut z = intercept[0];
+                for (col_idx, &val) in vec.iter() {
+                    z += val * coef[[0, col_idx]];
+                }
+                preds[i] = if z >= 0.0 { classes[1] } else { classes[0] };
+            }
+        } else {
+            let n_classes = classes.len();
+            for (i, vec) in X.outer_iterator().enumerate() {
+                let mut best_class = 0;
+                let mut max_z = f64::NEG_INFINITY;
+                for c in 0..n_classes {
+                    let mut z = intercept[c];
+                    for (col_idx, &val) in vec.iter() {
+                        z += val * coef[[c, col_idx]];
                     }
                     if z > max_z {
                         max_z = z;

@@ -249,8 +249,47 @@ impl LinearSVC {
         self.core.fit(&X.as_array(), &y.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)
     }
 
+    #[pyo3(signature = (data, indices, indptr, rows, cols, y))]
+    fn fit_sparse(
+        &mut self,
+        data: PyReadonlyArray1<f64>,
+        indices: PyReadonlyArray1<usize>,
+        indptr: PyReadonlyArray1<usize>,
+        rows: usize,
+        cols: usize,
+        y: PyReadonlyArray1<f64>,
+    ) -> PyResult<()> {
+        let data_slice = data.as_slice().unwrap();
+        let indices_slice = indices.as_slice().unwrap();
+        let indptr_slice = indptr.as_slice().unwrap();
+        
+        let cs_mat = build_csr(data_slice, indices_slice, indptr_slice, rows, cols)
+            .map_err(pyo3::exceptions::PyValueError::new_err)?;
+            
+        self.core.fit_sparse(&cs_mat, &y.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)
+    }
+
     fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<f64>>> {
         let preds = self.core.predict(&X.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)?;
+        Ok(PyArray1::from_array_bound(py, &preds))
+    }
+
+    #[pyo3(signature = (data, indices, indptr, rows, cols))]
+    fn predict_sparse<'py>(
+        &self,
+        py: Python<'py>,
+        data: PyReadonlyArray1<f64>,
+        indices: PyReadonlyArray1<usize>,
+        indptr: PyReadonlyArray1<usize>,
+        rows: usize,
+        cols: usize,
+    ) -> PyResult<Bound<'py, PyArray1<f64>>> {
+        let data_slice = data.as_slice().unwrap();
+        let indices_slice = indices.as_slice().unwrap();
+        let indptr_slice = indptr.as_slice().unwrap();
+        let cs_mat = build_csr(data_slice, indices_slice, indptr_slice, rows, cols)
+            .map_err(pyo3::exceptions::PyValueError::new_err)?;
+        let preds = self.core.predict_sparse(&cs_mat).map_err(pyo3::exceptions::PyValueError::new_err)?;
         Ok(PyArray1::from_array_bound(py, &preds))
     }
 

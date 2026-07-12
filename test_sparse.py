@@ -22,9 +22,6 @@ def test_sparse_logistic():
     clf_sparse = LogisticRegression(C=1.0, max_iter=200)
     clf_sparse.fit(X_sparse, y)
     
-    print("Dense coef:", clf_dense.coef_)
-    print("Sparse coef:", clf_sparse.coef_)
-    
     np.testing.assert_allclose(clf_dense.coef_, clf_sparse.coef_, atol=1e-3, rtol=1e-3)
     np.testing.assert_allclose(clf_dense.intercept_, clf_sparse.intercept_, atol=1e-3, rtol=1e-3)
     
@@ -40,5 +37,35 @@ def test_sparse_logistic():
     
     print("All sparse logistic regression tests passed!")
 
+def test_sparse_linearsvc():
+    from thermite.linear_model import LinearSVC
+    
+    X = np.array([
+        [0, 1, 0, 0],
+        [1, 0, 1, 0],
+        [0, 1, 1, 0],
+        [0, 0, 0, 1],
+        [1, 1, 0, 0]
+    ], dtype=np.float64)
+    y = np.array([0, 1, 1, 0, 0])
+    
+    clf_dense = LinearSVC(C=1.0, max_iter=200)
+    clf_dense.fit(X, y)
+    
+    X_sparse = sp.csr_matrix(X)
+    clf_sparse = LinearSVC(C=1.0, max_iter=200)
+    clf_sparse.fit(X_sparse, y)
+    
+    np.testing.assert_allclose(clf_dense.coef_, clf_sparse.coef_, atol=1e-3, rtol=1e-3)
+    np.testing.assert_allclose(clf_dense.intercept_, clf_sparse.intercept_, atol=1e-3, rtol=1e-3)
+    
+    pred_dense = clf_dense.predict(X)
+    pred_sparse = clf_sparse.predict(X_sparse)
+    
+    np.testing.assert_array_equal(pred_dense, pred_sparse)
+    
+    print("All sparse LinearSVC tests passed!")
+
 if __name__ == "__main__":
     test_sparse_logistic()
+    test_sparse_linearsvc()
