@@ -34,7 +34,7 @@ impl RandomForestClassifier {
             max_features,
             random_state,
         );
-        core.device = DeviceKind::from_str(device);
+        core.device = DeviceKind::from_string(device);
         RandomForestClassifier { core }
     }
 
@@ -89,7 +89,7 @@ impl RandomForestRegressor {
             max_features,
             random_state,
         );
-        core.device = DeviceKind::from_str(device);
+        core.device = DeviceKind::from_string(device);
         RandomForestRegressor { core }
     }
 

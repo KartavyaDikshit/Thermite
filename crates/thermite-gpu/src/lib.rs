@@ -25,7 +25,7 @@ pub enum DeviceKind {
 }
 
 impl DeviceKind {
-    pub fn from_str(s: &str) -> Self {
+    pub fn from_string(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "gpu" | "cuda" | "wgpu" => DeviceKind::Gpu,
             _ => DeviceKind::Cpu,
@@ -371,9 +371,9 @@ mod tests {
     }
 
     #[test]
-    fn device_kind_from_str() {
-        assert_eq!(DeviceKind::from_str("cuda"), DeviceKind::Gpu);
-        assert_eq!(DeviceKind::from_str("GPU"), DeviceKind::Gpu);
-        assert_eq!(DeviceKind::from_str("cpu"), DeviceKind::Cpu);
+    fn test_device_kind_from_string() {
+        assert_eq!(DeviceKind::from_string("cuda"), DeviceKind::Gpu);
+        assert_eq!(DeviceKind::from_string("GPU"), DeviceKind::Gpu);
+        assert_eq!(DeviceKind::from_string("cpu"), DeviceKind::Cpu);
     }
 }
