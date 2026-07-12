@@ -1134,6 +1134,7 @@ dependencies = [
  "pyo3",
  "sprs",
  "thermite-core",
+ "thermite-gpu",
 ]
 
 [[package]]
@@ -1144,6 +1145,7 @@ dependencies = [
  "rand",
  "rayon",
  "sprs",
+ "thermite-gpu",
 ]
 
 [[package]]

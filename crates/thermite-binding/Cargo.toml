@@ -11,6 +11,7 @@ test = false
 
 [dependencies]
 thermite-core = { path = "../thermite-core" }
+thermite-gpu = { path = "../thermite-gpu" }
 pyo3 = { workspace = true }
 numpy = { workspace = true }
 ndarray = { workspace = true }

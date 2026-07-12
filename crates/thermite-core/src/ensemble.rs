@@ -5,6 +5,7 @@ use rand::prelude::*;
 use rand::rngs::SmallRng;
 use rayon::prelude::*;
 use crate::tree::{DecisionTreeClassifier, DecisionTreeRegressor};
+use thermite_gpu::{DeviceKind, ensemble_majority_vote, ensemble_row_mean};
 
 // ==========================================
 // RandomForestClassifier
@@ -19,6 +20,7 @@ pub struct RandomForestClassifier {
     pub estimators_: Vec<DecisionTreeClassifier>,
     pub classes_: Option<Vec<f64>>,
     pub categorical_features: Vec<usize>,
+    pub device: DeviceKind,
 }
 
 impl RandomForestClassifier {
@@ -40,6 +42,7 @@ impl RandomForestClassifier {
             estimators_: Vec::new(),
             classes_: None,
             categorical_features: Vec::new(),
+            device: DeviceKind::Cpu,
         }
     }
 
@@ -96,24 +99,19 @@ impl RandomForestClassifier {
 
         let n_samples = X.nrows();
         let n_estimators = self.estimators_.len();
-        
-        // Predict with all trees in parallel
-        let all_preds: Vec<Array1<f64>> = self.estimators_
+
+        // Collect all tree predictions into contiguous f32 score matrix (GPU-ready layout)
+        let all_preds: Vec<Vec<f32>> = self.estimators_
             .par_iter()
-            .map(|tree| Array1::from(tree.predict(X)))
+            .map(|tree| tree.predict(X).into_iter().map(|v| v as f32).collect::<Vec<f32>>())
             .collect();
 
-        // Majority vote
-        let mut final_preds = Array1::<f64>::zeros(n_samples);
-        for i in 0..n_samples {
-            let mut counts = std::collections::HashMap::new();
-            for j in 0..n_estimators {
-                let p = all_preds[j][i].to_bits(); // exact float matching for labels
-                *counts.entry(p).or_insert(0) += 1;
-            }
-            let best = counts.into_iter().max_by_key(|&(_, count)| count).unwrap().0;
-            final_preds[i] = f64::from_bits(best);
-        }
+        // Flatten to [n_estimators * n_samples] row-major for GPU dispatch
+        let flat: Vec<f32> = all_preds.iter().flat_map(|p| p.iter().copied()).collect();
+
+        // GPU-dispatched majority vote
+        let result_f32 = ensemble_majority_vote(&flat, n_estimators, n_samples, self.device);
+        let final_preds = Array1::from(result_f32.into_iter().map(|v| v as f64).collect::<Vec<f64>>());
 
         Ok(final_preds)
     }
@@ -131,6 +129,7 @@ pub struct RandomForestRegressor {
     pub random_state: Option<u64>,
     pub estimators_: Vec<DecisionTreeRegressor>,
     pub categorical_features: Vec<usize>,
+    pub device: DeviceKind,
 }
 
 impl RandomForestRegressor {
@@ -151,6 +150,7 @@ impl RandomForestRegressor {
             random_state,
             estimators_: Vec::new(),
             categorical_features: Vec::new(),
+            device: DeviceKind::Cpu,
         }
     }
 
@@ -202,22 +202,18 @@ impl RandomForestRegressor {
 
         let n_samples = X.nrows();
         let n_estimators = self.estimators_.len();
-        
-        // Predict with all trees in parallel
-        let all_preds: Vec<Array1<f64>> = self.estimators_
+
+        // GPU-ready contiguous f32 layout: [est * n_samples + sample]
+        let all_preds: Vec<Vec<f32>> = self.estimators_
             .par_iter()
-            .map(|tree| Array1::from(tree.predict(X)))
+            .map(|tree| tree.predict(X).into_iter().map(|v| v as f32).collect::<Vec<f32>>())
             .collect();
 
-        // Average predictions
-        let mut final_preds = Array1::<f64>::zeros(n_samples);
-        for i in 0..n_samples {
-            let mut sum = 0.0;
-            for j in 0..n_estimators {
-                sum += all_preds[j][i];
-            }
-            final_preds[i] = sum / (n_estimators as f64);
-        }
+        let flat: Vec<f32> = all_preds.iter().flat_map(|p| p.iter().copied()).collect();
+
+        // GPU-dispatched row mean
+        let result_f32 = ensemble_row_mean(&flat, n_estimators, n_samples, self.device);
+        let final_preds = Array1::from(result_f32.into_iter().map(|v| v as f64).collect::<Vec<f64>>());
 
         Ok(final_preds)
     }

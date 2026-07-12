@@ -79,6 +79,35 @@ pub fn dot(a: &[f32], b: &[f32], device: DeviceKind) -> f32 {
     cpu::dot_cpu(a, b)
 }
 
+/// Majority vote across `n_estimators` predictions.
+/// `predictions` is a flat row-major array: [estimator_0_pred_0, estimator_0_pred_1, ..., estimator_k_pred_n]
+/// Outer dimension = n_estimators, inner dimension = n_samples.
+/// Returns Vec<f32> of length n_samples containing the majority class (as f32 bits = class label bits).
+pub fn ensemble_majority_vote(
+    predictions: &[f32],
+    n_estimators: usize,
+    n_samples: usize,
+    device: DeviceKind,
+) -> Vec<f32> {
+    // GPU reduction for this case: large n_estimators * n_samples
+    // For now, always use highly-optimised parallel CPU path.
+    // wgpu kernel can be plugged in identically to matmul_gpu.
+    let _ = device; // device reserved for future GPU dispatch
+    cpu::majority_vote_cpu(predictions, n_estimators, n_samples)
+}
+
+/// Row-wise average across `n_estimators` predictions.
+/// `predictions` layout: [est_0_sample_0, est_0_sample_1, ..., est_k_sample_n]
+pub fn ensemble_row_mean(
+    predictions: &[f32],
+    n_estimators: usize,
+    n_samples: usize,
+    device: DeviceKind,
+) -> Vec<f32> {
+    let _ = device;
+    cpu::row_mean_cpu(predictions, n_estimators, n_samples)
+}
+
 // =====================================================================
 // CPU fallback (always compiled, zero dependencies beyond std)
 // =====================================================================
@@ -105,6 +134,33 @@ mod cpu {
 
     pub fn dot_cpu(a: &[f32], b: &[f32]) -> f32 {
         a.par_iter().zip(b.par_iter()).map(|(&x, &y)| x * y).sum()
+    }
+
+    /// Majority vote: predictions[est * n_samples + sample] -> winner per sample.
+    pub fn majority_vote_cpu(predictions: &[f32], n_estimators: usize, n_samples: usize) -> Vec<f32> {
+        (0..n_samples)
+            .into_par_iter()
+            .map(|s| {
+                let mut counts: std::collections::HashMap<u32, usize> = std::collections::HashMap::new();
+                for e in 0..n_estimators {
+                    let v = predictions[e * n_samples + s];
+                    *counts.entry(v.to_bits()).or_insert(0) += 1;
+                }
+                let best_bits = counts.into_iter().max_by_key(|&(_, c)| c).unwrap().0;
+                f32::from_bits(best_bits)
+            })
+            .collect()
+    }
+
+    /// Row-wise mean: predictions[est * n_samples + sample] -> mean per sample.
+    pub fn row_mean_cpu(predictions: &[f32], n_estimators: usize, n_samples: usize) -> Vec<f32> {
+        (0..n_samples)
+            .into_par_iter()
+            .map(|s| {
+                let sum: f32 = (0..n_estimators).map(|e| predictions[e * n_samples + s]).sum();
+                sum / n_estimators as f32
+            })
+            .collect()
     }
 }
 

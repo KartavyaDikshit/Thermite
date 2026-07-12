@@ -9,3 +9,4 @@ ndarray = { workspace = true, features = ["blas"] }
 rayon = { workspace = true }
 rand = { workspace = true }
 sprs = "0.11.4"
+thermite-gpu = { path = "../thermite-gpu" }

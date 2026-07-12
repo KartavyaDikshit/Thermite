@@ -6,6 +6,7 @@ use thermite_core::ensemble::{
     GradientBoostingClassifier as CoreGradientBoostingClassifier,
     GradientBoostingRegressor as CoreGradientBoostingRegressor,
 };
+use thermite_gpu::DeviceKind;
 
 #[pyclass]
 pub struct RandomForestClassifier {
@@ -15,7 +16,7 @@ pub struct RandomForestClassifier {
 #[pymethods]
 impl RandomForestClassifier {
     #[new]
-    #[pyo3(signature = (n_estimators=100, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None))]
+    #[pyo3(signature = (n_estimators=100, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, device="cpu"))]
     fn new(
         n_estimators: usize,
         max_depth: Option<usize>,
@@ -23,17 +24,18 @@ impl RandomForestClassifier {
         min_samples_leaf: usize,
         max_features: Option<usize>,
         random_state: Option<u64>,
+        device: &str,
     ) -> Self {
-        RandomForestClassifier {
-            core: CoreRandomForestClassifier::new(
-                n_estimators,
-                max_depth,
-                min_samples_split,
-                min_samples_leaf,
-                max_features,
-                random_state,
-            ),
-        }
+        let mut core = CoreRandomForestClassifier::new(
+            n_estimators,
+            max_depth,
+            min_samples_split,
+            min_samples_leaf,
+            max_features,
+            random_state,
+        );
+        core.device = DeviceKind::from_str(device);
+        RandomForestClassifier { core }
     }
 
     #[pyo3(signature = (X, y, categorical_features=None))]
@@ -69,7 +71,7 @@ pub struct RandomForestRegressor {
 #[pymethods]
 impl RandomForestRegressor {
     #[new]
-    #[pyo3(signature = (n_estimators=100, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None))]
+    #[pyo3(signature = (n_estimators=100, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, device="cpu"))]
     fn new(
         n_estimators: usize,
         max_depth: Option<usize>,
@@ -77,17 +79,18 @@ impl RandomForestRegressor {
         min_samples_leaf: usize,
         max_features: Option<usize>,
         random_state: Option<u64>,
+        device: &str,
     ) -> Self {
-        RandomForestRegressor {
-            core: CoreRandomForestRegressor::new(
-                n_estimators,
-                max_depth,
-                min_samples_split,
-                min_samples_leaf,
-                max_features,
-                random_state,
-            ),
-        }
+        let mut core = CoreRandomForestRegressor::new(
+            n_estimators,
+            max_depth,
+            min_samples_split,
+            min_samples_leaf,
+            max_features,
+            random_state,
+        );
+        core.device = DeviceKind::from_str(device);
+        RandomForestRegressor { core }
     }
 
     #[pyo3(signature = (X, y, categorical_features=None))]

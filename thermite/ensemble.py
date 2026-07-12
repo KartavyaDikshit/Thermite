@@ -2,7 +2,7 @@ import numpy as np
 from . import _core
 
 class RandomForestClassifier:
-    def __init__(self, n_estimators=100, *, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, n_jobs=None):
+    def __init__(self, n_estimators=100, *, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, n_jobs=None, device='cpu'):
         self.n_estimators = n_estimators
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split
@@ -10,6 +10,7 @@ class RandomForestClassifier:
         self.max_features = max_features
         self.random_state = random_state
         self.n_jobs = n_jobs
+        self.device = device
         self._model = _core.RandomForestClassifier(
             n_estimators=n_estimators,
             max_depth=max_depth,
@@ -17,6 +18,7 @@ class RandomForestClassifier:
             min_samples_leaf=min_samples_leaf,
             max_features=max_features,
             random_state=random_state,
+            device=device,
         )
 
     def fit(self, X, y, categorical_features=None):
@@ -44,7 +46,7 @@ class RandomForestClassifier:
         return self._model.feature_importances_
 
 class RandomForestRegressor:
-    def __init__(self, n_estimators=100, *, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, n_jobs=None):
+    def __init__(self, n_estimators=100, *, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, n_jobs=None, device='cpu'):
         self.n_estimators = n_estimators
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split
@@ -52,6 +54,7 @@ class RandomForestRegressor:
         self.max_features = max_features
         self.random_state = random_state
         self.n_jobs = n_jobs
+        self.device = device
         self._model = _core.RandomForestRegressor(
             n_estimators=n_estimators,
             max_depth=max_depth,
@@ -59,6 +62,7 @@ class RandomForestRegressor:
             min_samples_leaf=min_samples_leaf,
             max_features=max_features,
             random_state=random_state,
+            device=device,
         )
 
     def fit(self, X, y, categorical_features=None):
