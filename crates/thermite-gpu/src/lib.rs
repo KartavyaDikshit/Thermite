@@ -18,7 +18,7 @@
 // Device abstraction (always compiled)
 // =====================================================================
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum DeviceKind {
     Cpu,
     Gpu,

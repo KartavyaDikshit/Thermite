@@ -1,6 +1,6 @@
 [package]
 name = "thermite-gpu"
-version = "1.2.0"
+version = "1.2.1"
 edition = "2021"
 description = "GPU acceleration backend for Thermite via wgpu"
 
@@ -14,3 +14,4 @@ rayon = { workspace = true }
 bytemuck = { workspace = true, optional = true }
 pollster = { workspace = true, optional = true }
 wgpu = { version = "0.19", optional = true }
+serde = { version = "1.0", features = ["derive"] }

@@ -1,6 +1,6 @@
 [package]
 name = "thermite-core"
-version = "1.2.0"
+version = "1.2.1"
 edition = "2021"
 description = "Core Rust implementation of Thermite machine learning algorithms"
 
@@ -13,6 +13,8 @@ thermite-gpu = { path = "../thermite-gpu" }
 intel-mkl-src = { version = "0.8", features = ["mkl-static-lp64-iomp"], optional = true }
 openblas-src = { version = "0.10", default-features = false, features = ["cblas", "system"], optional = true }
 accelerate-src = { version = "0.3", optional = true }
+serde = { version = "1.0", features = ["derive"] }
+bincode = "1.3"
 
 [features]
 intel-mkl = ["ndarray/blas", "dep:intel-mkl-src"]

@@ -9,6 +9,7 @@ extern crate accelerate_src;
 
 pub mod cluster;
 pub mod decomposition;
+pub mod automl;
 pub mod ensemble;
 pub mod linear_model;
 pub mod metrics;

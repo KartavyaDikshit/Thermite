@@ -11,7 +11,7 @@ use rand::SeedableRng;
 /// A single node in the decision tree, stored in a flat Vec.
 /// Internal nodes have `left` and `right` as indices into the Vec.
 /// Leaf nodes have `left == usize::MAX` and `right == usize::MAX`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TreeNode {
     pub feature_idx: usize,
     pub threshold: f64,
@@ -107,6 +107,7 @@ fn sorted_indices_by_feature(X: &ArrayView2<f64>, indices: &[usize], feature: us
 // DecisionTreeClassifier
 // ==========================================
 
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct DecisionTreeClassifier {
     pub max_depth: Option<usize>,
     pub min_samples_split: usize,
@@ -541,6 +542,7 @@ impl DecisionTreeClassifier {
 // DecisionTreeRegressor
 // ==========================================
 
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct DecisionTreeRegressor {
     pub max_depth: Option<usize>,
     pub min_samples_split: usize,

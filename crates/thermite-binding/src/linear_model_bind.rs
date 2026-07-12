@@ -10,6 +10,17 @@ pub struct LinearRegression {
 
 #[pymethods]
 impl LinearRegression {
+    fn __getstate__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, pyo3::types::PyBytes>> {
+        let bytes = bincode::serialize(&self.core)
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(pyo3::types::PyBytes::new_bound(py, &bytes))
+    }
+
+    fn __setstate__(&mut self, state: &Bound<'_, pyo3::types::PyBytes>) -> PyResult<()> {
+        self.core = bincode::deserialize(state.as_bytes())
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(())
+    }
     #[new]
     #[pyo3(signature = (fit_intercept=true))]
     fn new(fit_intercept: bool) -> Self {
@@ -55,6 +66,17 @@ pub struct Ridge {
 
 #[pymethods]
 impl Ridge {
+    fn __getstate__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, pyo3::types::PyBytes>> {
+        let bytes = bincode::serialize(&self.core)
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(pyo3::types::PyBytes::new_bound(py, &bytes))
+    }
+
+    fn __setstate__(&mut self, state: &Bound<'_, pyo3::types::PyBytes>) -> PyResult<()> {
+        self.core = bincode::deserialize(state.as_bytes())
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(())
+    }
     #[new]
     #[pyo3(signature = (alpha=1.0, fit_intercept=true))]
     fn new(alpha: f64, fit_intercept: bool) -> Self {
@@ -100,6 +122,17 @@ pub struct Lasso {
 
 #[pymethods]
 impl Lasso {
+    fn __getstate__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, pyo3::types::PyBytes>> {
+        let bytes = bincode::serialize(&self.core)
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(pyo3::types::PyBytes::new_bound(py, &bytes))
+    }
+
+    fn __setstate__(&mut self, state: &Bound<'_, pyo3::types::PyBytes>) -> PyResult<()> {
+        self.core = bincode::deserialize(state.as_bytes())
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(())
+    }
     #[new]
     #[pyo3(signature = (alpha=1.0, fit_intercept=true, max_iter=1000, tol=1e-4))]
     fn new(alpha: f64, fit_intercept: bool, max_iter: usize, tol: f64) -> Self {
@@ -145,6 +178,17 @@ pub struct LogisticRegression {
 
 #[pymethods]
 impl LogisticRegression {
+    fn __getstate__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, pyo3::types::PyBytes>> {
+        let bytes = bincode::serialize(&self.core)
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(pyo3::types::PyBytes::new_bound(py, &bytes))
+    }
+
+    fn __setstate__(&mut self, state: &Bound<'_, pyo3::types::PyBytes>) -> PyResult<()> {
+        self.core = bincode::deserialize(state.as_bytes())
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(())
+    }
     #[new]
     #[pyo3(signature = (C=1.0, max_iter=100, tol=1e-4, penalty="l2"))]
     fn new(C: f64, max_iter: usize, tol: f64, penalty: &str) -> Self {

@@ -163,6 +163,7 @@ fn at_b(A: &Array2<f64>, B: &Array2<f64>) -> Array2<f64> {
 // ==========================================
 // LinearRegression  OLS via normal equation
 // ==========================================
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct LinearRegression {
     pub coef_: Option<Array1<f64>>,
     pub intercept_: f64,
@@ -272,6 +273,7 @@ impl LinearRegression {
 // ==========================================
 // Ridge  OLS + L2 penalty
 // ==========================================
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct Ridge {
     pub coef_: Option<Array1<f64>>,
     pub intercept_: f64,
@@ -395,6 +397,7 @@ impl Ridge {
 // ==========================================
 // Lasso  Coordinate Descent with L1 penalty
 // ==========================================
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct Lasso {
     pub coef_: Option<Array1<f64>>,
     pub intercept_: f64,
@@ -566,6 +569,7 @@ impl Lasso {
 // LogisticRegression  gradient descent
 // Binary / multiclass (one-vs-rest)
 // ==========================================
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct LogisticRegression {
     /// Inverse of regularization strength (higher = weaker regularization)
     pub C: f64,

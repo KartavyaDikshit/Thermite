@@ -10,6 +10,7 @@ use thermite_gpu::{ensemble_majority_vote, ensemble_row_mean, DeviceKind};
 // ==========================================
 // RandomForestClassifier
 // ==========================================
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct RandomForestClassifier {
     pub n_estimators: usize,
     pub max_depth: Option<usize>,
@@ -134,6 +135,7 @@ impl RandomForestClassifier {
 // ==========================================
 // RandomForestRegressor
 // ==========================================
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct RandomForestRegressor {
     pub n_estimators: usize,
     pub max_depth: Option<usize>,
@@ -247,6 +249,7 @@ impl RandomForestRegressor {
 // ==========================================
 // GradientBoostingRegressor
 // ==========================================
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct GradientBoostingRegressor {
     pub n_estimators: usize,
     pub learning_rate: f64,
@@ -335,6 +338,7 @@ impl GradientBoostingRegressor {
 // ==========================================
 // GradientBoostingClassifier (Binary only for now, Log-Loss)
 // ==========================================
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct GradientBoostingClassifier {
     pub n_estimators: usize,
     pub learning_rate: f64,

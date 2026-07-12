@@ -116,3 +116,22 @@ Thermite is structured to provide safety, performance, and portability:
 - **Probabilistic:** `GaussianNB`.
 - **Preprocessing:** `StandardScaler`, `MinMaxScaler`, `OneHotEncoder`, `LabelEncoder`.
 - **Pipelines:** `Pipeline`, `GridSearchCV`, `cross_val_score`.
+- **Deep Learning Connectivity:** Native `__dlpack__` integrations for PyTorch/JAX `from_dlpack` zero-copy tensor passing.
+- **AutoML:** Rust native `BayesianOptimizer` utilizing `Ridge` surrogates.
+
+---
+
+##  What Sets Thermite Apart & Competitive Comparison
+
+While scikit-learn dominates the ML ecosystem (with over 100+ algorithms and extensive preprocessing), **Thermite** differentiates itself as an extreme performance overlay for production deployments.
+
+**Why people still use scikit-learn:**
+1. **Algorithm Breadth:** scikit-learn offers extensive specialized algorithms (e.g. Gaussian Mixture Models, complex Imputers like MICE) not yet ported to Thermite.
+2. **Ecosystem Tooling:** Vastly wider array of third-party plugins.
+
+**Why Thermite is unique:**
+1. **Rust-Native & Zero-Copy:** While similar projects like `Intel(R) Extension for Scikit-learn` try to accelerate operations by monkey-patching Cython with daal4py, Thermite is rewritten ground-up in Rust. We achieve true zero-copy data transmission for Apache Arrow/Polars AND Deep Learning frameworks (PyTorch/JAX via `DLPack`).
+2. **Distributed Computing Preparedness:** Thermite's Rust estimators derive `Serde` enabling high-speed `bincode` serialization out-of-the-box. This natively plugs into distributed execution engines like `Ray` and `Dask` without the heavy overhead of Python's standard `pickle`.
+3. **Rust AutoML:** Instead of looping cross-validation in Python, Thermite provides a fast native `BayesianOptimizer`.
+4. **Scale-up Gaps:** Future gaps to address for mass adoption include complex missing data strategies (`IterativeImputer`), adding more robust tree ensemble variants (like Histogram-based GBDT), and comprehensive categorical missing value handling.
+

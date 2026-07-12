@@ -15,6 +15,17 @@ pub struct RandomForestClassifier {
 
 #[pymethods]
 impl RandomForestClassifier {
+    fn __getstate__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, pyo3::types::PyBytes>> {
+        let bytes = bincode::serialize(&self.core)
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(pyo3::types::PyBytes::new_bound(py, &bytes))
+    }
+
+    fn __setstate__(&mut self, state: &Bound<'_, pyo3::types::PyBytes>) -> PyResult<()> {
+        self.core = bincode::deserialize(state.as_bytes())
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(())
+    }
     #[new]
     #[pyo3(signature = (n_estimators=100, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, device="cpu"))]
     fn new(
@@ -70,6 +81,17 @@ pub struct RandomForestRegressor {
 
 #[pymethods]
 impl RandomForestRegressor {
+    fn __getstate__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, pyo3::types::PyBytes>> {
+        let bytes = bincode::serialize(&self.core)
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(pyo3::types::PyBytes::new_bound(py, &bytes))
+    }
+
+    fn __setstate__(&mut self, state: &Bound<'_, pyo3::types::PyBytes>) -> PyResult<()> {
+        self.core = bincode::deserialize(state.as_bytes())
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(())
+    }
     #[new]
     #[pyo3(signature = (n_estimators=100, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, device="cpu"))]
     fn new(
@@ -133,6 +155,17 @@ pub struct GradientBoostingRegressor {
 
 #[pymethods]
 impl GradientBoostingRegressor {
+    fn __getstate__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, pyo3::types::PyBytes>> {
+        let bytes = bincode::serialize(&self.core)
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(pyo3::types::PyBytes::new_bound(py, &bytes))
+    }
+
+    fn __setstate__(&mut self, state: &Bound<'_, pyo3::types::PyBytes>) -> PyResult<()> {
+        self.core = bincode::deserialize(state.as_bytes())
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(())
+    }
     #[new]
     #[pyo3(signature = (n_estimators=100, learning_rate=0.1, max_depth=None, random_state=None))]
     fn new(
@@ -176,6 +209,17 @@ pub struct GradientBoostingClassifier {
 
 #[pymethods]
 impl GradientBoostingClassifier {
+    fn __getstate__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, pyo3::types::PyBytes>> {
+        let bytes = bincode::serialize(&self.core)
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(pyo3::types::PyBytes::new_bound(py, &bytes))
+    }
+
+    fn __setstate__(&mut self, state: &Bound<'_, pyo3::types::PyBytes>) -> PyResult<()> {
+        self.core = bincode::deserialize(state.as_bytes())
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(())
+    }
     #[new]
     #[pyo3(signature = (n_estimators=100, learning_rate=0.1, max_depth=None, random_state=None))]
     fn new(

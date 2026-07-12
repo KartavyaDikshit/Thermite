@@ -1,6 +1,6 @@
 [package]
 name = "thermite-binding"
-version = "1.2.0"
+version = "1.2.1"
 edition = "2021"
 description = "PyO3 bindings for Thermite"
 
@@ -16,6 +16,7 @@ pyo3 = { workspace = true }
 numpy = { workspace = true }
 ndarray = { workspace = true }
 sprs = "0.11.4"
+bincode = "1.3"
 
 [features]
 intel-mkl = ["thermite-core/intel-mkl"]
