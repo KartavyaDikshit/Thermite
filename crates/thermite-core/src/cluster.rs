@@ -111,35 +111,27 @@ impl KMeans {
         let n_samples = X.nrows();
         let n_clusters = centers.nrows();
 
-        // Precompute ||x||^2 for each sample
-        let x_sq: Vec<f64> = X.axis_iter(Axis(0))
+        let results: Vec<(usize, f64)> = X.axis_iter(Axis(0))
             .into_par_iter()
-            .map(|row| row.dot(&row))
-            .collect();
-
-        // Precompute ||c||^2 for each center
-        let c_sq: Vec<f64> = (0..n_clusters)
-            .map(|k| centers.row(k).dot(&centers.row(k)))
-            .collect();
-
-        // Compute -2 * X * C^T  (n_samples x n_clusters)
-        let xct = X.dot(&centers.t());
-
-        // For each sample, find the nearest center
-        let results: Vec<(usize, f64)> = (0..n_samples)
-            .into_par_iter()
-            .map(|i| {
+            .map(|row| {
                 let mut best_label = 0;
                 let mut best_dist = f64::INFINITY;
+                let row_slice = row.as_slice().unwrap();
+
                 for k in 0..n_clusters {
-                    // ||x_i - c_k||^2 = x_sq[i] - 2 * xct[i,k] + c_sq[k]
-                    let d = x_sq[i] - 2.0 * xct[[i, k]] + c_sq[k];
+                    let c_row = centers.row(k);
+                    let c_slice = c_row.as_slice().unwrap();
+                    let mut d = 0.0;
+                    for j in 0..row_slice.len() {
+                        let diff = row_slice[j] - c_slice[j];
+                        d += diff * diff;
+                    }
                     if d < best_dist {
                         best_dist = d;
                         best_label = k;
                     }
                 }
-                (best_label, best_dist.max(0.0))
+                (best_label, best_dist)
             })
             .collect();
 

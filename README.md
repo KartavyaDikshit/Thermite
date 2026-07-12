@@ -17,8 +17,8 @@ scikit-learn is the most widely-used ML library in the world (40M+ monthly downl
 **Thermite** rewrites the compute-heavy core in Rust and exposes the same Python API you already know. No new syntax. No migration guide. Just `import thermite` instead of `import sklearn`.
 
 ### Supported Models & Tools (Phase 1 & 2)
-- **Linear Models**: LinearRegression, Ridge, Lasso, LogisticRegression (Binary & Multiclass OvR, Native Sparse CSR support), LinearSVC (Binary & Multiclass OvR)
-- **Tree & Ensemble Models**: DecisionTreeClassifier, DecisionTreeRegressor, RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier, GradientBoostingRegressor
+- **Linear Models**: LinearRegression, Ridge, Lasso, LogisticRegression (Binary & Multiclass OvR, Native Sparse CSR support), LinearSVC (Binary & Multiclass OvR, Native Sparse CSR support)
+- **Tree & Ensemble Models**: DecisionTreeClassifier, DecisionTreeRegressor, RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier, GradientBoostingRegressor (All support Native Categorical Splits, avoiding memory-heavy one-hot encoding)
 - **Clustering**: KMeans
 - **Decomposition**: PCA (Subspace iteration optimized)
 - **Pipelines & Tuning**: `Pipeline`, `ColumnTransformer`, `GridSearchCV` (with parallel multiprocessing support), `train_test_split`, `KFold`
@@ -27,11 +27,12 @@ scikit-learn is the most widely-used ML library in the world (40M+ monthly downl
 
 | Operation | scikit-learn | Thermite | Speedup |
 |-----------|-------------|---------|---------|
-| LogisticRegression.fit (Small) | 0.0039s | 0.0003s | **12.58x** |
-| KMeans.fit (Small) | 0.0367s | 0.0064s | **5.77x** |
-| LinearRegression.fit (Medium) | 0.0162s | 0.0056s | **2.88x** |
-| DecisionTree.fit (Large) | 4.0438s | 1.5063s | **2.68x** |
-| RandomForest.fit (Small) | 0.0827s | 0.0180s | **4.60x** |
+| LinearRegression.fit (Dense) | 0.0238s | 0.0100s | **2.37x** |
+| KMeans.fit (Dense) | 0.0829s | 0.0356s | **2.33x** |
+| LogisticRegression.fit (Sparse) | 0.1068s | 0.0059s | **18.22x** |
+| LinearSVC.fit (Sparse) | 0.0244s | 0.0022s | **10.99x** |
+| DecisionTree.fit (Categorical) | 0.1405s | 0.0564s | **2.49x** |
+| RandomForest.fit (Categorical) | 0.1806s | 0.0653s | **2.76x** |
 
 > See `BENCHMARKS.md` for full detailed performance comparisons across varying datasets.
 

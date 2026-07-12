@@ -537,10 +537,6 @@ impl LogisticRegression {
         let n_f64 = n as f64;
         let lambda = 1.0 / self.C;
 
-        // Augmented X with intercept column prepended
-        let mut X_aug = Array2::<f64>::ones((n, n_features + 1));
-        X_aug.slice_mut(ndarray::s![.., 1..]).assign(X);
-
         let p = n_features + 1;
         let mut w = Array1::<f64>::zeros(p);
 
@@ -552,24 +548,33 @@ impl LogisticRegression {
 
         // Compute initial gradient
         let compute_grad = |w: &Array1<f64>| -> Array1<f64> {
-            let z = X_aug.dot(w);
+            let bias = w[0];
+            let w_feat = w.slice(ndarray::s![1..]);
+            let z = X.dot(&w_feat) + bias;
             let h = z.mapv(Self::sigmoid);
             let diff = &h - y_binary;
-            let mut grad = X_aug.t().dot(&diff);
-            grad /= n_f64;
-            // L2 regularization on weights only (skip bias at index 0)
-            for j in 1..p {
-                grad[j] += lambda * w[j];
+            
+            let mut grad = Array1::<f64>::zeros(p);
+            grad[0] = diff.sum() / n_f64;
+            
+            let mut grad_feat = X.t().dot(&diff);
+            grad_feat /= n_f64;
+            
+            for j in 0..n_features {
+                grad_feat[j] += lambda * w_feat[j];
             }
+            
+            grad.slice_mut(ndarray::s![1..]).assign(&grad_feat);
             grad
         };
 
         let compute_loss = |w: &Array1<f64>| -> f64 {
-            let z = X_aug.dot(w);
+            let bias = w[0];
+            let w_feat = w.slice(ndarray::s![1..]);
+            let z = X.dot(&w_feat) + bias;
             let mut loss = 0.0;
             for i in 0..n {
                 let zi = z[i];
-                // Numerically stable log-loss
                 if zi >= 0.0 {
                     loss += (1.0 + (-zi).exp()).ln() - y_binary[i] * zi;
                 } else {
@@ -577,9 +582,8 @@ impl LogisticRegression {
                 }
             }
             loss /= n_f64;
-            // L2 regularization
-            for j in 1..p {
-                loss += 0.5 * lambda * w[j] * w[j];
+            for j in 0..n_features {
+                loss += 0.5 * lambda * w_feat[j] * w_feat[j];
             }
             loss
         };
