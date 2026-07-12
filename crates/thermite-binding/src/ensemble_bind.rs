@@ -18,6 +18,31 @@ pub struct HistGradientBoostingRegressor {
 
 #[pymethods]
 impl HistGradientBoostingRegressor {
+    fn __getstate__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, pyo3::types::PyBytes>> {
+        let bytes = bincode::serialize(&self.core)
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(pyo3::types::PyBytes::new_bound(py, &bytes))
+    }
+
+    fn __setstate__(&mut self, state: &Bound<'_, pyo3::types::PyBytes>) -> PyResult<()> {
+        self.core = bincode::deserialize(state.as_bytes())
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(())
+    }
+
+    fn save_checkpoint(&self, filepath: &str) -> PyResult<()> {
+        let file = std::fs::File::create(filepath).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        bincode::serialize_into(file, &self.core).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(())
+    }
+
+    #[classmethod]
+    fn load_checkpoint(_cls: &Bound<'_, pyo3::types::PyType>, filepath: &str) -> PyResult<Self> {
+        let file = std::fs::File::open(filepath).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        let core: CoreHistGradientBoostingRegressor = bincode::deserialize_from(file).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(HistGradientBoostingRegressor { core })
+    }
+
     #[new]
     #[pyo3(signature = (n_estimators=100, learning_rate=0.1, max_depth=None, random_state=None))]
     fn new(
@@ -40,7 +65,7 @@ impl HistGradientBoostingRegressor {
         })
     }
 
-    fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<f64>>> {
+    fn predict<'py>(&mut self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<f64>>> {
         let x_view = X.as_array();
         let preds = py.allow_threads(|| {
             self.core.predict(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
@@ -56,6 +81,31 @@ pub struct HistGradientBoostingClassifier {
 
 #[pymethods]
 impl HistGradientBoostingClassifier {
+    fn __getstate__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, pyo3::types::PyBytes>> {
+        let bytes = bincode::serialize(&self.core)
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(pyo3::types::PyBytes::new_bound(py, &bytes))
+    }
+
+    fn __setstate__(&mut self, state: &Bound<'_, pyo3::types::PyBytes>) -> PyResult<()> {
+        self.core = bincode::deserialize(state.as_bytes())
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(())
+    }
+
+    fn save_checkpoint(&self, filepath: &str) -> PyResult<()> {
+        let file = std::fs::File::create(filepath).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        bincode::serialize_into(file, &self.core).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(())
+    }
+
+    #[classmethod]
+    fn load_checkpoint(_cls: &Bound<'_, pyo3::types::PyType>, filepath: &str) -> PyResult<Self> {
+        let file = std::fs::File::open(filepath).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        let core: CoreHistGradientBoostingClassifier = bincode::deserialize_from(file).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(HistGradientBoostingClassifier { core })
+    }
+
     #[new]
     #[pyo3(signature = (n_estimators=100, learning_rate=0.1, max_depth=None, random_state=None))]
     fn new(
@@ -78,7 +128,7 @@ impl HistGradientBoostingClassifier {
         })
     }
 
-    fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<f64>>> {
+    fn predict<'py>(&mut self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<f64>>> {
         let x_view = X.as_array();
         let preds = py.allow_threads(|| {
             self.core.predict(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
@@ -86,7 +136,7 @@ impl HistGradientBoostingClassifier {
         Ok(PyArray1::from_array_bound(py, &preds))
     }
 
-    fn predict_proba<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray2<f64>>> {
+    fn predict_proba<'py>(&mut self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray2<f64>>> {
         let x_view = X.as_array();
         let preds = py.allow_threads(|| {
             self.core.predict_proba(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
@@ -112,6 +162,19 @@ impl RandomForestClassifier {
         self.core = bincode::deserialize(state.as_bytes())
             .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
         Ok(())
+    }
+
+    fn save_checkpoint(&self, filepath: &str) -> PyResult<()> {
+        let file = std::fs::File::create(filepath).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        bincode::serialize_into(file, &self.core).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(())
+    }
+
+    #[classmethod]
+    fn load_checkpoint(_cls: &Bound<'_, pyo3::types::PyType>, filepath: &str) -> PyResult<Self> {
+        let file = std::fs::File::open(filepath).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        let core: CoreRandomForestClassifier = bincode::deserialize_from(file).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(RandomForestClassifier { core })
     }
     #[new]
     #[pyo3(signature = (n_estimators=100, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, device="cpu"))]
@@ -211,6 +274,19 @@ impl RandomForestRegressor {
         self.core = bincode::deserialize(state.as_bytes())
             .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
         Ok(())
+    }
+
+    fn save_checkpoint(&self, filepath: &str) -> PyResult<()> {
+        let file = std::fs::File::create(filepath).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        bincode::serialize_into(file, &self.core).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(())
+    }
+
+    #[classmethod]
+    fn load_checkpoint(_cls: &Bound<'_, pyo3::types::PyType>, filepath: &str) -> PyResult<Self> {
+        let file = std::fs::File::open(filepath).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        let core: CoreRandomForestRegressor = bincode::deserialize_from(file).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(RandomForestRegressor { core })
     }
     #[new]
     #[pyo3(signature = (n_estimators=100, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, device="cpu"))]
@@ -346,6 +422,19 @@ impl GradientBoostingRegressor {
             .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
         Ok(())
     }
+
+    fn save_checkpoint(&self, filepath: &str) -> PyResult<()> {
+        let file = std::fs::File::create(filepath).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        bincode::serialize_into(file, &self.core).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(())
+    }
+
+    #[classmethod]
+    fn load_checkpoint(_cls: &Bound<'_, pyo3::types::PyType>, filepath: &str) -> PyResult<Self> {
+        let file = std::fs::File::open(filepath).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        let core: CoreGradientBoostingRegressor = bincode::deserialize_from(file).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(GradientBoostingRegressor { core })
+    }
     #[new]
     #[pyo3(signature = (n_estimators=100, learning_rate=0.1, max_depth=None, random_state=None))]
     fn new(
@@ -399,6 +488,19 @@ impl GradientBoostingClassifier {
         self.core = bincode::deserialize(state.as_bytes())
             .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
         Ok(())
+    }
+
+    fn save_checkpoint(&self, filepath: &str) -> PyResult<()> {
+        let file = std::fs::File::create(filepath).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        bincode::serialize_into(file, &self.core).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(())
+    }
+
+    #[classmethod]
+    fn load_checkpoint(_cls: &Bound<'_, pyo3::types::PyType>, filepath: &str) -> PyResult<Self> {
+        let file = std::fs::File::open(filepath).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        let core: CoreGradientBoostingClassifier = bincode::deserialize_from(file).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(GradientBoostingClassifier { core })
     }
     #[new]
     #[pyo3(signature = (n_estimators=100, learning_rate=0.1, max_depth=None, random_state=None))]

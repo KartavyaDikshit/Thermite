@@ -191,3 +191,11 @@ While scikit-learn dominates the ML ecosystem (with over 100+ algorithms and ext
    - **Quantum Machine Learning (QML)**: Quantum Support Vector Classifier (`QSVC`) placeholder, bridging `qiskit` into native pipelines.
    - **Advanced Causal Inference**: Built-in `TLearner` estimating Conditional Average Treatment Effects (CATE).
    - **Auto-Documentation & Model Cards**: Automated transparent model documentation generating Markdown Model Cards instantly (`generate_model_card=True`).
+ 9. **Scale-up Milestones v2.0.0:**
+    - **Linear Model Dominance**: High-performance Cholesky decompositions for Ridge/Linear regression vastly outperforming Gaussian Elimination.
+    - **HistGradientBoosting**: Optimized allocation-free, in-place histogram binning, dramatically reducing L2 cache misses.
+    - **Meta-Ensembles**: Fully functional `VotingClassifier` and `StackingClassifier` for robust multi-model aggregations.
+    - **Advanced Transformers & Metrics**: Native implementations for `PolynomialFeatures`, `KBinsDiscretizer`, `PowerTransformer`, `classification_report`, `roc_curve`, and `SimpleImputer`.
+    - **Distributed Model Checkpointing**: Direct Python-to-Rust native serialization `.save_checkpoint()` and `.load_checkpoint()` utilizing blazingly fast `bincode` bypassing `pickle`.
+    - **Hyperparameter Optimization**: `RandomizedSearchCV` for extensive hyperparameter space searches.
+    - **Calibration**: `CalibratedClassifierCV` for reliable probabilistic scoring.

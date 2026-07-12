@@ -56,6 +56,22 @@ class LinearRegression:
     def to_onnx(self, filepath: str):
         self._model.to_onnx(filepath)
 
+    def save_checkpoint(self, filepath: str):
+        self._model.save_checkpoint(filepath)
+
+    @classmethod
+    def load_checkpoint(cls, filepath: str):
+        import inspect
+        sig = inspect.signature(cls.__init__)
+        kwargs = {}
+        for param in sig.parameters.values():
+            if param.name != 'self' and param.default is not inspect.Parameter.empty:
+                kwargs[param.name] = param.default
+        obj = cls(**kwargs)
+        obj._model = type(obj._model).load_checkpoint(filepath)
+        return obj
+
+
 
 class Ridge:
     def __init__(self, alpha=1.0, *, fit_intercept=True):
@@ -88,6 +104,22 @@ class Ridge:
     @property
     def intercept_(self):
         return self._model.intercept_
+
+    def save_checkpoint(self, filepath: str):
+        self._model.save_checkpoint(filepath)
+
+    @classmethod
+    def load_checkpoint(cls, filepath: str):
+        import inspect
+        sig = inspect.signature(cls.__init__)
+        kwargs = {}
+        for param in sig.parameters.values():
+            if param.name != 'self' and param.default is not inspect.Parameter.empty:
+                kwargs[param.name] = param.default
+        obj = cls(**kwargs)
+        obj._model = type(obj._model).load_checkpoint(filepath)
+        return obj
+
 
 
 class Lasso:
@@ -123,6 +155,22 @@ class Lasso:
     @property
     def intercept_(self):
         return self._model.intercept_
+
+    def save_checkpoint(self, filepath: str):
+        self._model.save_checkpoint(filepath)
+
+    @classmethod
+    def load_checkpoint(cls, filepath: str):
+        import inspect
+        sig = inspect.signature(cls.__init__)
+        kwargs = {}
+        for param in sig.parameters.values():
+            if param.name != 'self' and param.default is not inspect.Parameter.empty:
+                kwargs[param.name] = param.default
+        obj = cls(**kwargs)
+        obj._model = type(obj._model).load_checkpoint(filepath)
+        return obj
+
 
 
 class LogisticRegression:
@@ -215,6 +263,22 @@ class LogisticRegression:
     @property
     def classes_(self):
         return self._model.classes_
+
+    def save_checkpoint(self, filepath: str):
+        self._model.save_checkpoint(filepath)
+
+    @classmethod
+    def load_checkpoint(cls, filepath: str):
+        import inspect
+        sig = inspect.signature(cls.__init__)
+        kwargs = {}
+        for param in sig.parameters.values():
+            if param.name != 'self' and param.default is not inspect.Parameter.empty:
+                kwargs[param.name] = param.default
+        obj = cls(**kwargs)
+        obj._model = type(obj._model).load_checkpoint(filepath)
+        return obj
+
 
 class LinearSVC:
     def __init__(self, penalty='l2', loss='squared_hinge', *, dual=True, tol=1e-4, C=1.0, multi_class='ovr', fit_intercept=True, intercept_scaling=1, class_weight=None, verbose=0, random_state=None, max_iter=1000):

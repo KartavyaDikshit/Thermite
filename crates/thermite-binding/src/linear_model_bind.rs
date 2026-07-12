@@ -21,6 +21,19 @@ impl LinearRegression {
             .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
         Ok(())
     }
+
+    fn save_checkpoint(&self, filepath: &str) -> PyResult<()> {
+        let file = std::fs::File::create(filepath).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        bincode::serialize_into(file, &self.core).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(())
+    }
+
+    #[classmethod]
+    fn load_checkpoint(_cls: &Bound<'_, pyo3::types::PyType>, filepath: &str) -> PyResult<Self> {
+        let file = std::fs::File::open(filepath).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        let core: CoreLinearRegression = bincode::deserialize_from(file).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(LinearRegression { core })
+    }
     #[new]
     #[pyo3(signature = (fit_intercept=true))]
     fn new(fit_intercept: bool) -> Self {
@@ -83,6 +96,19 @@ impl Ridge {
             .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
         Ok(())
     }
+
+    fn save_checkpoint(&self, filepath: &str) -> PyResult<()> {
+        let file = std::fs::File::create(filepath).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        bincode::serialize_into(file, &self.core).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(())
+    }
+
+    #[classmethod]
+    fn load_checkpoint(_cls: &Bound<'_, pyo3::types::PyType>, filepath: &str) -> PyResult<Self> {
+        let file = std::fs::File::open(filepath).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        let core: CoreRidge = bincode::deserialize_from(file).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(Ridge { core })
+    }
     #[new]
     #[pyo3(signature = (alpha=1.0, fit_intercept=true))]
     fn new(alpha: f64, fit_intercept: bool) -> Self {
@@ -139,6 +165,19 @@ impl Lasso {
             .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
         Ok(())
     }
+
+    fn save_checkpoint(&self, filepath: &str) -> PyResult<()> {
+        let file = std::fs::File::create(filepath).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        bincode::serialize_into(file, &self.core).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(())
+    }
+
+    #[classmethod]
+    fn load_checkpoint(_cls: &Bound<'_, pyo3::types::PyType>, filepath: &str) -> PyResult<Self> {
+        let file = std::fs::File::open(filepath).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        let core: CoreLasso = bincode::deserialize_from(file).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(Lasso { core })
+    }
     #[new]
     #[pyo3(signature = (alpha=1.0, fit_intercept=true, max_iter=1000, tol=1e-4))]
     fn new(alpha: f64, fit_intercept: bool, max_iter: usize, tol: f64) -> Self {
@@ -194,6 +233,19 @@ impl LogisticRegression {
         self.core = bincode::deserialize(state.as_bytes())
             .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
         Ok(())
+    }
+
+    fn save_checkpoint(&self, filepath: &str) -> PyResult<()> {
+        let file = std::fs::File::create(filepath).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        bincode::serialize_into(file, &self.core).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(())
+    }
+
+    #[classmethod]
+    fn load_checkpoint(_cls: &Bound<'_, pyo3::types::PyType>, filepath: &str) -> PyResult<Self> {
+        let file = std::fs::File::open(filepath).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        let core: CoreLogisticRegression = bincode::deserialize_from(file).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(LogisticRegression { core })
     }
     #[new]
     #[pyo3(signature = (C=1.0, max_iter=100, tol=1e-4, penalty="l2"))]

@@ -77,6 +77,22 @@ class RandomForestClassifier:
     def estimators_(self):
         return self._model.estimators_
 
+    def save_checkpoint(self, filepath: str):
+        self._model.save_checkpoint(filepath)
+
+    @classmethod
+    def load_checkpoint(cls, filepath: str):
+        import inspect
+        sig = inspect.signature(cls.__init__)
+        kwargs = {}
+        for param in sig.parameters.values():
+            if param.name != 'self' and param.default is not inspect.Parameter.empty:
+                kwargs[param.name] = param.default
+        obj = cls(**kwargs)
+        obj._model = type(obj._model).load_checkpoint(filepath)
+        return obj
+
+
 class RandomForestRegressor:
     def __init__(self, n_estimators=100, *, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, n_jobs=None, device='cpu'):
         self.n_estimators = n_estimators
@@ -132,6 +148,22 @@ class RandomForestRegressor:
     def estimators_(self):
         return self._model.estimators_
 
+    def save_checkpoint(self, filepath: str):
+        self._model.save_checkpoint(filepath)
+
+    @classmethod
+    def load_checkpoint(cls, filepath: str):
+        import inspect
+        sig = inspect.signature(cls.__init__)
+        kwargs = {}
+        for param in sig.parameters.values():
+            if param.name != 'self' and param.default is not inspect.Parameter.empty:
+                kwargs[param.name] = param.default
+        obj = cls(**kwargs)
+        obj._model = type(obj._model).load_checkpoint(filepath)
+        return obj
+
+
 class GradientBoostingClassifier:
     def __init__(self, n_estimators=100, learning_rate=0.1, *, max_depth=3, random_state=None):
         self.n_estimators = n_estimators
@@ -173,6 +205,22 @@ class GradientBoostingClassifier:
     def score(self, X, y):
         from .metrics import accuracy_score
         return accuracy_score(y, self.predict(X))
+
+    def save_checkpoint(self, filepath: str):
+        self._model.save_checkpoint(filepath)
+
+    @classmethod
+    def load_checkpoint(cls, filepath: str):
+        import inspect
+        sig = inspect.signature(cls.__init__)
+        kwargs = {}
+        for param in sig.parameters.values():
+            if param.name != 'self' and param.default is not inspect.Parameter.empty:
+                kwargs[param.name] = param.default
+        obj = cls(**kwargs)
+        obj._model = type(obj._model).load_checkpoint(filepath)
+        return obj
+
 
 class GradientBoostingRegressor:
     def __init__(self, n_estimators=100, learning_rate=0.1, *, max_depth=3, random_state=None, loss=None):
@@ -233,6 +281,22 @@ class GradientBoostingRegressor:
         from .metrics import r2_score
         return r2_score(y, self.predict(X))
 
+    def save_checkpoint(self, filepath: str):
+        self._model.save_checkpoint(filepath)
+
+    @classmethod
+    def load_checkpoint(cls, filepath: str):
+        import inspect
+        sig = inspect.signature(cls.__init__)
+        kwargs = {}
+        for param in sig.parameters.values():
+            if param.name != 'self' and param.default is not inspect.Parameter.empty:
+                kwargs[param.name] = param.default
+        obj = cls(**kwargs)
+        obj._model = type(obj._model).load_checkpoint(filepath)
+        return obj
+
+
 
 class HistGradientBoostingClassifier:
     def __init__(self, n_estimators=100, learning_rate=0.1, *, max_depth=3, random_state=None):
@@ -276,6 +340,22 @@ class HistGradientBoostingClassifier:
         from .metrics import accuracy_score
         return accuracy_score(y, self.predict(X))
 
+    def save_checkpoint(self, filepath: str):
+        self._model.save_checkpoint(filepath)
+
+    @classmethod
+    def load_checkpoint(cls, filepath: str):
+        import inspect
+        sig = inspect.signature(cls.__init__)
+        kwargs = {}
+        for param in sig.parameters.values():
+            if param.name != 'self' and param.default is not inspect.Parameter.empty:
+                kwargs[param.name] = param.default
+        obj = cls(**kwargs)
+        obj._model = type(obj._model).load_checkpoint(filepath)
+        return obj
+
+
 class HistGradientBoostingRegressor:
     def __init__(self, n_estimators=100, learning_rate=0.1, *, max_depth=3, random_state=None):
         self.n_estimators = n_estimators
@@ -310,6 +390,22 @@ class HistGradientBoostingRegressor:
     def score(self, X, y):
         from .metrics import r2_score
         return r2_score(y, self.predict(X))
+
+    def save_checkpoint(self, filepath: str):
+        self._model.save_checkpoint(filepath)
+
+    @classmethod
+    def load_checkpoint(cls, filepath: str):
+        import inspect
+        sig = inspect.signature(cls.__init__)
+        kwargs = {}
+        for param in sig.parameters.values():
+            if param.name != 'self' and param.default is not inspect.Parameter.empty:
+                kwargs[param.name] = param.default
+        obj = cls(**kwargs)
+        obj._model = type(obj._model).load_checkpoint(filepath)
+        return obj
+
 
 class IsolationForest:
     def __init__(self, n_estimators=100, *, random_state=None):

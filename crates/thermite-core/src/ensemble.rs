@@ -502,6 +502,8 @@ pub struct HistGradientBoostingRegressor {
     pub mins: Vec<f64>,
     pub maxs: Vec<f64>,
     pub bins: usize,
+    #[serde(skip)]
+    pub buffer: Option<Array2<f64>>,
 }
 
 impl HistGradientBoostingRegressor {
@@ -516,13 +518,17 @@ impl HistGradientBoostingRegressor {
             mins: Vec::new(),
             maxs: Vec::new(),
             bins: 255,
+            buffer: None,
         }
     }
 
-    fn discretize(&self, X: &ArrayView2<f64>) -> Array2<f64> {
+    fn discretize_in_place(&mut self, X: &ArrayView2<f64>) {
         let n = X.nrows();
         let p = X.ncols();
-        let mut X_binned = Array2::<f64>::zeros((n, p));
+        if self.buffer.is_none() || self.buffer.as_ref().unwrap().nrows() != n || self.buffer.as_ref().unwrap().ncols() != p {
+            self.buffer = Some(Array2::<f64>::zeros((n, p)));
+        }
+        let buffer = self.buffer.as_mut().unwrap();
         for j in 0..p {
             let min_val = self.mins[j];
             let max_val = self.maxs[j];
@@ -530,17 +536,16 @@ impl HistGradientBoostingRegressor {
             for i in 0..n {
                 let val = X[[i, j]];
                 if val <= min_val {
-                    X_binned[[i, j]] = 0.0;
+                    buffer[[i, j]] = 0.0;
                 } else if val >= max_val {
-                    X_binned[[i, j]] = (self.bins - 1) as f64;
+                    buffer[[i, j]] = (self.bins - 1) as f64;
                 } else {
                     let mut bin = ((val - min_val) / width).floor() as usize;
                     if bin >= self.bins { bin = self.bins - 1; }
-                    X_binned[[i, j]] = bin as f64;
+                    buffer[[i, j]] = bin as f64;
                 }
             }
         }
-        X_binned
     }
 
     pub fn fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<f64>) -> Result<(), String> {
@@ -554,13 +559,15 @@ impl HistGradientBoostingRegressor {
                 if val > self.maxs[j] { self.maxs[j] = val; }
             }
         }
-        let X_binned = self.discretize(X);
-        self.core.fit(&X_binned.view(), y)
+        self.discretize_in_place(X);
+        let X_binned = self.buffer.as_ref().unwrap().view();
+        self.core.fit(&X_binned, y)
     }
 
-    pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
-        let X_binned = self.discretize(X);
-        self.core.predict(&X_binned.view())
+    pub fn predict(&mut self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
+        self.discretize_in_place(X);
+        let X_binned = self.buffer.as_ref().unwrap().view();
+        self.core.predict(&X_binned)
     }
 }
 
@@ -570,6 +577,8 @@ pub struct HistGradientBoostingClassifier {
     pub mins: Vec<f64>,
     pub maxs: Vec<f64>,
     pub bins: usize,
+    #[serde(skip)]
+    pub buffer: Option<Array2<f64>>,
 }
 
 impl HistGradientBoostingClassifier {
@@ -584,13 +593,17 @@ impl HistGradientBoostingClassifier {
             mins: Vec::new(),
             maxs: Vec::new(),
             bins: 255,
+            buffer: None,
         }
     }
 
-    fn discretize(&self, X: &ArrayView2<f64>) -> Array2<f64> {
+    fn discretize_in_place(&mut self, X: &ArrayView2<f64>) {
         let n = X.nrows();
         let p = X.ncols();
-        let mut X_binned = Array2::<f64>::zeros((n, p));
+        if self.buffer.is_none() || self.buffer.as_ref().unwrap().nrows() != n || self.buffer.as_ref().unwrap().ncols() != p {
+            self.buffer = Some(Array2::<f64>::zeros((n, p)));
+        }
+        let buffer = self.buffer.as_mut().unwrap();
         for j in 0..p {
             let min_val = self.mins[j];
             let max_val = self.maxs[j];
@@ -598,17 +611,16 @@ impl HistGradientBoostingClassifier {
             for i in 0..n {
                 let val = X[[i, j]];
                 if val <= min_val {
-                    X_binned[[i, j]] = 0.0;
+                    buffer[[i, j]] = 0.0;
                 } else if val >= max_val {
-                    X_binned[[i, j]] = (self.bins - 1) as f64;
+                    buffer[[i, j]] = (self.bins - 1) as f64;
                 } else {
                     let mut bin = ((val - min_val) / width).floor() as usize;
                     if bin >= self.bins { bin = self.bins - 1; }
-                    X_binned[[i, j]] = bin as f64;
+                    buffer[[i, j]] = bin as f64;
                 }
             }
         }
-        X_binned
     }
 
     pub fn fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<f64>) -> Result<(), String> {
@@ -622,18 +634,21 @@ impl HistGradientBoostingClassifier {
                 if val > self.maxs[j] { self.maxs[j] = val; }
             }
         }
-        let X_binned = self.discretize(X);
-        self.core.fit(&X_binned.view(), y)
+        self.discretize_in_place(X);
+        let X_binned = self.buffer.as_ref().unwrap().view();
+        self.core.fit(&X_binned, y)
     }
 
-    pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
-        let X_binned = self.discretize(X);
-        self.core.predict(&X_binned.view())
+    pub fn predict(&mut self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
+        self.discretize_in_place(X);
+        let X_binned = self.buffer.as_ref().unwrap().view();
+        self.core.predict(&X_binned)
     }
 
-    pub fn predict_proba(&self, X: &ArrayView2<f64>) -> Result<Array2<f64>, String> {
-        let X_binned = self.discretize(X);
-        self.core.predict_proba(&X_binned.view())
+    pub fn predict_proba(&mut self, X: &ArrayView2<f64>) -> Result<Array2<f64>, String> {
+        self.discretize_in_place(X);
+        let X_binned = self.buffer.as_ref().unwrap().view();
+        self.core.predict_proba(&X_binned)
     }
 }
 

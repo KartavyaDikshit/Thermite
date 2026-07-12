@@ -63,79 +63,71 @@ fn check_finite_1d(y: &ArrayView1<f64>) -> Result<(), String> {
 }
 
 // ==========================================
-// Helper: Gaussian elimination to solve A * x = b
-// where A is (n x n) and b is (n x m).
-// Returns x as (n x m).
+// Helper: Cholesky decomposition and solve
 // ==========================================
-fn solve_linear_system(A: &Array2<f64>, b: &Array2<f64>) -> Result<Array2<f64>, String> {
+fn cholesky_decompose(A: &Array2<f64>) -> Result<Array2<f64>, String> {
     let n = A.nrows();
-    if n != A.ncols() {
-        return Err("Matrix A must be square".to_string());
-    }
-    if n != b.nrows() {
-        return Err("Dimension mismatch between A and b".to_string());
-    }
-    let m = b.ncols();
-
-    // Build augmented matrix [A | b] of shape (n, n+m)
-    let mut aug = Array2::<f64>::zeros((n, n + m));
+    let mut L = Array2::<f64>::zeros((n, n));
     for i in 0..n {
-        for j in 0..n {
-            aug[[i, j]] = A[[i, j]];
-        }
-        for j in 0..m {
-            aug[[i, n + j]] = b[[i, j]];
-        }
-    }
-
-    // Forward elimination with partial pivoting
-    for col in 0..n {
-        // Find pivot
-        let mut max_row = col;
-        let mut max_val = aug[[col, col]].abs();
-        for row in (col + 1)..n {
-            let val = aug[[row, col]].abs();
-            if val > max_val {
-                max_val = val;
-                max_row = row;
+        for j in 0..=i {
+            let mut sum = 0.0;
+            for k in 0..j {
+                sum += L[[i, k]] * L[[j, k]];
             }
-        }
-        if max_val < 1e-14 {
-            return Err("Matrix is singular or near-singular".to_string());
-        }
-        // Swap rows
-        if max_row != col {
-            for j in 0..(n + m) {
-                let tmp = aug[[col, j]];
-                aug[[col, j]] = aug[[max_row, j]];
-                aug[[max_row, j]] = tmp;
-            }
-        }
-        // Eliminate below
-        let pivot = aug[[col, col]];
-        for row in (col + 1)..n {
-            let factor = aug[[row, col]] / pivot;
-            aug[[row, col]] = 0.0;
-            for j in (col + 1)..(n + m) {
-                aug[[row, j]] -= factor * aug[[col, j]];
+            if i == j {
+                let val = A[[i, i]] - sum;
+                if val <= 0.0 {
+                    return Err("Matrix is not positive definite".to_string());
+                }
+                L[[i, i]] = val.sqrt();
+            } else {
+                L[[i, j]] = (A[[i, j]] - sum) / L[[j, j]];
             }
         }
     }
+    Ok(L)
+}
 
-    // Back substitution
+fn cholesky_solve(L: &Array2<f64>, b: &Array2<f64>) -> Array2<f64> {
+    let n = L.nrows();
+    let m = b.ncols();
+    let mut y = Array2::<f64>::zeros((n, m));
+    for j in 0..m {
+        for i in 0..n {
+            let mut sum = 0.0;
+            for k in 0..i {
+                sum += L[[i, k]] * y[[k, j]];
+            }
+            y[[i, j]] = (b[[i, j]] - sum) / L[[i, i]];
+        }
+    }
     let mut x = Array2::<f64>::zeros((n, m));
-    for col in (0..n).rev() {
-        let pivot = aug[[col, col]];
-        for j in 0..m {
-            let mut val = aug[[col, n + j]];
-            for k in (col + 1)..n {
-                val -= aug[[col, k]] * x[[k, j]];
+    for j in 0..m {
+        for i in (0..n).rev() {
+            let mut sum = 0.0;
+            for k in (i + 1)..n {
+                sum += L[[k, i]] * x[[k, j]];
             }
-            x[[col, j]] = val / pivot;
+            x[[i, j]] = (y[[i, j]] - sum) / L[[i, i]];
         }
     }
+    x
+}
 
-    Ok(x)
+fn solve_linear_system_cholesky(A: &Array2<f64>, b: &Array2<f64>) -> Result<Array2<f64>, String> {
+    match cholesky_decompose(A) {
+        Ok(L) => Ok(cholesky_solve(&L, b)),
+        Err(_) => {
+            // Fallback to a simple small ridge if pseudo-singular
+            let n = A.nrows();
+            let mut A_ridge = A.clone();
+            for i in 0..n {
+                A_ridge[[i, i]] += 1e-8;
+            }
+            let L = cholesky_decompose(&A_ridge)?;
+            Ok(cholesky_solve(&L, b))
+        }
+    }
 }
 
 // ==========================================
@@ -217,7 +209,7 @@ impl LinearRegression {
         let Xty = at_b(&X_work, &y_col);
 
         // Solve (X^T X) w = X^T y
-        let w = solve_linear_system(&XtX, &Xty)?;
+        let w = solve_linear_system_cholesky(&XtX, &Xty)?;
 
         if self.fit_intercept {
             self.intercept_ = w[[0, 0]];
@@ -332,7 +324,7 @@ impl Ridge {
         }
 
         let Xty = at_b(&X_work, &y_col);
-        let w = solve_linear_system(&XtX, &Xty)?;
+        let w = solve_linear_system_cholesky(&XtX, &Xty)?;
 
         if self.fit_intercept {
             self.intercept_ = w[[0, 0]];
@@ -1689,19 +1681,19 @@ mod tests {
     fn test_solve_identity() {
         let A = array![[1.0, 0.0], [0.0, 1.0]];
         let b = array![[3.0], [5.0]];
-        let x = solve_linear_system(&A, &b).unwrap();
+        let x = solve_linear_system_cholesky(&A, &b).unwrap();
         assert!((x[[0, 0]] - 3.0).abs() < 1e-12);
         assert!((x[[1, 0]] - 5.0).abs() < 1e-12);
     }
 
     #[test]
     fn test_solve_2x2() {
-        // [2 1; 5 3] * x = [11; 29]  =>  x = [4; 3]
-        let A = array![[2.0, 1.0], [5.0, 3.0]];
-        let b = array![[11.0], [29.0]];
-        let x = solve_linear_system(&A, &b).unwrap();
-        assert!((x[[0, 0]] - 4.0).abs() < 1e-10);
-        assert!((x[[1, 0]] - 3.0).abs() < 1e-10);
+        // [2 1; 1 2] * x = [4; 5]  =>  x = [1; 2]
+        let A = array![[2.0, 1.0], [1.0, 2.0]];
+        let b = array![[4.0], [5.0]];
+        let x = solve_linear_system_cholesky(&A, &b).unwrap();
+        assert!((x[[0, 0]] - 1.0).abs() < 1e-10);
+        assert!((x[[1, 0]] - 2.0).abs() < 1e-10);
     }
 
     #[test]
