@@ -22,6 +22,7 @@ scikit-learn is the most widely-used ML library in the world (40M+ monthly downl
 - **Clustering**: KMeans
 - **Decomposition**: PCA (Subspace iteration optimized)
 - **Pipelines & Tuning**: `Pipeline`, `ColumnTransformer`, `GridSearchCV` (with parallel multiprocessing support), `train_test_split`, `KFold`
+- **Probabilistic Models**: GaussianNB
 
 ### The Numbers
 
@@ -33,6 +34,7 @@ scikit-learn is the most widely-used ML library in the world (40M+ monthly downl
 | LinearSVC.fit (Sparse) | 0.0244s | 0.0022s | **10.99x** |
 | DecisionTree.fit (Categorical) | 0.1405s | 0.0564s | **2.49x** |
 | RandomForest.fit (Categorical) | 0.1806s | 0.0653s | **2.76x** |
+| GaussianNB.fit (Dense) | 0.0066s | 0.0039s | **1.69x** |
 
 > See `BENCHMARKS.md` for full detailed performance comparisons across varying datasets.
 

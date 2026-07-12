@@ -12,6 +12,7 @@ from .decomposition import PCA
 from .neighbors import KNeighborsClassifier
 from .ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier, GradientBoostingRegressor
 from .pipeline import Pipeline, ColumnTransformer
+from .naive_bayes import GaussianNB
 
 __version__ = "0.1.0"
 __all__ = [
@@ -43,5 +44,7 @@ __all__ = [
     "GradientBoostingClassifier",
     "GradientBoostingRegressor",
     "Pipeline",
-    "LinearSVC"
+    "LinearSVC",
+    "ColumnTransformer",
+    "GaussianNB",
 ]

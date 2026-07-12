@@ -12,6 +12,7 @@ from sklearn.svm import LinearSVC as SklearnLinearSVC
 from sklearn.cluster import KMeans as SklearnKMeans
 from sklearn.tree import DecisionTreeClassifier as SklearnDT
 from sklearn.ensemble import RandomForestClassifier as SklearnRF
+from sklearn.naive_bayes import GaussianNB as SklearnNB
 from sklearn.preprocessing import OneHotEncoder
 
 # Thermite imports
@@ -19,6 +20,7 @@ from thermite.linear_model import LogisticRegression as ThermiteLogReg, LinearRe
 from thermite.cluster import KMeans as ThermiteKMeans
 from thermite.tree import DecisionTreeClassifier as ThermiteDT
 from thermite.ensemble import RandomForestClassifier as ThermiteRF
+from thermite.naive_bayes import GaussianNB as ThermiteNB
 
 def generate_dense_data(n_samples=10000, n_features=50, classes=2):
     np.random.seed(42)
@@ -133,6 +135,14 @@ def main():
         X_cat, y_cat,
         X_sklearn=X_cat_sklearn,
         kwargs_thermite={'categorical_features': cat_features}
+    ))
+
+    # 8. Gaussian Naive Bayes
+    results.append(run_benchmark(
+        "GaussianNB (Dense)",
+        SklearnNB(),
+        ThermiteNB(),
+        X_dense, y_dense
     ))
 
     print("\n" + "="*50)

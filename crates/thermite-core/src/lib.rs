@@ -8,6 +8,7 @@ pub mod decomposition;
 pub mod neighbors;
 pub mod ensemble;
 pub mod sparse;
+pub mod naive_bayes;
 
 pub fn core_ping() -> &'static str {
     "core_pong"
