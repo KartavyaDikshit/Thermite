@@ -3,6 +3,8 @@ use numpy::{PyArray1, PyArray2, PyReadonlyArray1, PyReadonlyArray2};
 use thermite_core::ensemble::{
     RandomForestClassifier as CoreRandomForestClassifier,
     RandomForestRegressor as CoreRandomForestRegressor,
+    GradientBoostingClassifier as CoreGradientBoostingClassifier,
+    GradientBoostingRegressor as CoreGradientBoostingRegressor,
 };
 
 #[pyclass]
@@ -90,5 +92,72 @@ impl RandomForestRegressor {
 pub fn bind_ensemble(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<RandomForestClassifier>()?;
     m.add_class::<RandomForestRegressor>()?;
+    m.add_class::<GradientBoostingClassifier>()?;
+    m.add_class::<GradientBoostingRegressor>()?;
     Ok(())
+}
+
+#[pyclass]
+pub struct GradientBoostingRegressor {
+    core: CoreGradientBoostingRegressor,
+}
+
+#[pymethods]
+impl GradientBoostingRegressor {
+    #[new]
+    #[pyo3(signature = (n_estimators=100, learning_rate=0.1, max_depth=None, random_state=None))]
+    fn new(
+        n_estimators: usize,
+        learning_rate: f64,
+        max_depth: Option<usize>,
+        random_state: Option<u64>,
+    ) -> Self {
+        GradientBoostingRegressor {
+            core: CoreGradientBoostingRegressor::new(n_estimators, learning_rate, max_depth, random_state),
+        }
+    }
+
+    fn fit(&mut self, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>) -> PyResult<()> {
+        self.core.fit(&X.as_array(), &y.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)
+    }
+
+    fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<f64>>> {
+        let preds = self.core.predict(&X.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)?;
+        Ok(PyArray1::from_array_bound(py, &preds))
+    }
+}
+
+#[pyclass]
+pub struct GradientBoostingClassifier {
+    core: CoreGradientBoostingClassifier,
+}
+
+#[pymethods]
+impl GradientBoostingClassifier {
+    #[new]
+    #[pyo3(signature = (n_estimators=100, learning_rate=0.1, max_depth=None, random_state=None))]
+    fn new(
+        n_estimators: usize,
+        learning_rate: f64,
+        max_depth: Option<usize>,
+        random_state: Option<u64>,
+    ) -> Self {
+        GradientBoostingClassifier {
+            core: CoreGradientBoostingClassifier::new(n_estimators, learning_rate, max_depth, random_state),
+        }
+    }
+
+    fn fit(&mut self, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>) -> PyResult<()> {
+        self.core.fit(&X.as_array(), &y.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)
+    }
+
+    fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<f64>>> {
+        let preds = self.core.predict(&X.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)?;
+        Ok(PyArray1::from_array_bound(py, &preds))
+    }
+
+    fn predict_proba<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray2<f64>>> {
+        let preds = self.core.predict_proba(&X.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)?;
+        Ok(PyArray2::from_array_bound(py, &preds))
+    }
 }

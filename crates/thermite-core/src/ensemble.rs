@@ -216,3 +216,234 @@ impl RandomForestRegressor {
         Ok(final_preds)
     }
 }
+
+// ==========================================
+// GradientBoostingRegressor
+// ==========================================
+pub struct GradientBoostingRegressor {
+    pub n_estimators: usize,
+    pub learning_rate: f64,
+    pub max_depth: Option<usize>,
+    pub random_state: Option<u64>,
+    pub initial_prediction_: f64,
+    pub estimators_: Vec<DecisionTreeRegressor>,
+}
+
+impl GradientBoostingRegressor {
+    pub fn new(
+        n_estimators: usize,
+        learning_rate: f64,
+        max_depth: Option<usize>,
+        random_state: Option<u64>,
+    ) -> Self {
+        GradientBoostingRegressor {
+            n_estimators,
+            learning_rate,
+            max_depth,
+            random_state,
+            initial_prediction_: 0.0,
+            estimators_: Vec::new(),
+        }
+    }
+
+    pub fn fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<f64>) -> Result<(), String> {
+        let n_samples = X.nrows();
+        let base_seed = self.random_state.unwrap_or(0);
+
+        // F0 is the mean of y
+        let mean_y = y.sum() / (n_samples as f64);
+        self.initial_prediction_ = mean_y;
+
+        let mut current_preds = Array1::<f64>::from_elem(n_samples, mean_y);
+        let mut estimators = Vec::with_capacity(self.n_estimators);
+
+        for m in 0..self.n_estimators {
+            // Compute pseudo-residuals (negative gradient of squared error loss)
+            let residuals = y - &current_preds;
+
+            let seed = base_seed.wrapping_add(m as u64);
+            let mut tree = DecisionTreeRegressor::new(
+                self.max_depth,
+                2,
+                1,
+                None, // Use all features
+                Some(seed),
+            );
+
+            tree.fit(&X.view(), residuals.as_slice().unwrap());
+
+            // Update predictions: Fm(x) = Fm_1(x) + lr * h_m(x)
+            let tree_preds = tree.predict(X);
+            for i in 0..n_samples {
+                current_preds[i] += self.learning_rate * tree_preds[i];
+            }
+
+            estimators.push(tree);
+        }
+
+        self.estimators_ = estimators;
+        Ok(())
+    }
+
+    pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
+        if self.estimators_.is_empty() {
+            return Err("Model is not fitted".to_string());
+        }
+        let n_samples = X.nrows();
+        let mut preds = Array1::<f64>::from_elem(n_samples, self.initial_prediction_);
+
+        for tree in &self.estimators_ {
+            let tree_preds = tree.predict(X);
+            for i in 0..n_samples {
+                preds[i] += self.learning_rate * tree_preds[i];
+            }
+        }
+        Ok(preds)
+    }
+}
+
+// ==========================================
+// GradientBoostingClassifier (Binary only for now, Log-Loss)
+// ==========================================
+pub struct GradientBoostingClassifier {
+    pub n_estimators: usize,
+    pub learning_rate: f64,
+    pub max_depth: Option<usize>,
+    pub random_state: Option<u64>,
+    pub initial_prediction_: f64,
+    pub classes_: Option<Vec<f64>>,
+    pub estimators_: Vec<DecisionTreeRegressor>, // uses regressor to predict residuals
+}
+
+impl GradientBoostingClassifier {
+    pub fn new(
+        n_estimators: usize,
+        learning_rate: f64,
+        max_depth: Option<usize>,
+        random_state: Option<u64>,
+    ) -> Self {
+        GradientBoostingClassifier {
+            n_estimators,
+            learning_rate,
+            max_depth,
+            random_state,
+            initial_prediction_: 0.0,
+            classes_: None,
+            estimators_: Vec::new(),
+        }
+    }
+
+    #[inline]
+    fn sigmoid(z: f64) -> f64 {
+        1.0 / (1.0 + (-z).exp())
+    }
+
+    pub fn fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<f64>) -> Result<(), String> {
+        let n_samples = X.nrows();
+        let base_seed = self.random_state.unwrap_or(0);
+
+        let mut classes = y.to_vec();
+        classes.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        classes.dedup();
+
+        if classes.len() != 2 {
+            return Err("GradientBoostingClassifier currently only supports binary classification".to_string());
+        }
+
+        let pos_class = classes[1];
+        let mut y_bin = Array1::<f64>::zeros(n_samples);
+        let mut sum_y = 0.0;
+        for i in 0..n_samples {
+            if y[i] == pos_class {
+                y_bin[i] = 1.0;
+                sum_y += 1.0;
+            }
+        }
+        
+        // F0 = log(p / (1-p))
+        let p = sum_y / (n_samples as f64);
+        let f0 = if p == 0.0 || p == 1.0 { 0.0 } else { (p / (1.0 - p)).ln() };
+        self.initial_prediction_ = f0;
+
+        let mut current_preds = Array1::<f64>::from_elem(n_samples, f0);
+        let mut estimators = Vec::with_capacity(self.n_estimators);
+
+        for m in 0..self.n_estimators {
+            // Compute probabilities and residuals
+            let mut residuals = Array1::<f64>::zeros(n_samples);
+            for i in 0..n_samples {
+                let prob = Self::sigmoid(current_preds[i]);
+                residuals[i] = y_bin[i] - prob;
+            }
+
+            let seed = base_seed.wrapping_add(m as u64);
+            let mut tree = DecisionTreeRegressor::new(
+                self.max_depth,
+                2,
+                1,
+                None, // Use all features
+                Some(seed),
+            );
+
+            tree.fit(&X.view(), residuals.as_slice().unwrap());
+
+            let tree_preds = tree.predict(X);
+            for i in 0..n_samples {
+                current_preds[i] += self.learning_rate * tree_preds[i];
+            }
+
+            estimators.push(tree);
+        }
+
+        self.classes_ = Some(classes);
+        self.estimators_ = estimators;
+        Ok(())
+    }
+
+    pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
+        if self.estimators_.is_empty() {
+            return Err("Model is not fitted".to_string());
+        }
+        let n_samples = X.nrows();
+        let mut z = Array1::<f64>::from_elem(n_samples, self.initial_prediction_);
+
+        for tree in &self.estimators_ {
+            let tree_preds = tree.predict(X);
+            for i in 0..n_samples {
+                z[i] += self.learning_rate * tree_preds[i];
+            }
+        }
+
+        let classes = self.classes_.as_ref().unwrap();
+        let mut preds = Array1::<f64>::zeros(n_samples);
+        for i in 0..n_samples {
+            preds[i] = if Self::sigmoid(z[i]) >= 0.5 { classes[1] } else { classes[0] };
+        }
+
+        Ok(preds)
+    }
+
+    pub fn predict_proba(&self, X: &ArrayView2<f64>) -> Result<Array2<f64>, String> {
+        if self.estimators_.is_empty() {
+            return Err("Model is not fitted".to_string());
+        }
+        let n_samples = X.nrows();
+        let mut z = Array1::<f64>::from_elem(n_samples, self.initial_prediction_);
+
+        for tree in &self.estimators_ {
+            let tree_preds = tree.predict(X);
+            for i in 0..n_samples {
+                z[i] += self.learning_rate * tree_preds[i];
+            }
+        }
+
+        let mut proba = Array2::<f64>::zeros((n_samples, 2));
+        for i in 0..n_samples {
+            let p1 = Self::sigmoid(z[i]);
+            proba[[i, 0]] = 1.0 - p1;
+            proba[[i, 1]] = p1;
+        }
+
+        Ok(proba)
+    }
+}

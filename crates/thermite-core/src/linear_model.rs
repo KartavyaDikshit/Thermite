@@ -1122,7 +1122,7 @@ mod tests {
 // LinearSVC  Linear Support Vector Classification
 // ==========================================
 pub struct LinearSVC {
-    pub coef_: Option<Array1<f64>>,
+    pub coef_: Option<Array2<f64>>,
     pub intercept_: Option<Array1<f64>>,
     pub classes_: Option<Vec<f64>>,
     pub C: f64,
@@ -1211,11 +1211,32 @@ impl LinearSVC {
             let (w, b) = self.fit_binary(&X.to_owned(), &y_bin, n_features)?;
             
             let intercept = Array1::from(vec![b]);
+            let mut coef = Array2::<f64>::zeros((1, n_features));
+            for j in 0..n_features {
+                coef[[0, j]] = w[j];
+            }
 
-            self.coef_ = Some(w);
+            self.coef_ = Some(coef);
             self.intercept_ = Some(intercept);
         } else {
-            return Err("Multiclass LinearSVC is not implemented yet".to_string());
+            // Multiclass: one-vs-rest
+            let n_classes = classes.len();
+            let mut coef = Array2::<f64>::zeros((n_classes, n_features));
+            let mut intercept = Array1::<f64>::zeros(n_classes);
+
+            for (c_idx, &cls) in classes.iter().enumerate() {
+                let mut y_bin = Array1::<f64>::zeros(y.len());
+                for i in 0..y.len() {
+                    y_bin[i] = if (y[i] - cls).abs() < f64::EPSILON { 1.0 } else { -1.0 };
+                }
+                let (w, b) = self.fit_binary(&X.to_owned(), &y_bin, n_features)?;
+                for j in 0..n_features {
+                    coef[[c_idx, j]] = w[j];
+                }
+                intercept[c_idx] = b;
+            }
+            self.coef_ = Some(coef);
+            self.intercept_ = Some(intercept);
         }
 
         self.classes_ = Some(classes);
@@ -1227,10 +1248,35 @@ impl LinearSVC {
         let intercept = self.intercept_.as_ref().unwrap();
         let classes = self.classes_.as_ref().unwrap();
 
-        let preds: Vec<f64> = X.axis_iter(Axis(0)).map(|row| {
-            let z = row.dot(coef) + intercept[0];
-            if z >= 0.0 { classes[1] } else { classes[0] }
-        }).collect();
+        let n_samples = X.nrows();
+        let mut preds = Array1::<f64>::zeros(n_samples);
+
+        if classes.len() == 2 {
+            for i in 0..n_samples {
+                let mut z = intercept[0];
+                for j in 0..X.ncols() {
+                    z += X[[i, j]] * coef[[0, j]];
+                }
+                preds[i] = if z >= 0.0 { classes[1] } else { classes[0] };
+            }
+        } else {
+            let n_classes = classes.len();
+            for i in 0..n_samples {
+                let mut best_class = 0;
+                let mut max_z = f64::NEG_INFINITY;
+                for c in 0..n_classes {
+                    let mut z = intercept[c];
+                    for j in 0..X.ncols() {
+                        z += X[[i, j]] * coef[[c, j]];
+                    }
+                    if z > max_z {
+                        max_z = z;
+                        best_class = c;
+                    }
+                }
+                preds[i] = classes[best_class];
+            }
+        }
 
         Ok(Array1::from(preds))
     }

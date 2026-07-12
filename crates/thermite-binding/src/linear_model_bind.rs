@@ -196,9 +196,9 @@ impl LinearSVC {
     }
 
     #[getter]
-    fn coef_<'py>(&self, py: Python<'py>) -> PyResult<Option<Bound<'py, PyArray1<f64>>>> {
+    fn coef_<'py>(&self, py: Python<'py>) -> PyResult<Option<Bound<'py, PyArray2<f64>>>> {
         match &self.core.coef_ {
-            Some(c) => Ok(Some(PyArray1::from_array_bound(py, c))),
+            Some(c) => Ok(Some(PyArray2::from_array_bound(py, c))),
             None => Ok(None),
         }
     }
