@@ -949,6 +949,8 @@ mod tests {
         let internal = TreeNode {
             feature_idx: 0,
             threshold: 0.5,
+            is_categorical: false,
+            left_categories: Vec::new(),
             left: 1,
             right: 2,
             value: vec![0.5, 0.5],

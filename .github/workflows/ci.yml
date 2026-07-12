@@ -46,14 +46,11 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install maturin
-        run: pip install maturin
-
-      - name: Build dev wheel
-        run: maturin develop --release
-
-      - name: Install test deps
-        run: pip install pytest numpy scipy scikit-learn polars
-
-      - name: Run Python tests
-        run: pytest tests/ -v --tb=short
+      - name: Build and Test
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install -U pip
+          pip install maturin pytest numpy scipy scikit-learn polars
+          maturin develop --release
+          pytest tests/ -v --tb=short
