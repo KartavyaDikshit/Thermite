@@ -30,7 +30,7 @@ class PCA:
 
     @_catch_panic
     def fit(self, X, y=None):
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         self._model.fit(X)
@@ -38,19 +38,19 @@ class PCA:
 
     @_catch_panic
     def transform(self, X):
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         return self._model.transform(X)
 
     def fit_transform(self, X, y=None):
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         return self._model.fit_transform(X)
 
     def inverse_transform(self, X):
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         return self._model.inverse_transform(X)

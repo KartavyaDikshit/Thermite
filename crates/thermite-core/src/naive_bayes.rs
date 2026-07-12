@@ -24,10 +24,15 @@ impl GaussianNB {
         }
     }
 
-    pub fn partial_fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<f64>, classes: Option<Vec<f64>>) -> Result<(), String> {
+    pub fn partial_fit(
+        &mut self,
+        X: &ArrayView2<f64>,
+        y: &ArrayView1<f64>,
+        classes: Option<Vec<f64>>,
+    ) -> Result<(), String> {
         let n_samples = X.nrows();
         let n_features = X.ncols();
-        
+
         if n_samples != y.len() {
             return Err("X and y sample counts do not match".to_string());
         }
@@ -50,7 +55,7 @@ impl GaussianNB {
 
         let model_classes = self.classes_.as_ref().unwrap().clone();
         let _n_classes = model_classes.len();
-        
+
         let mut class_count = self.class_count_.as_ref().unwrap().clone();
         let mut theta = self.theta_.as_ref().unwrap().clone();
         let mut var = self.var_.as_ref().unwrap().clone();
@@ -77,7 +82,7 @@ impl GaussianNB {
         for (c_idx, &cls) in model_classes.iter().enumerate() {
             let mut batch_count = 0.0;
             let mut batch_theta = Array1::<f64>::zeros(n_features);
-            
+
             for i in 0..n_samples {
                 if (y[i] - cls).abs() < f64::EPSILON {
                     batch_count += 1.0;
@@ -105,7 +110,7 @@ impl GaussianNB {
                 for j in 0..n_features {
                     let prev_t = theta[[c_idx, j]];
                     let prev_v = var[[c_idx, j]]; // this already has epsilon added, we must remove it for true var
-                    
+
                     // remove epsilon if count > 0
                     let mut raw_prev_v = 0.0;
                     if prev_count > 0.0 {
@@ -114,11 +119,14 @@ impl GaussianNB {
 
                     // Parallel variance update formula
                     let new_t = (prev_count * prev_t + batch_count * batch_theta[j]) / new_count;
-                    
+
                     let s_prev = raw_prev_v * prev_count;
                     let s_batch = batch_var[j] * batch_count;
-                    let s_new = s_prev + s_batch + (prev_count * batch_count / new_count) * (prev_t - batch_theta[j]).powi(2);
-                    
+                    let s_new = s_prev
+                        + s_batch
+                        + (prev_count * batch_count / new_count)
+                            * (prev_t - batch_theta[j]).powi(2);
+
                     theta[[c_idx, j]] = new_t;
                     var[[c_idx, j]] = (s_new / new_count) + self.epsilon_;
                 }
@@ -127,7 +135,8 @@ impl GaussianNB {
                 // Ensure epsilon is updated even if count doesn't change
                 if class_count[c_idx] > 0.0 {
                     for j in 0..n_features {
-                        var[[c_idx, j]] = (var[[c_idx, j]] - self.epsilon_).max(0.0) + self.epsilon_;
+                        var[[c_idx, j]] =
+                            (var[[c_idx, j]] - self.epsilon_).max(0.0) + self.epsilon_;
                     }
                 }
             }
@@ -184,7 +193,7 @@ impl GaussianNB {
         let classes = self.classes_.as_ref().unwrap();
         let n_classes = classes.len();
         let n_features = X.ncols();
-        
+
         let prior = self.class_prior_.as_ref().unwrap();
         let theta = self.theta_.as_ref().unwrap();
         let var = self.var_.as_ref().unwrap();
@@ -215,7 +224,7 @@ impl GaussianNB {
             for c in 0..n_classes {
                 log_prob_sum += (log_probs[c] - max_log_prob).exp();
             }
-            
+
             for c in 0..n_classes {
                 proba[[i, c]] = (log_probs[c] - max_log_prob - log_prob_sum.ln()).exp();
             }

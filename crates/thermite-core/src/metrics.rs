@@ -92,7 +92,15 @@ fn compute_per_class(y_true: &[f64], y_pred: &[f64]) -> Result<(Vec<f64>, PerCla
         }
     }
 
-    Ok((classes, PerClassStats { tp, fp, fn_, support }))
+    Ok((
+        classes,
+        PerClassStats {
+            tp,
+            fp,
+            fn_,
+            support,
+        },
+    ))
 }
 
 // ==========================================
@@ -125,7 +133,11 @@ pub fn precision_score(y_true: &[f64], y_pred: &[f64], average: &str) -> Result<
                     let k = class_key(c);
                     let tp = *stats.tp.get(&k).unwrap_or(&0);
                     let fp = *stats.fp.get(&k).unwrap_or(&0);
-                    if tp + fp == 0 { 0.0 } else { tp as f64 / (tp + fp) as f64 }
+                    if tp + fp == 0 {
+                        0.0
+                    } else {
+                        tp as f64 / (tp + fp) as f64
+                    }
                 })
                 .sum();
             Ok(sum / n)
@@ -142,13 +154,20 @@ pub fn precision_score(y_true: &[f64], y_pred: &[f64], average: &str) -> Result<
                     let tp = *stats.tp.get(&k).unwrap_or(&0);
                     let fp = *stats.fp.get(&k).unwrap_or(&0);
                     let sup = *stats.support.get(&k).unwrap_or(&0);
-                    let prec = if tp + fp == 0 { 0.0 } else { tp as f64 / (tp + fp) as f64 };
+                    let prec = if tp + fp == 0 {
+                        0.0
+                    } else {
+                        tp as f64 / (tp + fp) as f64
+                    };
                     prec * sup as f64
                 })
                 .sum();
             Ok(sum / total as f64)
         }
-        _ => Err(format!("Unsupported average: '{}'. Use 'binary', 'macro', or 'weighted'.", average)),
+        _ => Err(format!(
+            "Unsupported average: '{}'. Use 'binary', 'macro', or 'weighted'.",
+            average
+        )),
     }
 }
 
@@ -181,7 +200,11 @@ pub fn recall_score(y_true: &[f64], y_pred: &[f64], average: &str) -> Result<f64
                     let k = class_key(c);
                     let tp = *stats.tp.get(&k).unwrap_or(&0);
                     let fn_ = *stats.fn_.get(&k).unwrap_or(&0);
-                    if tp + fn_ == 0 { 0.0 } else { tp as f64 / (tp + fn_) as f64 }
+                    if tp + fn_ == 0 {
+                        0.0
+                    } else {
+                        tp as f64 / (tp + fn_) as f64
+                    }
                 })
                 .sum();
             Ok(sum / n)
@@ -198,13 +221,20 @@ pub fn recall_score(y_true: &[f64], y_pred: &[f64], average: &str) -> Result<f64
                     let tp = *stats.tp.get(&k).unwrap_or(&0);
                     let fn_ = *stats.fn_.get(&k).unwrap_or(&0);
                     let sup = *stats.support.get(&k).unwrap_or(&0);
-                    let rec = if tp + fn_ == 0 { 0.0 } else { tp as f64 / (tp + fn_) as f64 };
+                    let rec = if tp + fn_ == 0 {
+                        0.0
+                    } else {
+                        tp as f64 / (tp + fn_) as f64
+                    };
                     rec * sup as f64
                 })
                 .sum();
             Ok(sum / total as f64)
         }
-        _ => Err(format!("Unsupported average: '{}'. Use 'binary', 'macro', or 'weighted'.", average)),
+        _ => Err(format!(
+            "Unsupported average: '{}'. Use 'binary', 'macro', or 'weighted'.",
+            average
+        )),
     }
 }
 
@@ -220,8 +250,16 @@ pub fn f1_score(y_true: &[f64], y_pred: &[f64], average: &str) -> Result<f64, St
         let fp = *stats.fp.get(&k).unwrap_or(&0) as f64;
         let fn_ = *stats.fn_.get(&k).unwrap_or(&0) as f64;
         let prec = if tp + fp == 0.0 { 0.0 } else { tp / (tp + fp) };
-        let rec = if tp + fn_ == 0.0 { 0.0 } else { tp / (tp + fn_) };
-        if prec + rec == 0.0 { 0.0 } else { 2.0 * prec * rec / (prec + rec) }
+        let rec = if tp + fn_ == 0.0 {
+            0.0
+        } else {
+            tp / (tp + fn_)
+        };
+        if prec + rec == 0.0 {
+            0.0
+        } else {
+            2.0 * prec * rec / (prec + rec)
+        }
     };
 
     match average {
@@ -252,7 +290,10 @@ pub fn f1_score(y_true: &[f64], y_pred: &[f64], average: &str) -> Result<f64, St
                 .sum();
             Ok(sum / total as f64)
         }
-        _ => Err(format!("Unsupported average: '{}'. Use 'binary', 'macro', or 'weighted'.", average)),
+        _ => Err(format!(
+            "Unsupported average: '{}'. Use 'binary', 'macro', or 'weighted'.",
+            average
+        )),
     }
 }
 
@@ -274,7 +315,10 @@ pub fn roc_auc_score(y_true: &[f64], y_score: &[f64]) -> Result<f64, String> {
         return Err("Input arrays are empty".to_string());
     }
 
-    let n_pos = y_true.iter().filter(|&&v| (v - 1.0).abs() < f64::EPSILON).count();
+    let n_pos = y_true
+        .iter()
+        .filter(|&&v| (v - 1.0).abs() < f64::EPSILON)
+        .count();
     let n_neg = y_true.len() - n_pos;
     if n_pos == 0 || n_neg == 0 {
         return Err("ROC AUC requires both positive and negative samples".to_string());

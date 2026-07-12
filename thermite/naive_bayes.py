@@ -33,8 +33,8 @@ class GaussianNB:
         """
         Fit Gaussian Naive Bayes according to X, y.
         """
-        X = np.asarray(X, dtype=np.float64)
-        y = np.asarray(y, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
@@ -47,8 +47,8 @@ class GaussianNB:
         """
         Incremental fit on a batch of samples.
         """
-        X = np.asarray(X, dtype=np.float64)
-        y = np.asarray(y, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
@@ -62,7 +62,7 @@ class GaussianNB:
         """
         Perform classification on an array of test vectors X.
         """
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         return self._model.predict(X)
@@ -72,7 +72,7 @@ class GaussianNB:
         """
         Return probability estimates for the test vector X.
         """
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         return self._model.predict_proba(X)

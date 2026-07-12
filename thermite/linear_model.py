@@ -28,8 +28,8 @@ class LinearRegression:
 
     @_catch_panic
     def fit(self, X, y):
-        X = np.asarray(X, dtype=np.float64)
-        y = np.asarray(y, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
@@ -39,7 +39,7 @@ class LinearRegression:
 
     @_catch_panic
     def predict(self, X):
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         return self._model.predict(X)
@@ -61,8 +61,8 @@ class Ridge:
 
     @_catch_panic
     def fit(self, X, y):
-        X = np.asarray(X, dtype=np.float64)
-        y = np.asarray(y, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
@@ -72,7 +72,7 @@ class Ridge:
 
     @_catch_panic
     def predict(self, X):
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         return self._model.predict(X)
@@ -96,8 +96,8 @@ class Lasso:
 
     @_catch_panic
     def fit(self, X, y):
-        X = np.asarray(X, dtype=np.float64)
-        y = np.asarray(y, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
@@ -107,7 +107,7 @@ class Lasso:
 
     @_catch_panic
     def predict(self, X):
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         return self._model.predict(X)
@@ -132,22 +132,22 @@ class LogisticRegression:
     @_catch_panic
     def fit(self, X, y):
         import scipy.sparse
-        y = np.asarray(y, dtype=np.float64)
+        y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
         if y.ndim != 1:
             raise ValueError("Expected 1D array for y")
             
         if scipy.sparse.issparse(X):
             X_csr = X.tocsr()
             self._model.fit_sparse(
-                X_csr.data.astype(np.float64),
-                X_csr.indices.astype(np.uintp),
-                X_csr.indptr.astype(np.uintp),
+                np.ascontiguousarray(X_csr.data.astype(np.float64)),
+                np.ascontiguousarray(X_csr.indices.astype(np.uintp)),
+                np.ascontiguousarray(X_csr.indptr.astype(np.uintp)),
                 X_csr.shape[0],
                 X_csr.shape[1],
                 y
             )
         else:
-            X = np.asarray(X, dtype=np.float64)
+            X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
             if X.ndim != 2:
                 raise ValueError("Expected 2D array for X")
             self._model.fit(X, y)
@@ -155,8 +155,8 @@ class LogisticRegression:
 
     def partial_fit(self, X, y, classes=None):
         """Incremental fit with SGD - for streaming out-of-core learning."""
-        y = np.asarray(y, dtype=np.float64)
-        X = np.asarray(X, dtype=np.float64)
+        y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
@@ -170,14 +170,14 @@ class LogisticRegression:
         if scipy.sparse.issparse(X):
             X_csr = X.tocsr()
             return self._model.predict_sparse(
-                X_csr.data.astype(np.float64),
-                X_csr.indices.astype(np.uintp),
-                X_csr.indptr.astype(np.uintp),
+                np.ascontiguousarray(X_csr.data.astype(np.float64)),
+                np.ascontiguousarray(X_csr.indices.astype(np.uintp)),
+                np.ascontiguousarray(X_csr.indptr.astype(np.uintp)),
                 X_csr.shape[0],
                 X_csr.shape[1]
             )
         else:
-            X = np.asarray(X, dtype=np.float64)
+            X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
             if X.ndim != 2:
                 raise ValueError("Expected 2D array for X")
             return self._model.predict(X)
@@ -188,14 +188,14 @@ class LogisticRegression:
         if scipy.sparse.issparse(X):
             X_csr = X.tocsr()
             return self._model.predict_proba_sparse(
-                X_csr.data.astype(np.float64),
-                X_csr.indices.astype(np.uintp),
-                X_csr.indptr.astype(np.uintp),
+                np.ascontiguousarray(X_csr.data.astype(np.float64)),
+                np.ascontiguousarray(X_csr.indices.astype(np.uintp)),
+                np.ascontiguousarray(X_csr.indptr.astype(np.uintp)),
                 X_csr.shape[0],
                 X_csr.shape[1]
             )
         else:
-            X = np.asarray(X, dtype=np.float64)
+            X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
             if X.ndim != 2:
                 raise ValueError("Expected 2D array for X")
             return self._model.predict_proba(X)
@@ -232,22 +232,22 @@ class LinearSVC:
     @_catch_panic
     def fit(self, X, y):
         import scipy.sparse
-        y = np.asarray(y, dtype=np.float64)
+        y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
         if y.ndim != 1:
             raise ValueError("Expected 1D array for y")
             
         if scipy.sparse.issparse(X):
             X_csr = X.tocsr()
             self._model.fit_sparse(
-                X_csr.data.astype(np.float64),
-                X_csr.indices.astype(np.uintp),
-                X_csr.indptr.astype(np.uintp),
+                np.ascontiguousarray(X_csr.data.astype(np.float64)),
+                np.ascontiguousarray(X_csr.indices.astype(np.uintp)),
+                np.ascontiguousarray(X_csr.indptr.astype(np.uintp)),
                 X_csr.shape[0],
                 X_csr.shape[1],
                 y
             )
         else:
-            X = np.asarray(X, dtype=np.float64)
+            X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
             if X.ndim != 2:
                 raise ValueError("Expected 2D array for X")
             self._model.fit(X, y)
@@ -259,14 +259,14 @@ class LinearSVC:
         if scipy.sparse.issparse(X):
             X_csr = X.tocsr()
             return self._model.predict_sparse(
-                X_csr.data.astype(np.float64),
-                X_csr.indices.astype(np.uintp),
-                X_csr.indptr.astype(np.uintp),
+                np.ascontiguousarray(X_csr.data.astype(np.float64)),
+                np.ascontiguousarray(X_csr.indices.astype(np.uintp)),
+                np.ascontiguousarray(X_csr.indptr.astype(np.uintp)),
                 X_csr.shape[0],
                 X_csr.shape[1]
             )
         else:
-            X = np.asarray(X, dtype=np.float64)
+            X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
             if X.ndim != 2:
                 raise ValueError("Expected 2D array for X")
             return self._model.predict(X)

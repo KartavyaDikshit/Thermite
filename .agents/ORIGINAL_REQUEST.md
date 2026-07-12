@@ -78,3 +78,28 @@ The benchmark script must be runnable via a single command (e.g., `python benchm
 - [ ] README.md includes accurate installation instructions, benchmark results table, and usage examples
 - [ ] API reference docs are generated and browsable
 - [ ] DEVLOG.md is updated with a detailed work log entry documenting the build
+
+## Follow-up — 2026-07-12T17:45:09Z
+
+Enable Thermite ML to handle missing data (NaNs) dynamically, support Kernel SVMs via C-bindings, and compile optionally with optimized hardware BLAS/MKL libraries.
+
+Working directory: /Users/kartavyadikshit/Projects/Thermite
+Integrity mode: development
+
+## Requirements
+
+### R1. NaN / Missing Data Native Support
+Allow Rust-side estimators to handle float NaNs dynamically. Trees should support branch-splitting routing for NaNs, and linear models should support simple imputation.
+
+### R2. Kernel SVM Support
+Integrate Rust binding wrappers around optimized SVM solvers (like LIBSVM/LIBLINEAR) to support RBF and polynomial kernels, mimicking scikit-learn's `SVC`.
+
+### R3. Dynamic BLAS/MKL Linkage
+Provide compile-time configuration features (via `Cargo.toml`) to link the matrix multiplication routines dynamically with vendor-optimized libraries (like Apple Accelerate or Intel MKL) to accelerate CPU GEMM operations.
+
+## Acceptance Criteria
+
+### Verification (Programmatic)
+- [ ] **NaN Support:** A Python test script (`test_nan_support.py`) successfully trains and predicts using `DecisionTreeClassifier` and `LogisticRegression` on a dataset containing `np.nan` values without throwing exceptions, achieving >90% accuracy on a dummy dataset.
+- [ ] **Kernel SVM:** A Python test script (`test_svm.py`) successfully trains an `SVC(kernel='rbf')` and `SVC(kernel='poly')` on a dummy dataset, verifying the API matches scikit-learn and the Rust bindings compile correctly.
+- [ ] **BLAS Linkage:** Running `cargo test --features mkl` (or equivalent) in `thermite-core` successfully compiles and links against the specified BLAS library without linker errors.

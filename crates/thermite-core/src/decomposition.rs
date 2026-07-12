@@ -169,10 +169,8 @@ impl PCA {
         // Relaxing max_iter to 200 and tol to 1e-6 gives massive speedups on large data
         // while maintaining sufficient precision for ML applications.
         let mut rng = SmallRng::seed_from_u64(self.random_state.unwrap_or(0));
-        let (explained_variance, components) = Self::subspace_iteration(
-            &cov, self.n_components, &mut rng, 200, 1e-6
-        );
-
+        let (explained_variance, components) =
+            Self::subspace_iteration(&cov, self.n_components, &mut rng, 200, 1e-6);
 
         // Compute explained variance ratio
         let explained_variance_ratio = if total_variance > 0.0 {
@@ -214,11 +212,11 @@ impl PCA {
         self.transform(X)
     }
 
-    pub fn inverse_transform(&self, X_transformed: &ArrayView2<f64>) -> Result<Array2<f64>, String> {
-        let components = self
-            .components_
-            .as_ref()
-            .ok_or("PCA is not fitted yet")?;
+    pub fn inverse_transform(
+        &self,
+        X_transformed: &ArrayView2<f64>,
+    ) -> Result<Array2<f64>, String> {
+        let components = self.components_.as_ref().ok_or("PCA is not fitted yet")?;
         let mean = self.mean_.as_ref().unwrap();
         check_finite(X_transformed)?;
 
@@ -256,12 +254,7 @@ mod tests {
     #[test]
     fn test_pca_basic() {
         // Simple 2D data, reduce to 1 component
-        let X = array![
-            [1.0, 2.0],
-            [3.0, 4.0],
-            [5.0, 6.0],
-            [7.0, 8.0],
-        ];
+        let X = array![[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0],];
         let mut pca = PCA::new(1, Some(42));
         pca.fit(&X.view()).unwrap();
 

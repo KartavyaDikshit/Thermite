@@ -1,11 +1,11 @@
 #![allow(non_snake_case)]
 
+use crate::tree::{DecisionTreeClassifier, DecisionTreeRegressor};
 use ndarray::{Array1, Array2, ArrayView1, ArrayView2, Axis};
 use rand::prelude::*;
 use rand::rngs::SmallRng;
 use rayon::prelude::*;
-use crate::tree::{DecisionTreeClassifier, DecisionTreeRegressor};
-use thermite_gpu::{DeviceKind, ensemble_majority_vote, ensemble_row_mean};
+use thermite_gpu::{ensemble_majority_vote, ensemble_row_mean, DeviceKind};
 
 // ==========================================
 // RandomForestClassifier
@@ -62,7 +62,7 @@ impl RandomForestClassifier {
             .map(|i| {
                 let seed = base_seed.wrapping_add(i as u64);
                 let mut rng = SmallRng::seed_from_u64(seed);
-                
+
                 // Bootstrap sample using fast index mapping
                 let mut indices = Vec::with_capacity(n_samples);
                 for _ in 0..n_samples {
@@ -72,7 +72,10 @@ impl RandomForestClassifier {
                 let y_boot = y.select(Axis(0), &indices);
 
                 // Default max_features to sqrt(n_features) for classification
-                let max_feat = self.max_features.unwrap_or_else(|| (n_features as f64).sqrt().ceil() as usize).max(1);
+                let max_feat = self
+                    .max_features
+                    .unwrap_or_else(|| (n_features as f64).sqrt().ceil() as usize)
+                    .max(1);
 
                 let mut tree = DecisionTreeClassifier::new(
                     self.max_depth,
@@ -82,7 +85,7 @@ impl RandomForestClassifier {
                     Some(seed),
                 );
                 tree.categorical_features = self.categorical_features.clone();
-                
+
                 tree.fit(&X_boot.view(), y_boot.as_slice().unwrap());
                 tree
             })
@@ -101,9 +104,15 @@ impl RandomForestClassifier {
         let n_estimators = self.estimators_.len();
 
         // Collect all tree predictions into contiguous f32 score matrix (GPU-ready layout)
-        let all_preds: Vec<Vec<f32>> = self.estimators_
+        let all_preds: Vec<Vec<f32>> = self
+            .estimators_
             .par_iter()
-            .map(|tree| tree.predict(X).into_iter().map(|v| v as f32).collect::<Vec<f32>>())
+            .map(|tree| {
+                tree.predict(X)
+                    .into_iter()
+                    .map(|v| v as f32)
+                    .collect::<Vec<f32>>()
+            })
             .collect();
 
         // Flatten to [n_estimators * n_samples] row-major for GPU dispatch
@@ -111,7 +120,12 @@ impl RandomForestClassifier {
 
         // GPU-dispatched majority vote
         let result_f32 = ensemble_majority_vote(&flat, n_estimators, n_samples, self.device);
-        let final_preds = Array1::from(result_f32.into_iter().map(|v| v as f64).collect::<Vec<f64>>());
+        let final_preds = Array1::from(
+            result_f32
+                .into_iter()
+                .map(|v| v as f64)
+                .collect::<Vec<f64>>(),
+        );
 
         Ok(final_preds)
     }
@@ -165,7 +179,7 @@ impl RandomForestRegressor {
             .map(|i| {
                 let seed = base_seed.wrapping_add(i as u64);
                 let mut rng = SmallRng::seed_from_u64(seed);
-                
+
                 // Bootstrap sample using fast index mapping
                 let mut indices = Vec::with_capacity(n_samples);
                 for _ in 0..n_samples {
@@ -185,7 +199,7 @@ impl RandomForestRegressor {
                     Some(seed),
                 );
                 tree.categorical_features = self.categorical_features.clone();
-                
+
                 tree.fit(&X_boot.view(), y_boot.as_slice().unwrap());
                 tree
             })
@@ -204,16 +218,27 @@ impl RandomForestRegressor {
         let n_estimators = self.estimators_.len();
 
         // GPU-ready contiguous f32 layout: [est * n_samples + sample]
-        let all_preds: Vec<Vec<f32>> = self.estimators_
+        let all_preds: Vec<Vec<f32>> = self
+            .estimators_
             .par_iter()
-            .map(|tree| tree.predict(X).into_iter().map(|v| v as f32).collect::<Vec<f32>>())
+            .map(|tree| {
+                tree.predict(X)
+                    .into_iter()
+                    .map(|v| v as f32)
+                    .collect::<Vec<f32>>()
+            })
             .collect();
 
         let flat: Vec<f32> = all_preds.iter().flat_map(|p| p.iter().copied()).collect();
 
         // GPU-dispatched row mean
         let result_f32 = ensemble_row_mean(&flat, n_estimators, n_samples, self.device);
-        let final_preds = Array1::from(result_f32.into_iter().map(|v| v as f64).collect::<Vec<f64>>());
+        let final_preds = Array1::from(
+            result_f32
+                .into_iter()
+                .map(|v| v as f64)
+                .collect::<Vec<f64>>(),
+        );
 
         Ok(final_preds)
     }
@@ -354,7 +379,10 @@ impl GradientBoostingClassifier {
         classes.dedup();
 
         if classes.len() != 2 {
-            return Err("GradientBoostingClassifier currently only supports binary classification".to_string());
+            return Err(
+                "GradientBoostingClassifier currently only supports binary classification"
+                    .to_string(),
+            );
         }
 
         let pos_class = classes[1];
@@ -366,10 +394,14 @@ impl GradientBoostingClassifier {
                 sum_y += 1.0;
             }
         }
-        
+
         // F0 = log(p / (1-p))
         let p = sum_y / (n_samples as f64);
-        let f0 = if p == 0.0 || p == 1.0 { 0.0 } else { (p / (1.0 - p)).ln() };
+        let f0 = if p == 0.0 || p == 1.0 {
+            0.0
+        } else {
+            (p / (1.0 - p)).ln()
+        };
         self.initial_prediction_ = f0;
 
         let mut current_preds = Array1::<f64>::from_elem(n_samples, f0);
@@ -425,7 +457,11 @@ impl GradientBoostingClassifier {
         let classes = self.classes_.as_ref().unwrap();
         let mut preds = Array1::<f64>::zeros(n_samples);
         for i in 0..n_samples {
-            preds[i] = if Self::sigmoid(z[i]) >= 0.5 { classes[1] } else { classes[0] };
+            preds[i] = if Self::sigmoid(z[i]) >= 0.5 {
+                classes[1]
+            } else {
+                classes[0]
+            };
         }
 
         Ok(preds)

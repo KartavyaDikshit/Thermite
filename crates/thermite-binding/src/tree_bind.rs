@@ -39,8 +39,9 @@ impl DecisionTreeClassifier {
         let x_view = X.as_array();
         // Since y_slice is just a slice, we can borrow the array here instead of y_slice
         let y_view = y.as_array();
+        let y_slice = y_view.as_slice().ok_or_else(|| pyo3::exceptions::PyValueError::new_err("Array must be contiguous"))?;
         py.allow_threads(|| {
-            self.core.fit(&x_view, y_view.as_slice().unwrap());
+            self.core.fit(&x_view, y_slice);
         });
         Ok(())
     }
@@ -98,8 +99,9 @@ impl DecisionTreeRegressor {
         }
         let x_view = X.as_array();
         let y_view = y.as_array();
+        let y_slice = y_view.as_slice().ok_or_else(|| pyo3::exceptions::PyValueError::new_err("Array must be contiguous"))?;
         py.allow_threads(|| {
-            self.core.fit(&x_view, y_view.as_slice().unwrap());
+            self.core.fit(&x_view, y_slice);
         });
         Ok(())
     }

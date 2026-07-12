@@ -28,7 +28,10 @@ impl WeightType {
         match s {
             "uniform" => Ok(WeightType::Uniform),
             "distance" => Ok(WeightType::Distance),
-            _ => Err(format!("Unknown weight type: '{}'. Use 'uniform' or 'distance'.", s)),
+            _ => Err(format!(
+                "Unknown weight type: '{}'. Use 'uniform' or 'distance'.",
+                s
+            )),
         }
     }
 }
@@ -56,11 +59,7 @@ impl KNeighborsClassifier {
         }
     }
 
-    pub fn fit(
-        &mut self,
-        X: &ArrayView2<f64>,
-        y: &ArrayView1<i64>,
-    ) -> Result<(), String> {
+    pub fn fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<i64>) -> Result<(), String> {
         if X.is_empty() {
             return Err("Input array is empty".to_string());
         }
@@ -96,11 +95,7 @@ impl KNeighborsClassifier {
 
     /// For a single query point, find the k nearest neighbors.
     /// Returns Vec<(distance_sq, index)> sorted ascending by distance.
-    fn find_neighbors(
-        query: &[f64],
-        X_train: &Array2<f64>,
-        k: usize,
-    ) -> Vec<(f64, usize)> {
+    fn find_neighbors(query: &[f64], X_train: &Array2<f64>, k: usize) -> Vec<(f64, usize)> {
         let n_train = X_train.nrows();
 
         // Compute all distances
@@ -120,7 +115,10 @@ impl KNeighborsClassifier {
     }
 
     pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Array1<i64>, String> {
-        let X_train = self.X_train.as_ref().ok_or("KNeighborsClassifier is not fitted yet")?;
+        let X_train = self
+            .X_train
+            .as_ref()
+            .ok_or("KNeighborsClassifier is not fitted yet")?;
         let y_train = self.y_train.as_ref().unwrap();
         check_finite(X)?;
 
@@ -173,7 +171,10 @@ impl KNeighborsClassifier {
     }
 
     pub fn predict_proba(&self, X: &ArrayView2<f64>) -> Result<Array2<f64>, String> {
-        let X_train = self.X_train.as_ref().ok_or("KNeighborsClassifier is not fitted yet")?;
+        let X_train = self
+            .X_train
+            .as_ref()
+            .ok_or("KNeighborsClassifier is not fitted yet")?;
         let y_train = self.y_train.as_ref().unwrap();
         let classes = self.classes_.as_ref().unwrap();
         check_finite(X)?;
@@ -191,11 +192,8 @@ impl KNeighborsClassifier {
         let weights = &self.weights;
 
         // Build class-to-index map
-        let class_idx: HashMap<i64, usize> = classes
-            .iter()
-            .enumerate()
-            .map(|(i, &c)| (c, i))
-            .collect();
+        let class_idx: HashMap<i64, usize> =
+            classes.iter().enumerate().map(|(i, &c)| (c, i)).collect();
 
         let probas: Vec<Vec<f64>> = X
             .axis_iter(Axis(0))
@@ -248,11 +246,7 @@ impl KNeighborsClassifier {
         Ok(result)
     }
 
-    pub fn score(
-        &self,
-        X: &ArrayView2<f64>,
-        y: &ArrayView1<i64>,
-    ) -> Result<f64, String> {
+    pub fn score(&self, X: &ArrayView2<f64>, y: &ArrayView1<i64>) -> Result<f64, String> {
         let predictions = self.predict(X)?;
 
         if predictions.len() != y.len() {
@@ -301,11 +295,7 @@ mod tests {
 
     #[test]
     fn test_knn_distance_weighted() {
-        let X_train = array![
-            [0.0, 0.0],
-            [1.0, 0.0],
-            [2.0, 0.0],
-        ];
+        let X_train = array![[0.0, 0.0], [1.0, 0.0], [2.0, 0.0],];
         let y_train = array![0i64, 0, 1];
 
         let mut knn = KNeighborsClassifier::new(3, WeightType::Distance);
@@ -319,11 +309,7 @@ mod tests {
 
     #[test]
     fn test_knn_predict_proba() {
-        let X_train = array![
-            [0.0, 0.0],
-            [1.0, 0.0],
-            [2.0, 0.0],
-        ];
+        let X_train = array![[0.0, 0.0], [1.0, 0.0], [2.0, 0.0],];
         let y_train = array![0i64, 0, 1];
 
         let mut knn = KNeighborsClassifier::new(3, WeightType::Uniform);
@@ -340,12 +326,7 @@ mod tests {
 
     #[test]
     fn test_knn_score() {
-        let X_train = array![
-            [0.0, 0.0],
-            [1.0, 0.0],
-            [10.0, 10.0],
-            [11.0, 10.0],
-        ];
+        let X_train = array![[0.0, 0.0], [1.0, 0.0], [10.0, 10.0], [11.0, 10.0],];
         let y_train = array![0i64, 0, 1, 1];
 
         let mut knn = KNeighborsClassifier::new(2, WeightType::Uniform);
@@ -405,8 +386,14 @@ mod tests {
 
     #[test]
     fn test_weight_type_from_str() {
-        assert_eq!(WeightType::from_str("uniform").unwrap(), WeightType::Uniform);
-        assert_eq!(WeightType::from_str("distance").unwrap(), WeightType::Distance);
+        assert_eq!(
+            WeightType::from_str("uniform").unwrap(),
+            WeightType::Uniform
+        );
+        assert_eq!(
+            WeightType::from_str("distance").unwrap(),
+            WeightType::Distance
+        );
         assert!(WeightType::from_str("invalid").is_err());
     }
 }

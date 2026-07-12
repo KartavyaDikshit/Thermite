@@ -30,8 +30,8 @@ class KNeighborsClassifier:
 
     @_catch_panic
     def fit(self, X, y):
-        X = np.asarray(X, dtype=np.float64)
-        y = np.asarray(y, dtype=np.int64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        y = np.ascontiguousarray(np.asarray(y, dtype=np.int64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
@@ -41,14 +41,14 @@ class KNeighborsClassifier:
 
     @_catch_panic
     def predict(self, X):
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         return self._model.predict(X)
 
     @_catch_panic
     def predict_proba(self, X):
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         return self._model.predict_proba(X)

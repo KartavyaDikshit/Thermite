@@ -41,14 +41,14 @@ class KMeans:
         import scipy.sparse as sp
         if sp.issparse(X):
             X_csr = X.tocsr()
-            data = np.asarray(X_csr.data, dtype=np.float64)
-            indices = np.asarray(X_csr.indices, dtype=np.uintp)
-            indptr = np.asarray(X_csr.indptr, dtype=np.uintp)
+            data = np.ascontiguousarray(np.asarray(X_csr.data, dtype=np.float64))
+            indices = np.ascontiguousarray(np.asarray(X_csr.indices, dtype=np.uintp))
+            indptr = np.ascontiguousarray(np.asarray(X_csr.indptr, dtype=np.uintp))
             rows, cols = X_csr.shape
             self._model.fit_sparse(data, indices, indptr, rows, cols)
             return self
             
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         self._model.fit(X)
@@ -59,13 +59,13 @@ class KMeans:
         import scipy.sparse as sp
         if sp.issparse(X):
             X_csr = X.tocsr()
-            data = np.asarray(X_csr.data, dtype=np.float64)
-            indices = np.asarray(X_csr.indices, dtype=np.uintp)
-            indptr = np.asarray(X_csr.indptr, dtype=np.uintp)
+            data = np.ascontiguousarray(np.asarray(X_csr.data, dtype=np.float64))
+            indices = np.ascontiguousarray(np.asarray(X_csr.indices, dtype=np.uintp))
+            indptr = np.ascontiguousarray(np.asarray(X_csr.indptr, dtype=np.uintp))
             rows, cols = X_csr.shape
             return self._model.predict_sparse(data, indices, indptr, rows, cols)
 
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         return self._model.predict(X)
@@ -103,7 +103,7 @@ class DBSCAN:
 
     @_catch_panic
     def fit(self, X, y=None):
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         self._model.fit(X)
@@ -111,7 +111,7 @@ class DBSCAN:
 
     @_catch_panic
     def fit_predict(self, X, y=None):
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         return self._model.fit_predict(X)

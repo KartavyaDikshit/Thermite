@@ -128,7 +128,9 @@ class GridSearchCV:
         base_params = {}
         for k in dir(self.estimator):
             if not k.startswith('_') and not k.endswith('_') and k not in ('fit', 'predict', 'score', 'predict_proba'):
-                base_params[k] = getattr(self.estimator, k)
+                val = getattr(self.estimator, k)
+                if not callable(val):
+                    base_params[k] = val
 
         if self.n_jobs == 1:
             for params in experiments:

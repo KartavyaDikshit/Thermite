@@ -1,41 +1,33 @@
-# Thermite Implementation Plan
+# Thermite Follow-up Implementation Plan
 
-This document outlines the milestones and tracking for the implementation of Thermite.
-
-## Execution Tracks
-
-We run two parallel execution tracks:
-1. **E2E Testing Track**: Build a robust, scikit-learn-compatible E2E test suite covering Tiers 1-4.
-2. **Implementation Track**: Progressively build the Rust core and Python bindings through 4 implementation milestones, ending with a final E2E verification and adversarial hardening milestone.
+This document outlines the milestones and tracking for implementing the new requirements in the follow-up request (2026-07-12T17:45:09Z).
 
 ## Milestones
 
-### Milestone E2E: E2E Testing Track
-- **Goal**: Create comprehensive requirement-driven test suite (Tiers 1-4) using pytest.
-- **Verification**: Outputs `TEST_READY.md` containing runner command and tier counts.
+### Milestone F0: Exploration & Architecture
+- **Goal**: Research current linear model and tree implementations, identify best integration points for NaN handling, SVM bindings (using LIBSVM/LIBLINEAR or wrapping a C library), and BLAS/MKL linkage options.
+- **Verification**: Exploration reports with specific code recommendations.
 - **Dependencies**: None.
 
-### Milestone 1: Foundation & Preprocessing
-- **Goal**: Set up Cargo workspace, PyO3 bindings, and python package scaffolding. Implement preprocessing (`StandardScaler`, `MinMaxScaler`, `LabelEncoder`, `OneHotEncoder`) and utility `train_test_split`.
-- **Verification**: Successful build, `pip install -e .` installation, and execution of basic preprocessing/split tests.
-- **Dependencies**: None.
+### Milestone F1: NaN / Missing Data Support
+- **Goal**: Implement dynamic NaN handling.
+  - **Trees**: Branch-splitting routing for NaNs (DecisionTreeClassifier/Regressor, and ensure ensemble models wrap them correctly).
+  - **Linear Models**: Simple imputation (e.g. mean/median imputation during fit/predict/transform, in StandardScaler/MinMaxScaler or inside LogisticRegression and LinearRegression models).
+- **Verification**: Complete implementation + `test_nan_support.py` passes with >90% accuracy on a dummy dataset containing NaNs.
+- **Dependencies**: Milestone F0.
 
-### Milestone 2: Linear Models, Neighbors & Metrics
-- **Goal**: Implement `LinearRegression`, `Ridge`, `Lasso`, `LogisticRegression`, `KNeighborsClassifier`, and performance metrics (`accuracy_score`, `precision_score`, `recall_score`, `f1_score`, `roc_auc_score`, `mean_squared_error`, `r2_score`).
-- **Verification**: Algorithm correctness tests.
-- **Dependencies**: Milestone 1.
+### Milestone F2: Kernel SVM via C-bindings
+- **Goal**: Wrap/integrate optimized SVM solvers (like LIBSVM/LIBLINEAR) via C-bindings. Implement `SVC` with `rbf` and `poly` kernels in `thermite.svm` (mimicking scikit-learn's `SVC`).
+- **Verification**: `test_svm.py` successfully trains and predicts using `SVC(kernel='rbf')` and `SVC(kernel='poly')` on a dummy dataset, matching the scikit-learn API.
+- **Dependencies**: Milestone F0.
 
-### Milestone 3: Trees, Clustering & PCA
-- **Goal**: Implement decision trees, random forests, gradient boosting, clustering (`KMeans`, `DBSCAN`), and dimensionality reduction (`PCA`). Use Rayon for parallelism where performance wins are needed.
-- **Verification**: Algorithm correctness and performance tests.
-- **Dependencies**: Milestone 1.
+### Milestone F3: Dynamic BLAS/MKL Linkage
+- **Goal**: Configure Cargo.toml and ndarray/gemm options to optionally link with optimized hardware BLAS libraries (e.g., Apple Accelerate, Intel MKL).
+- **Verification**: `cargo test --features mkl` (or equivalent) compiles and links cleanly.
+- **Dependencies**: Milestone F0.
 
-### Milestone 4: Pipeline & Model Selection
-- **Goal**: Implement `Pipeline` chaining, `cross_val_score`, and `GridSearchCV`.
-- **Verification**: End-to-end grid search and pipeline execution tests.
-- **Dependencies**: Milestones 1, 2, 3.
+### Milestone F4: Final E2E Integration and Adversarial Hardening
+- **Goal**: Run comprehensive testing suite, run Forensic Auditor, run Challenger to perform adversarial stress-testing.
+- **Verification**: Verification and validation checkmarks pass.
+- **Dependencies**: Milestones F1, F2, F3.
 
-### Milestone 5: E2E Integration and Adversarial Hardening (Final Milestone)
-- **Goal**: Pass 100% of the E2E test suite (Tiers 1-4) and run Phase 2 (Tier 5 adversarial hardening and coverage checks).
-- **Verification**: Complete test pass, no gaps, clippy/ruff lints pass, doc generation, update `DEVLOG.md` and `README.md`.
-- **Dependencies**: Milestones 1, 2, 3, 4, and Milestone E2E.

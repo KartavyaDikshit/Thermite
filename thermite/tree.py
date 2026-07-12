@@ -33,19 +33,19 @@ class DecisionTreeClassifier:
 
     @_catch_panic
     def fit(self, X, y, categorical_features=None):
-        X = np.asarray(X, dtype=np.float64)
-        y = np.asarray(y, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
         self._model.fit(X, y, categorical_features)
         return self
 
     @_catch_panic
     def predict(self, X):
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         return self._model.predict(X)
 
     @_catch_panic
     def predict_proba(self, X):
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         return self._model.predict_proba(X)
 
     def score(self, X, y):
@@ -72,14 +72,14 @@ class DecisionTreeRegressor:
 
     @_catch_panic
     def fit(self, X, y, categorical_features=None):
-        X = np.asarray(X, dtype=np.float64)
-        y = np.asarray(y, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
         self._model.fit(X, y, categorical_features)
         return self
 
     @_catch_panic
     def predict(self, X):
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         return self._model.predict(X)
 
     def score(self, X, y):

@@ -47,13 +47,13 @@ impl KMeans {
         rows: usize,
         cols: usize,
     ) -> PyResult<()> {
-        let data_slice = data.as_slice().unwrap();
-        let indices_slice = indices.as_slice().unwrap();
-        let indptr_slice = indptr.as_slice().unwrap();
+        let data_slice = data.as_slice().map_err(|_| pyo3::exceptions::PyValueError::new_err("Array must be contiguous"))?;
+        let indices_slice = indices.as_slice().map_err(|_| pyo3::exceptions::PyValueError::new_err("Array must be contiguous"))?;
+        let indptr_slice = indptr.as_slice().map_err(|_| pyo3::exceptions::PyValueError::new_err("Array must be contiguous"))?;
         
         let cs_mat = build_csr(data_slice, indices_slice, indptr_slice, rows, cols)
-            .map_err(pyo3::exceptions::PyValueError::new_err)?;
-            
+             .map_err(pyo3::exceptions::PyValueError::new_err)?;
+             
         self.core.fit_sparse(&cs_mat).map_err(pyo3::exceptions::PyValueError::new_err)
     }
 
@@ -67,9 +67,9 @@ impl KMeans {
         rows: usize,
         cols: usize,
     ) -> PyResult<Bound<'py, PyArray1<usize>>> {
-        let data_slice = data.as_slice().unwrap();
-        let indices_slice = indices.as_slice().unwrap();
-        let indptr_slice = indptr.as_slice().unwrap();
+        let data_slice = data.as_slice().map_err(|_| pyo3::exceptions::PyValueError::new_err("Array must be contiguous"))?;
+        let indices_slice = indices.as_slice().map_err(|_| pyo3::exceptions::PyValueError::new_err("Array must be contiguous"))?;
+        let indptr_slice = indptr.as_slice().map_err(|_| pyo3::exceptions::PyValueError::new_err("Array must be contiguous"))?;
         let cs_mat = build_csr(data_slice, indices_slice, indptr_slice, rows, cols)
             .map_err(pyo3::exceptions::PyValueError::new_err)?;
             

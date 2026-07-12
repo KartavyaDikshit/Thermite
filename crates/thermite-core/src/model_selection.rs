@@ -1,6 +1,6 @@
+use rand::rngs::SmallRng;
 use rand::seq::SliceRandom;
 use rand::SeedableRng;
-use rand::rngs::SmallRng;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
@@ -179,7 +179,10 @@ fn determine_split_sizes(
                 return Err("test_size must be > 0".to_string());
             };
             if n_test > n_samples {
-                return Err(format!("test_size={} is greater than n_samples={}", n_test, n_samples));
+                return Err(format!(
+                    "test_size={} is greater than n_samples={}",
+                    n_test, n_samples
+                ));
             }
             (n_samples - n_test, n_test)
         }
@@ -192,7 +195,10 @@ fn determine_split_sizes(
                 return Err("train_size must be > 0".to_string());
             };
             if n_train > n_samples {
-                return Err(format!("train_size={} is greater than n_samples={}", n_train, n_samples));
+                return Err(format!(
+                    "train_size={} is greater than n_samples={}",
+                    n_train, n_samples
+                ));
             }
             (n_train, n_samples - n_train)
         }
@@ -237,7 +243,7 @@ mod tests {
         let indices = compute_split_indices(100, Some(0.20), None, true, Some(42), None).unwrap();
         assert_eq!(indices.train_indices.len(), 80);
         assert_eq!(indices.test_indices.len(), 20);
-        
+
         // Ensure no overlap
         for idx in &indices.train_indices {
             assert!(!indices.test_indices.contains(idx));
@@ -246,14 +252,25 @@ mod tests {
 
     #[test]
     fn test_split_indices_stratified() {
-        let labels: Vec<String> = (0..100).map(|i| if i % 2 == 0 { "A" } else { "B" }.to_string()).collect();
-        let indices = compute_split_indices(100, Some(0.50), None, true, Some(42), Some(&labels)).unwrap();
-        
+        let labels: Vec<String> = (0..100)
+            .map(|i| if i % 2 == 0 { "A" } else { "B" }.to_string())
+            .collect();
+        let indices =
+            compute_split_indices(100, Some(0.50), None, true, Some(42), Some(&labels)).unwrap();
+
         assert_eq!(indices.train_indices.len(), 50);
         assert_eq!(indices.test_indices.len(), 50);
-        
-        let train_a = indices.train_indices.iter().filter(|&&i| labels[i] == "A").count();
-        let test_a = indices.test_indices.iter().filter(|&&i| labels[i] == "A").count();
+
+        let train_a = indices
+            .train_indices
+            .iter()
+            .filter(|&&i| labels[i] == "A")
+            .count();
+        let test_a = indices
+            .test_indices
+            .iter()
+            .filter(|&&i| labels[i] == "A")
+            .count();
         assert_eq!(train_a, 25);
         assert_eq!(test_a, 25);
     }

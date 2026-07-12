@@ -10,3 +10,16 @@ rayon = { workspace = true }
 rand = { workspace = true }
 sprs = "0.11.4"
 thermite-gpu = { path = "../thermite-gpu" }
+intel-mkl-src = { version = "0.8", features = ["mkl-static-lp64-iomp"], optional = true }
+openblas-src = { version = "0.10", default-features = false, features = ["cblas", "system"], optional = true }
+accelerate-src = { version = "0.3", optional = true }
+
+[features]
+intel-mkl = ["ndarray/blas", "dep:intel-mkl-src"]
+openblas = ["ndarray/blas", "dep:openblas-src"]
+accelerate = ["ndarray/blas", "dep:accelerate-src"]
+
+[build-dependencies]
+cc = "1.2.66"
+
+

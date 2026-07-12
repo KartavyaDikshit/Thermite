@@ -43,8 +43,8 @@ class RandomForestClassifier:
 
     @_catch_panic
     def fit(self, X, y, categorical_features=None):
-        X = np.asarray(X, dtype=np.float64)
-        y = np.asarray(y, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
@@ -54,7 +54,7 @@ class RandomForestClassifier:
 
     @_catch_panic
     def predict(self, X):
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         return self._model.predict(X)
@@ -89,8 +89,8 @@ class RandomForestRegressor:
 
     @_catch_panic
     def fit(self, X, y, categorical_features=None):
-        X = np.asarray(X, dtype=np.float64)
-        y = np.asarray(y, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
@@ -100,7 +100,7 @@ class RandomForestRegressor:
 
     @_catch_panic
     def predict(self, X):
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         return self._model.predict(X)
@@ -128,8 +128,8 @@ class GradientBoostingClassifier:
 
     @_catch_panic
     def fit(self, X, y, categorical_features=None):
-        X = np.asarray(X, dtype=np.float64)
-        y = np.asarray(y, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
@@ -139,14 +139,14 @@ class GradientBoostingClassifier:
 
     @_catch_panic
     def predict(self, X):
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         return self._model.predict(X)
 
     @_catch_panic
     def predict_proba(self, X):
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         return self._model.predict_proba(X)
@@ -170,8 +170,8 @@ class GradientBoostingRegressor:
 
     @_catch_panic
     def fit(self, X, y, categorical_features=None):
-        X = np.asarray(X, dtype=np.float64)
-        y = np.asarray(y, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
@@ -181,7 +181,7 @@ class GradientBoostingRegressor:
 
     @_catch_panic
     def predict(self, X):
-        X = np.asarray(X, dtype=np.float64)
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         return self._model.predict(X)

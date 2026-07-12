@@ -2,7 +2,6 @@
 use ndarray::{Array1, ArrayView2, Axis};
 use rayon::prelude::*;
 
-
 // Helper to check for non-finite numbers (NaN/Inf)
 fn check_finite(X: &ArrayView2<f64>) -> Result<(), String> {
     if X.iter().any(|&val| !val.is_finite()) {
@@ -45,7 +44,8 @@ impl StandardScaler {
         let n_features = X.ncols();
 
         // Parallel column-wise statistics
-        let stats: Vec<(f64, f64)> = X.axis_iter(Axis(1))
+        let stats: Vec<(f64, f64)> = X
+            .axis_iter(Axis(1))
             .into_par_iter()
             .map(|col| {
                 let n = col.len() as f64;
@@ -87,12 +87,17 @@ impl StandardScaler {
         let scale = self.scale.as_ref().unwrap();
 
         if n_features != mean.len() {
-            return Err(format!("Feature mismatch: expected {}, got {}", mean.len(), n_features));
+            return Err(format!(
+                "Feature mismatch: expected {}, got {}",
+                mean.len(),
+                n_features
+            ));
         }
 
         let mut X_transformed = X.to_owned();
 
-        X_transformed.axis_iter_mut(Axis(0))
+        X_transformed
+            .axis_iter_mut(Axis(0))
             .into_par_iter()
             .for_each(|mut row| {
                 for j in 0..row.len() {
@@ -121,12 +126,17 @@ impl StandardScaler {
         let scale = self.scale.as_ref().unwrap();
 
         if n_features != mean.len() {
-            return Err(format!("Feature mismatch: expected {}, got {}", mean.len(), n_features));
+            return Err(format!(
+                "Feature mismatch: expected {}, got {}",
+                mean.len(),
+                n_features
+            ));
         }
 
         let mut X_orig = X.to_owned();
 
-        X_orig.axis_iter_mut(Axis(0))
+        X_orig
+            .axis_iter_mut(Axis(0))
             .into_par_iter()
             .for_each(|mut row| {
                 for j in 0..row.len() {
@@ -178,14 +188,19 @@ impl MinMaxScaler {
 
         let n_features = X.ncols();
 
-        let stats: Vec<(f64, f64)> = X.axis_iter(Axis(1))
+        let stats: Vec<(f64, f64)> = X
+            .axis_iter(Axis(1))
             .into_par_iter()
             .map(|col| {
                 let mut c_min = f64::INFINITY;
                 let mut c_max = f64::NEG_INFINITY;
                 for &val in col {
-                    if val < c_min { c_min = val; }
-                    if val > c_max { c_max = val; }
+                    if val < c_min {
+                        c_min = val;
+                    }
+                    if val > c_max {
+                        c_max = val;
+                    }
                 }
                 (c_min, c_max)
             })
@@ -231,12 +246,17 @@ impl MinMaxScaler {
         let min = self.min.as_ref().unwrap();
 
         if n_features != scale.len() {
-            return Err(format!("Feature mismatch: expected {}, got {}", scale.len(), n_features));
+            return Err(format!(
+                "Feature mismatch: expected {}, got {}",
+                scale.len(),
+                n_features
+            ));
         }
 
         let mut X_transformed = X.to_owned();
 
-        X_transformed.axis_iter_mut(Axis(0))
+        X_transformed
+            .axis_iter_mut(Axis(0))
             .into_par_iter()
             .for_each(|mut row| {
                 for j in 0..row.len() {
@@ -259,12 +279,17 @@ impl MinMaxScaler {
         let data_min = self.data_min.as_ref().unwrap();
 
         if n_features != scale.len() {
-            return Err(format!("Feature mismatch: expected {}, got {}", scale.len(), n_features));
+            return Err(format!(
+                "Feature mismatch: expected {}, got {}",
+                scale.len(),
+                n_features
+            ));
         }
 
         let mut X_orig = X.to_owned();
 
-        X_orig.axis_iter_mut(Axis(0))
+        X_orig
+            .axis_iter_mut(Axis(0))
             .into_par_iter()
             .for_each(|mut row| {
                 for j in 0..row.len() {
@@ -326,7 +351,10 @@ impl LabelEncoderCore {
     }
 
     pub fn transform_int(&self, y: &[i64]) -> Result<Vec<i64>, String> {
-        let classes = self.classes_int.as_ref().ok_or("LabelEncoder not fitted on integers")?;
+        let classes = self
+            .classes_int
+            .as_ref()
+            .ok_or("LabelEncoder not fitted on integers")?;
         let mut out = Vec::with_capacity(y.len());
         for &val in y {
             match classes.binary_search(&val) {
@@ -338,7 +366,10 @@ impl LabelEncoderCore {
     }
 
     pub fn transform_str(&self, y: &[String]) -> Result<Vec<i64>, String> {
-        let classes = self.classes_str.as_ref().ok_or("LabelEncoder not fitted on strings")?;
+        let classes = self
+            .classes_str
+            .as_ref()
+            .ok_or("LabelEncoder not fitted on strings")?;
         let mut out = Vec::with_capacity(y.len());
         for val in y {
             match classes.binary_search(val) {
@@ -350,7 +381,10 @@ impl LabelEncoderCore {
     }
 
     pub fn inverse_transform_int(&self, y: &[i64]) -> Result<Vec<i64>, String> {
-        let classes = self.classes_int.as_ref().ok_or("LabelEncoder not fitted on integers")?;
+        let classes = self
+            .classes_int
+            .as_ref()
+            .ok_or("LabelEncoder not fitted on integers")?;
         let mut out = Vec::with_capacity(y.len());
         for &idx in y {
             if idx < 0 || idx >= classes.len() as i64 {
@@ -362,7 +396,10 @@ impl LabelEncoderCore {
     }
 
     pub fn inverse_transform_str(&self, y: &[i64]) -> Result<Vec<String>, String> {
-        let classes = self.classes_str.as_ref().ok_or("LabelEncoder not fitted on strings")?;
+        let classes = self
+            .classes_str
+            .as_ref()
+            .ok_or("LabelEncoder not fitted on strings")?;
         let mut out = Vec::with_capacity(y.len());
         for &idx in y {
             if idx < 0 || idx >= classes.len() as i64 {
@@ -374,7 +411,10 @@ impl LabelEncoderCore {
     }
 
     pub fn transform_float(&self, y: &[f64]) -> Result<Vec<i64>, String> {
-        let classes = self.classes_float.as_ref().ok_or("LabelEncoder not fitted on floats")?;
+        let classes = self
+            .classes_float
+            .as_ref()
+            .ok_or("LabelEncoder not fitted on floats")?;
         let mut out = Vec::with_capacity(y.len());
         for &val in y {
             match classes.binary_search_by(|probe| probe.total_cmp(&val)) {
@@ -386,7 +426,10 @@ impl LabelEncoderCore {
     }
 
     pub fn inverse_transform_float(&self, y: &[i64]) -> Result<Vec<f64>, String> {
-        let classes = self.classes_float.as_ref().ok_or("LabelEncoder not fitted on floats")?;
+        let classes = self
+            .classes_float
+            .as_ref()
+            .ok_or("LabelEncoder not fitted on floats")?;
         let mut out = Vec::with_capacity(y.len());
         for &idx in y {
             if idx < 0 || idx >= classes.len() as i64 {
@@ -457,13 +500,18 @@ impl OneHotEncoderCore {
         let n_features = X.ncols();
 
         if n_features != self.categories.len() {
-            return Err(format!("Feature mismatch: expected {}, got {}", self.categories.len(), n_features));
+            return Err(format!(
+                "Feature mismatch: expected {}, got {}",
+                self.categories.len(),
+                n_features
+            ));
         }
 
         let total_categories: usize = self.categories.iter().map(|c| c.len()).sum();
         let mut output = ndarray::Array2::<f64>::zeros((n_samples, total_categories));
 
-        output.axis_iter_mut(Axis(0))
+        output
+            .axis_iter_mut(Axis(0))
             .into_par_iter()
             .enumerate()
             .try_for_each(|(i, mut row)| -> Result<(), String> {
@@ -478,13 +526,20 @@ impl OneHotEncoderCore {
                                 }
                                 Err(_) => {
                                     if self.handle_unknown == "error" {
-                                        return Err(format!("Found unknown category {} in column {}", val, j));
+                                        return Err(format!(
+                                            "Found unknown category {} in column {}",
+                                            val, j
+                                        ));
                                     }
                                 }
                             }
                             offset += cats.len();
                         }
-                        _ => return Err("Expected integer category, found string categories".to_string()),
+                        _ => {
+                            return Err(
+                                "Expected integer category, found string categories".to_string()
+                            )
+                        }
                     }
                 }
                 Ok(())
@@ -501,13 +556,18 @@ impl OneHotEncoderCore {
         let n_samples = X_cols[0].len();
 
         if n_features != self.categories.len() {
-            return Err(format!("Feature mismatch: expected {}, got {}", self.categories.len(), n_features));
+            return Err(format!(
+                "Feature mismatch: expected {}, got {}",
+                self.categories.len(),
+                n_features
+            ));
         }
 
         let total_categories: usize = self.categories.iter().map(|c| c.len()).sum();
         let mut output = ndarray::Array2::<f64>::zeros((n_samples, total_categories));
 
-        output.axis_iter_mut(Axis(0))
+        output
+            .axis_iter_mut(Axis(0))
             .into_par_iter()
             .enumerate()
             .try_for_each(|(i, mut row)| -> Result<(), String> {
@@ -522,13 +582,20 @@ impl OneHotEncoderCore {
                                 }
                                 Err(_) => {
                                     if self.handle_unknown == "error" {
-                                        return Err(format!("Found unknown category {} in column {}", val, j));
+                                        return Err(format!(
+                                            "Found unknown category {} in column {}",
+                                            val, j
+                                        ));
                                     }
                                 }
                             }
                             offset += cats.len();
                         }
-                        _ => return Err("Expected string category, found integer categories".to_string()),
+                        _ => {
+                            return Err(
+                                "Expected string category, found integer categories".to_string()
+                            )
+                        }
                     }
                 }
                 Ok(())
@@ -537,18 +604,26 @@ impl OneHotEncoderCore {
         Ok(output)
     }
 
-    pub fn inverse_transform_int(&self, X: &ArrayView2<f64>) -> Result<ndarray::Array2<i64>, String> {
+    pub fn inverse_transform_int(
+        &self,
+        X: &ArrayView2<f64>,
+    ) -> Result<ndarray::Array2<i64>, String> {
         let n_samples = X.nrows();
         let n_features = self.categories.len();
-        
+
         let total_categories: usize = self.categories.iter().map(|c| c.len()).sum();
         if X.ncols() != total_categories {
-            return Err(format!("Feature mismatch: expected {} one-hot encoded columns, got {}", total_categories, X.ncols()));
+            return Err(format!(
+                "Feature mismatch: expected {} one-hot encoded columns, got {}",
+                total_categories,
+                X.ncols()
+            ));
         }
 
         let mut output = ndarray::Array2::<i64>::zeros((n_samples, n_features));
 
-        output.axis_iter_mut(Axis(0))
+        output
+            .axis_iter_mut(Axis(0))
             .into_par_iter()
             .enumerate()
             .try_for_each(|(i, mut row)| -> Result<(), String> {
@@ -583,12 +658,17 @@ impl OneHotEncoderCore {
 
         let total_categories: usize = self.categories.iter().map(|c| c.len()).sum();
         if X.ncols() != total_categories {
-            return Err(format!("Feature mismatch: expected {} one-hot encoded columns, got {}", total_categories, X.ncols()));
+            return Err(format!(
+                "Feature mismatch: expected {} one-hot encoded columns, got {}",
+                total_categories,
+                X.ncols()
+            ));
         }
 
         let mut output = vec![vec![String::new(); n_features]; n_samples];
 
-        output.par_iter_mut()
+        output
+            .par_iter_mut()
             .enumerate()
             .try_for_each(|(i, row)| -> Result<(), String> {
                 let mut offset = 0;
@@ -630,7 +710,7 @@ mod tests {
 
         assert_eq!(scaler.mean.as_ref().unwrap(), &array![3.0, 4.0]);
         // Var is [(1-3)^2 + 0 + (5-3)^2]/3 = 8/3 = 2.6666666666666665
-        assert!((scaler.var.as_ref().unwrap()[0] - 8.0/3.0).abs() < 1e-9);
+        assert!((scaler.var.as_ref().unwrap()[0] - 8.0 / 3.0).abs() < 1e-9);
 
         let xt = scaler.transform(&x.view()).unwrap();
         // first col mean 3, std sqrt(8/3)
@@ -679,7 +759,14 @@ mod tests {
         // col 1 cats: 10, 20 (len 2)
         let xt = ohe.transform_int(&x.view()).unwrap();
         // first row [1, 10] -> [1, 0, 1, 0]
-        assert_eq!(xt, array![[1.0, 0.0, 1.0, 0.0], [0.0, 1.0, 0.0, 1.0], [1.0, 0.0, 0.0, 1.0]]);
+        assert_eq!(
+            xt,
+            array![
+                [1.0, 0.0, 1.0, 0.0],
+                [0.0, 1.0, 0.0, 1.0],
+                [1.0, 0.0, 0.0, 1.0]
+            ]
+        );
 
         let x_orig = ohe.inverse_transform_int(&xt.view()).unwrap();
         assert_eq!(x_orig, x);

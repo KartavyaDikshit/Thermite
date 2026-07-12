@@ -16,3 +16,9 @@ pyo3 = { workspace = true }
 numpy = { workspace = true }
 ndarray = { workspace = true }
 sprs = "0.11.4"
+
+[features]
+intel-mkl = ["thermite-core/intel-mkl"]
+openblas = ["thermite-core/openblas"]
+accelerate = ["thermite-core/accelerate"]
+

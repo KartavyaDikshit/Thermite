@@ -74,7 +74,10 @@ impl KMeans {
             // Update min_dists with the last added center
             let prev_center = centers.row(c - 1);
             for i in 0..n_samples {
-                let d = euclidean_dist_sq(X.row(i).as_slice().unwrap(), prev_center.as_slice().unwrap());
+                let d = euclidean_dist_sq(
+                    X.row(i).as_slice().unwrap(),
+                    prev_center.as_slice().unwrap(),
+                );
                 if d < min_dists[i] {
                     min_dists[i] = d;
                 }
@@ -112,7 +115,8 @@ impl KMeans {
         let n_samples = X.nrows();
         let n_clusters = centers.nrows();
 
-        let results: Vec<(usize, f64)> = X.axis_iter(Axis(0))
+        let results: Vec<(usize, f64)> = X
+            .axis_iter(Axis(0))
             .into_par_iter()
             .map(|row| {
                 let mut best_label = 0;
@@ -306,7 +310,9 @@ impl KMeans {
                     norm_x_sq += val * val;
                 }
                 let mut d = norm_x_sq - 2.0 * x_dot_c + norm_c_sq;
-                if d < 0.0 { d = 0.0; }
+                if d < 0.0 {
+                    d = 0.0;
+                }
                 if d < min_dists[i] {
                     min_dists[i] = d;
                 }
@@ -360,7 +366,7 @@ impl KMeans {
                 let row = X.outer_view(i).unwrap();
                 let mut best_label = 0;
                 let mut best_dist = f64::INFINITY;
-                
+
                 let mut norm_x_sq = 0.0;
                 for (_, &val) in row.iter() {
                     norm_x_sq += val * val;
@@ -374,8 +380,10 @@ impl KMeans {
                         x_dot_c += val * c_slice[col_idx];
                     }
                     let mut d = norm_x_sq - 2.0 * x_dot_c + center_norms_sq[k];
-                    if d < 0.0 { d = 0.0; }
-                    
+                    if d < 0.0 {
+                        d = 0.0;
+                    }
+
                     if d < best_dist {
                         best_dist = d;
                         best_label = k;
@@ -653,12 +661,7 @@ mod tests {
 
     #[test]
     fn test_kmeans_predict() {
-        let X = array![
-            [0.0, 0.0],
-            [0.5, 0.5],
-            [10.0, 10.0],
-            [10.5, 10.5],
-        ];
+        let X = array![[0.0, 0.0], [0.5, 0.5], [10.0, 10.0], [10.5, 10.5],];
         let mut km = KMeans::new(2, 100, 1e-4, 1, Some(0));
         km.fit(&X.view()).unwrap();
 

@@ -10,10 +10,49 @@ use crate::metrics;
 // Helper: check for non-finite values
 // ==========================================
 fn check_finite_2d(X: &ArrayView2<f64>) -> Result<(), String> {
-    if X.iter().any(|&val| !val.is_finite()) {
-        return Err("Input contains NaN or infinity values".to_string());
+    if X.iter().any(|&val| val.is_infinite()) {
+        return Err("Input contains infinity values".to_string());
     }
     Ok(())
+}
+
+fn compute_column_means_and_impute(X: &ArrayView2<f64>) -> (Vec<f64>, Array2<f64>) {
+    let nrows = X.nrows();
+    let ncols = X.ncols();
+    let mut impute_values = vec![0.0; ncols];
+    let mut X_imputed = Array2::<f64>::zeros((nrows, ncols));
+    for j in 0..ncols {
+        let mut sum = 0.0;
+        let mut count = 0.0;
+        for i in 0..nrows {
+            let val = X[[i, j]];
+            if !val.is_nan() {
+                sum += val;
+                count += 1.0;
+            }
+        }
+        let mean = if count > 0.0 { sum / count } else { 0.0 };
+        impute_values[j] = mean;
+        for i in 0..nrows {
+            let val = X[[i, j]];
+            X_imputed[[i, j]] = if val.is_nan() { mean } else { val };
+        }
+    }
+    (impute_values, X_imputed)
+}
+
+fn impute_features(X: &ArrayView2<f64>, impute_values: &[f64]) -> Array2<f64> {
+    let nrows = X.nrows();
+    let ncols = X.ncols();
+    let mut X_imputed = Array2::<f64>::zeros((nrows, ncols));
+    for j in 0..ncols {
+        let mean = impute_values[j];
+        for i in 0..nrows {
+            let val = X[[i, j]];
+            X_imputed[[i, j]] = if val.is_nan() { mean } else { val };
+        }
+    }
+    X_imputed
 }
 
 fn check_finite_1d(y: &ArrayView1<f64>) -> Result<(), String> {
@@ -128,6 +167,7 @@ pub struct LinearRegression {
     pub coef_: Option<Array1<f64>>,
     pub intercept_: f64,
     pub fit_intercept: bool,
+    pub impute_values: Option<Vec<f64>>,
 }
 
 impl LinearRegression {
@@ -136,6 +176,7 @@ impl LinearRegression {
             coef_: None,
             intercept_: 0.0,
             fit_intercept,
+            impute_values: None,
         }
     }
 
@@ -154,14 +195,19 @@ impl LinearRegression {
         check_finite_2d(X)?;
         check_finite_1d(y)?;
 
+        let (impute, X_clean) = compute_column_means_and_impute(X);
+        self.impute_values = Some(impute);
+
         let X_work = if self.fit_intercept {
-            add_intercept_column(X)
+            add_intercept_column(&X_clean.view())
         } else {
-            X.to_owned()
+            X_clean
         };
 
         // y as column vector (n, 1)
-        let y_col = y.to_owned().into_shape((y.len(), 1))
+        let y_col = y
+            .to_owned()
+            .into_shape((y.len(), 1))
             .map_err(|e| format!("Failed to reshape y: {}", e))?;
 
         // X^T X
@@ -204,8 +250,14 @@ impl LinearRegression {
         }
         check_finite_2d(X)?;
 
+        let impute = self
+            .impute_values
+            .as_ref()
+            .ok_or("Model is not fitted yet")?;
+        let X_clean = impute_features(X, impute);
+
         let intercept = self.intercept_;
-        let preds = X.dot(coef) + intercept;
+        let preds = X_clean.dot(coef) + intercept;
 
         Ok(preds)
     }
@@ -225,6 +277,7 @@ pub struct Ridge {
     pub intercept_: f64,
     pub fit_intercept: bool,
     pub alpha: f64,
+    pub impute_values: Option<Vec<f64>>,
 }
 
 impl Ridge {
@@ -234,6 +287,7 @@ impl Ridge {
             intercept_: 0.0,
             fit_intercept,
             alpha,
+            impute_values: None,
         }
     }
 
@@ -252,13 +306,18 @@ impl Ridge {
         check_finite_2d(X)?;
         check_finite_1d(y)?;
 
+        let (impute, X_clean) = compute_column_means_and_impute(X);
+        self.impute_values = Some(impute);
+
         let X_work = if self.fit_intercept {
-            add_intercept_column(X)
+            add_intercept_column(&X_clean.view())
         } else {
-            X.to_owned()
+            X_clean
         };
 
-        let y_col = y.to_owned().into_shape((y.len(), 1))
+        let y_col = y
+            .to_owned()
+            .into_shape((y.len(), 1))
             .map_err(|e| format!("Failed to reshape y: {}", e))?;
 
         let mut XtX = at_b(&X_work, &X_work);
@@ -305,8 +364,14 @@ impl Ridge {
         }
         check_finite_2d(X)?;
 
+        let impute = self
+            .impute_values
+            .as_ref()
+            .ok_or("Model is not fitted yet")?;
+        let X_clean = impute_features(X, impute);
+
         let intercept = self.intercept_;
-        let preds: Vec<f64> = X
+        let preds: Vec<f64> = X_clean
             .axis_iter(Axis(0))
             .into_par_iter()
             .map(|row| {
@@ -337,6 +402,7 @@ pub struct Lasso {
     pub alpha: f64,
     pub max_iter: usize,
     pub tol: f64,
+    pub impute_values: Option<Vec<f64>>,
 }
 
 impl Lasso {
@@ -348,6 +414,7 @@ impl Lasso {
             alpha,
             max_iter,
             tol,
+            impute_values: None,
         }
     }
 
@@ -378,31 +445,32 @@ impl Lasso {
         check_finite_2d(X)?;
         check_finite_1d(y)?;
 
-        let n = X.nrows();
-        let p = X.ncols();
+        let (impute, X_clean) = compute_column_means_and_impute(X);
+        self.impute_values = Some(impute);
+
+        let n = X_clean.nrows();
+        let p = X_clean.ncols();
         let n_f64 = n as f64;
 
         // Center the data if fit_intercept
         let (X_work, y_work, x_mean, y_mean) = if self.fit_intercept {
-            let x_mean: Array1<f64> = X.mean_axis(Axis(0)).unwrap();
+            let x_mean: Array1<f64> = X_clean.mean_axis(Axis(0)).unwrap();
             let y_mean = y.mean().unwrap();
 
-            let mut X_centered = X.to_owned();
+            let mut X_centered = X_clean;
             X_centered -= &x_mean;
-            
+
             let y_centered: Array1<f64> = y.mapv(|v| v - y_mean);
             (X_centered, y_centered, x_mean, y_mean)
         } else {
             let x_mean = Array1::<f64>::zeros(p);
-            (X.to_owned(), y.to_owned(), x_mean, 0.0)
+            (X_clean, y.to_owned(), x_mean, 0.0)
         };
 
         // Precompute column norms squared
         let col_norms_sq: Vec<f64> = (0..p)
             .into_par_iter()
-            .map(|j| {
-                X_work.column(j).dot(&X_work.column(j))
-            })
+            .map(|j| X_work.column(j).dot(&X_work.column(j)))
             .collect();
 
         let mut coef = Array1::<f64>::zeros(p);
@@ -428,7 +496,9 @@ impl Lasso {
                 let delta = new_coef - old_coef;
                 if delta.abs() > 0.0 {
                     // Update residual
-                    ndarray::Zip::from(&mut residual).and(&X_work.column(j)).for_each(|r, &x| *r -= delta * x);
+                    ndarray::Zip::from(&mut residual)
+                        .and(&X_work.column(j))
+                        .for_each(|r, &x| *r -= delta * x);
                     coef[j] = new_coef;
                     max_change = max_change.max(delta.abs());
                 }
@@ -464,8 +534,14 @@ impl Lasso {
         }
         check_finite_2d(X)?;
 
+        let impute = self
+            .impute_values
+            .as_ref()
+            .ok_or("Model is not fitted yet")?;
+        let X_clean = impute_features(X, impute);
+
         let intercept = self.intercept_;
-        let preds: Vec<f64> = X
+        let preds: Vec<f64> = X_clean
             .axis_iter(Axis(0))
             .into_par_iter()
             .map(|row| {
@@ -503,6 +579,7 @@ pub struct LogisticRegression {
     /// Ordered unique classes
     pub classes_: Option<Vec<f64>>,
     pub learning_rate: f64,
+    pub impute_values: Option<Vec<f64>>,
 }
 
 impl LogisticRegression {
@@ -516,6 +593,7 @@ impl LogisticRegression {
             intercept_: None,
             classes_: None,
             learning_rate: 0.1,
+            impute_values: None,
         }
     }
 
@@ -553,17 +631,17 @@ impl LogisticRegression {
             let z = X.dot(&w_feat) + bias;
             let h = z.mapv(Self::sigmoid);
             let diff = &h - y_binary;
-            
+
             let mut grad = Array1::<f64>::zeros(p);
             grad[0] = diff.sum() / n_f64;
-            
+
             let mut grad_feat = X.t().dot(&diff);
             grad_feat /= n_f64;
-            
+
             for j in 0..n_features {
                 grad_feat[j] += lambda * w_feat[j];
             }
-            
+
             grad.slice_mut(ndarray::s![1..]).assign(&grad_feat);
             grad
         };
@@ -704,22 +782,22 @@ impl LogisticRegression {
         // Compute initial gradient
         let compute_grad = |w: &Array1<f64>| -> Array1<f64> {
             let mut grad = Array1::<f64>::zeros(p);
-            
+
             for (i, vec) in X.outer_iterator().enumerate() {
                 let mut z = w[0];
                 for (col_idx, &val) in vec.iter() {
                     z += val * w[col_idx + 1];
                 }
-                
+
                 let h = Self::sigmoid(z);
                 let diff = h - y_binary[i];
-                
+
                 grad[0] += diff;
                 for (col_idx, &val) in vec.iter() {
                     grad[col_idx + 1] += diff * val;
                 }
             }
-            
+
             grad /= n_f64;
             // L2 regularization on weights only (skip bias at index 0)
             for j in 1..p {
@@ -777,7 +855,7 @@ impl LogisticRegression {
 
             let direction = -&r;
             let grad_dot_dir = grad.dot(&direction);
-            
+
             if grad_dot_dir >= 0.0 {
                 s_hist.clear();
                 y_hist.clear();
@@ -864,7 +942,13 @@ impl LogisticRegression {
             let pos = classes[1];
             let y_binary = Array1::from(
                 y.iter()
-                    .map(|&v| if (v - pos).abs() < f64::EPSILON { 1.0 } else { 0.0 })
+                    .map(|&v| {
+                        if (v - pos).abs() < f64::EPSILON {
+                            1.0
+                        } else {
+                            0.0
+                        }
+                    })
                     .collect::<Vec<f64>>(),
             );
             let (w, b) = self.fit_binary_sparse(X, &y_binary, n_features)?;
@@ -882,7 +966,13 @@ impl LogisticRegression {
             for (c_idx, &cls) in classes.iter().enumerate() {
                 let y_binary = Array1::from(
                     y.iter()
-                        .map(|&v| if (v - cls).abs() < f64::EPSILON { 1.0 } else { 0.0 })
+                        .map(|&v| {
+                            if (v - cls).abs() < f64::EPSILON {
+                                1.0
+                            } else {
+                                0.0
+                            }
+                        })
                         .collect::<Vec<f64>>(),
                 );
                 let (w, b) = self.fit_binary_sparse(X, &y_binary, n_features)?;
@@ -921,6 +1011,9 @@ impl LogisticRegression {
             ));
         }
 
+        let (impute, X_clean) = compute_column_means_and_impute(X);
+        self.impute_values = Some(impute);
+
         // Discover classes
         let mut classes: Vec<f64> = Vec::new();
         for &v in y.iter() {
@@ -930,15 +1023,21 @@ impl LogisticRegression {
         }
         classes.sort_unstable_by(|a, b| a.total_cmp(b));
 
-        let n_features = X.ncols();
-        let X_owned = X.to_owned();
+        let n_features = X_clean.ncols();
+        let X_owned = X_clean;
 
         if classes.len() == 2 {
             // Binary: map to 0/1 where positive class is classes[1]
             let pos = classes[1];
             let y_binary = Array1::from(
                 y.iter()
-                    .map(|&v| if (v - pos).abs() < f64::EPSILON { 1.0 } else { 0.0 })
+                    .map(|&v| {
+                        if (v - pos).abs() < f64::EPSILON {
+                            1.0
+                        } else {
+                            0.0
+                        }
+                    })
                     .collect::<Vec<f64>>(),
             );
             let (w, b) = self.fit_binary(&X_owned, &y_binary, n_features)?;
@@ -957,7 +1056,13 @@ impl LogisticRegression {
             for (c_idx, &cls) in classes.iter().enumerate() {
                 let y_binary = Array1::from(
                     y.iter()
-                        .map(|&v| if (v - cls).abs() < f64::EPSILON { 1.0 } else { 0.0 })
+                        .map(|&v| {
+                            if (v - cls).abs() < f64::EPSILON {
+                                1.0
+                            } else {
+                                0.0
+                            }
+                        })
                         .collect::<Vec<f64>>(),
                 );
                 let (w, b) = self.fit_binary(&X_owned, &y_binary, n_features)?;
@@ -974,7 +1079,12 @@ impl LogisticRegression {
         Ok(())
     }
 
-    pub fn partial_fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<f64>, classes_opt: Option<Vec<f64>>) -> Result<(), String> {
+    pub fn partial_fit(
+        &mut self,
+        X: &ArrayView2<f64>,
+        y: &ArrayView1<f64>,
+        classes_opt: Option<Vec<f64>>,
+    ) -> Result<(), String> {
         if X.nrows() == 0 || X.ncols() == 0 {
             return Err("Input array is empty".to_string());
         }
@@ -984,10 +1094,21 @@ impl LogisticRegression {
         check_finite_2d(X)?;
         check_finite_1d(y)?;
 
-        let n_features = X.ncols();
+        let (impute, X_clean) = compute_column_means_and_impute(X);
+        if self.impute_values.is_none() {
+            self.impute_values = Some(impute);
+        } else {
+            if let Some(ref mut current_impute) = self.impute_values {
+                for (j, &val) in impute.iter().enumerate() {
+                    current_impute[j] = 0.9 * current_impute[j] + 0.1 * val;
+                }
+            }
+        }
+
+        let n_features = X_clean.ncols();
         let lambda = 1.0 / self.C;
         let lr = self.learning_rate;
-        let n_f64 = X.nrows() as f64;
+        let n_f64 = X_clean.nrows() as f64;
 
         if self.classes_.is_none() {
             if let Some(c) = classes_opt {
@@ -1017,57 +1138,68 @@ impl LogisticRegression {
             let pos = classes[1];
             let y_binary = Array1::from(
                 y.iter()
-                    .map(|&v| if (v - pos).abs() < f64::EPSILON { 1.0 } else { 0.0 })
+                    .map(|&v| {
+                        if (v - pos).abs() < f64::EPSILON {
+                            1.0
+                        } else {
+                            0.0
+                        }
+                    })
                     .collect::<Vec<f64>>(),
             );
-            
+
             let mut w_feat = coef.row(0).to_owned();
             let mut bias = intercept[0];
 
-            let z = X.dot(&w_feat) + bias;
+            let z = X_clean.dot(&w_feat) + bias;
             let h = z.mapv(Self::sigmoid);
             let diff = &h - &y_binary;
 
             bias -= lr * (diff.sum() / n_f64);
-            
-            let mut grad_feat = X.t().dot(&diff);
+
+            let mut grad_feat = X_clean.t().dot(&diff);
             grad_feat /= n_f64;
-            
+
             for j in 0..n_features {
                 grad_feat[j] += lambda * w_feat[j];
                 w_feat[j] -= lr * grad_feat[j];
             }
-            
+
             coef.row_mut(0).assign(&w_feat);
             intercept[0] = bias;
-
         } else {
             let n_classes = classes.len();
             for c_idx in 0..n_classes {
                 let cls = classes[c_idx];
                 let y_binary = Array1::from(
                     y.iter()
-                        .map(|&v| if (v - cls).abs() < f64::EPSILON { 1.0 } else { 0.0 })
+                        .map(|&v| {
+                            if (v - cls).abs() < f64::EPSILON {
+                                1.0
+                            } else {
+                                0.0
+                            }
+                        })
                         .collect::<Vec<f64>>(),
                 );
-                
+
                 let mut w_feat = coef.row(c_idx).to_owned();
                 let mut bias = intercept[c_idx];
 
-                let z = X.dot(&w_feat) + bias;
+                let z = X_clean.dot(&w_feat) + bias;
                 let h = z.mapv(Self::sigmoid);
                 let diff = &h - &y_binary;
 
                 bias -= lr * (diff.sum() / n_f64);
-                
-                let mut grad_feat = X.t().dot(&diff);
+
+                let mut grad_feat = X_clean.t().dot(&diff);
                 grad_feat /= n_f64;
-                
+
                 for j in 0..n_features {
                     grad_feat[j] += lambda * w_feat[j];
                     w_feat[j] -= lr * grad_feat[j];
                 }
-                
+
                 coef.row_mut(c_idx).assign(&w_feat);
                 intercept[c_idx] = bias;
             }
@@ -1095,11 +1227,17 @@ impl LogisticRegression {
             ));
         }
 
-        let _n = X.nrows();
+        let impute = self
+            .impute_values
+            .as_ref()
+            .ok_or("Model is not fitted yet")?;
+        let X_clean = impute_features(X, impute);
+
+        let _n = X_clean.nrows();
 
         if classes.len() == 2 {
             // Binary
-            let preds: Vec<f64> = X
+            let preds: Vec<f64> = X_clean
                 .axis_iter(Axis(0))
                 .into_par_iter()
                 .map(|row| {
@@ -1107,14 +1245,18 @@ impl LogisticRegression {
                     for j in 0..n_features {
                         z += row[j] * coef[[0, j]];
                     }
-                    if Self::sigmoid(z) >= 0.5 { classes[1] } else { classes[0] }
+                    if Self::sigmoid(z) >= 0.5 {
+                        classes[1]
+                    } else {
+                        classes[0]
+                    }
                 })
                 .collect();
             Ok(Array1::from(preds))
         } else {
             // Multiclass: argmax of OVR scores
             let n_classes = classes.len();
-            let preds: Vec<f64> = X
+            let preds: Vec<f64> = X_clean
                 .axis_iter(Axis(0))
                 .into_par_iter()
                 .map(|row| {
@@ -1153,7 +1295,13 @@ impl LogisticRegression {
             ));
         }
 
-        let n = X.nrows();
+        let impute = self
+            .impute_values
+            .as_ref()
+            .ok_or("Model is not fitted yet")?;
+        let X_clean = impute_features(X, impute);
+
+        let n = X_clean.nrows();
         let n_classes = classes.len();
 
         if n_classes == 2 {
@@ -1161,7 +1309,7 @@ impl LogisticRegression {
             for i in 0..n {
                 let mut z = intercept[0];
                 for j in 0..n_features {
-                    z += X[[i, j]] * coef[[0, j]];
+                    z += X_clean[[i, j]] * coef[[0, j]];
                 }
                 let p1 = Self::sigmoid(z);
                 proba[[i, 0]] = 1.0 - p1;
@@ -1176,7 +1324,7 @@ impl LogisticRegression {
                 for c in 0..n_classes {
                     let mut z = intercept[c];
                     for j in 0..n_features {
-                        z += X[[i, j]] * coef[[c, j]];
+                        z += X_clean[[i, j]] * coef[[c, j]];
                     }
                     let p = Self::sigmoid(z);
                     proba[[i, c]] = p;
@@ -1215,7 +1363,11 @@ impl LogisticRegression {
                 for (col_idx, &val) in vec.iter() {
                     z += val * coef[[0, col_idx]];
                 }
-                preds.push(if Self::sigmoid(z) >= 0.5 { classes[1] } else { classes[0] });
+                preds.push(if Self::sigmoid(z) >= 0.5 {
+                    classes[1]
+                } else {
+                    classes[0]
+                });
             }
             Ok(Array1::from(preds))
         } else {
@@ -1319,8 +1471,16 @@ mod tests {
         lr.fit(&X.view(), &y.view()).unwrap();
 
         let coef = lr.coef_.as_ref().unwrap();
-        assert!((coef[0] - 2.0).abs() < 1e-6, "coef should be ~2.0, got {}", coef[0]);
-        assert!((lr.intercept_ - 1.0).abs() < 1e-6, "intercept should be ~1.0, got {}", lr.intercept_);
+        assert!(
+            (coef[0] - 2.0).abs() < 1e-6,
+            "coef should be ~2.0, got {}",
+            coef[0]
+        );
+        assert!(
+            (lr.intercept_ - 1.0).abs() < 1e-6,
+            "intercept should be ~1.0, got {}",
+            lr.intercept_
+        );
 
         let preds = lr.predict(&X.view()).unwrap();
         for i in 0..5 {
@@ -1334,13 +1494,7 @@ mod tests {
     #[test]
     fn test_linear_regression_multivariate() {
         // y = 1*x0 + 2*x1 + 3
-        let X = array![
-            [1.0, 0.0],
-            [0.0, 1.0],
-            [1.0, 1.0],
-            [2.0, 1.0],
-            [1.0, 2.0]
-        ];
+        let X = array![[1.0, 0.0], [0.0, 1.0], [1.0, 1.0], [2.0, 1.0], [1.0, 2.0]];
         let y = array![4.0, 5.0, 6.0, 7.0, 8.0];
         let mut lr = LinearRegression::new(true);
         lr.fit(&X.view(), &y.view()).unwrap();
@@ -1395,7 +1549,10 @@ mod tests {
         // Higher alpha => smaller coefficient magnitude
         let coef_low = ridge_low.coef_.as_ref().unwrap()[0].abs();
         let coef_high = ridge_high.coef_.as_ref().unwrap()[0].abs();
-        assert!(coef_high < coef_low, "Higher alpha should shrink coefficients");
+        assert!(
+            coef_high < coef_low,
+            "Higher alpha should shrink coefficients"
+        );
     }
 
     // ---- Lasso tests ----
@@ -1408,19 +1565,17 @@ mod tests {
         lasso.fit(&X.view(), &y.view()).unwrap();
 
         let coef = lasso.coef_.as_ref().unwrap();
-        assert!((coef[0] - 2.0).abs() < 0.05, "coef should be ~2.0, got {}", coef[0]);
+        assert!(
+            (coef[0] - 2.0).abs() < 0.05,
+            "coef should be ~2.0, got {}",
+            coef[0]
+        );
     }
 
     #[test]
     fn test_lasso_sparsity() {
         // High alpha should drive coefficients to zero
-        let X = array![
-            [1.0, 0.1],
-            [2.0, 0.2],
-            [3.0, 0.3],
-            [4.0, 0.4],
-            [5.0, 0.5]
-        ];
+        let X = array![[1.0, 0.1], [2.0, 0.2], [3.0, 0.3], [4.0, 0.4], [5.0, 0.5]];
         let y = array![2.0, 4.0, 6.0, 8.0, 10.0]; // y  2*x0
         let mut lasso = Lasso::new(5.0, true, 10000, 1e-8);
         lasso.fit(&X.view(), &y.view()).unwrap();
@@ -1452,22 +1607,30 @@ mod tests {
         let preds = lr.predict(&X.view()).unwrap();
         // Should classify correctly
         for i in 0..3 {
-            assert!((preds[i] - 0.0).abs() < f64::EPSILON, "Sample {} should be class 0", i);
+            assert!(
+                (preds[i] - 0.0).abs() < f64::EPSILON,
+                "Sample {} should be class 0",
+                i
+            );
         }
         for i in 3..6 {
-            assert!((preds[i] - 1.0).abs() < f64::EPSILON, "Sample {} should be class 1", i);
+            assert!(
+                (preds[i] - 1.0).abs() < f64::EPSILON,
+                "Sample {} should be class 1",
+                i
+            );
         }
 
         let acc = lr.score(&X.view(), &y.view()).unwrap();
-        assert!((acc - 1.0).abs() < 1e-9, "Should achieve perfect accuracy on linearly separable data");
+        assert!(
+            (acc - 1.0).abs() < 1e-9,
+            "Should achieve perfect accuracy on linearly separable data"
+        );
     }
 
     #[test]
     fn test_logistic_regression_predict_proba() {
-        let X = array![
-            [0.0, 0.0],
-            [1.0, 1.0]
-        ];
+        let X = array![[0.0, 0.0], [1.0, 1.0]];
         let y = array![0.0, 1.0];
 
         let mut lr = LogisticRegression::new(1.0, 1000, 1e-6, "l2");
@@ -1477,7 +1640,10 @@ mod tests {
         // Probabilities should sum to 1 for each row
         for i in 0..2 {
             let row_sum = proba[[i, 0]] + proba[[i, 1]];
-            assert!((row_sum - 1.0).abs() < 1e-9, "Probabilities should sum to 1");
+            assert!(
+                (row_sum - 1.0).abs() < 1e-9,
+                "Probabilities should sum to 1"
+            );
         }
         // First sample should have higher prob for class 0
         assert!(proba[[0, 0]] > proba[[0, 1]]);
@@ -1503,7 +1669,11 @@ mod tests {
 
         let _preds = lr.predict(&X.view()).unwrap();
         let acc = lr.score(&X.view(), &y.view()).unwrap();
-        assert!(acc >= 0.8, "Multiclass accuracy should be reasonable, got {}", acc);
+        assert!(
+            acc >= 0.8,
+            "Multiclass accuracy should be reasonable, got {}",
+            acc
+        );
 
         let classes = lr.classes_.as_ref().unwrap();
         assert_eq!(classes.len(), 3);
@@ -1544,6 +1714,36 @@ mod tests {
 
         let logreg = LogisticRegression::new(1.0, 100, 1e-4, "l2");
         assert!(logreg.predict(&X.view()).is_err());
+    }
+
+    #[test]
+    fn test_linear_regression_imputation() {
+        let X = array![[1.0, 2.0], [f64::NAN, 4.0], [3.0, f64::NAN], [4.0, 8.0]];
+        let y = array![5.0, 7.0, 9.0, 11.0];
+        let mut lr = LinearRegression::new(true);
+        lr.fit(&X.view(), &y.view()).unwrap();
+
+        let impute = lr.impute_values.as_ref().unwrap();
+        assert!((impute[0] - 8.0 / 3.0).abs() < 1e-6);
+        assert!((impute[1] - 14.0 / 3.0).abs() < 1e-6);
+
+        let preds = lr.predict(&X.view()).unwrap();
+        assert_eq!(preds.len(), 4);
+    }
+
+    #[test]
+    fn test_logistic_regression_imputation() {
+        let X = array![[1.0, 2.0], [f64::NAN, 4.0], [3.0, f64::NAN], [4.0, 8.0]];
+        let y = array![0.0, 0.0, 1.0, 1.0];
+        let mut lr = LogisticRegression::new(1.0, 100, 1e-4, "l2");
+        lr.fit(&X.view(), &y.view()).unwrap();
+
+        let impute = lr.impute_values.as_ref().unwrap();
+        assert!((impute[0] - 8.0 / 3.0).abs() < 1e-6);
+        assert!((impute[1] - 14.0 / 3.0).abs() < 1e-6);
+
+        let preds = lr.predict(&X.view()).unwrap();
+        assert_eq!(preds.len(), 4);
     }
 }
 
@@ -1591,7 +1791,7 @@ impl LinearSVC {
             // Hinge loss gradient: if y*z < 1, grad_w += -y*X, grad_b += -y
             let mut grad_w = &w * lambda;
             let mut grad_b = 0.0;
-            
+
             for i in 0..X.nrows() {
                 if y_binary[i] * z[i] < 1.0 {
                     let update = -y_binary[i] / n_f64;
@@ -1607,7 +1807,11 @@ impl LinearSVC {
             let b_update = grad_b * lr;
             bias -= b_update;
 
-            let max_change = w_update.iter().map(|v| v.abs()).fold(0.0_f64, |a, b| a.max(b)).max(b_update.abs());
+            let max_change = w_update
+                .iter()
+                .map(|v| v.abs())
+                .fold(0.0_f64, |a, b| a.max(b))
+                .max(b_update.abs());
             if max_change < self.tol {
                 break;
             }
@@ -1632,13 +1836,13 @@ impl LinearSVC {
         for _iter in 0..self.max_iter {
             let mut grad_w = &w * lambda;
             let mut grad_b = 0.0;
-            
+
             for (i, vec) in X.outer_iterator().enumerate() {
                 let mut z = bias;
                 for (col_idx, &val) in vec.iter() {
                     z += val * w[col_idx];
                 }
-                
+
                 if y_binary[i] * z < 1.0 {
                     let update = -y_binary[i] / n_f64;
                     for (col_idx, &val) in vec.iter() {
@@ -1653,7 +1857,11 @@ impl LinearSVC {
             let b_update = grad_b * lr;
             bias -= b_update;
 
-            let max_change = w_update.iter().map(|v| v.abs()).fold(0.0_f64, |a, b| a.max(b)).max(b_update.abs());
+            let max_change = w_update
+                .iter()
+                .map(|v| v.abs())
+                .fold(0.0_f64, |a, b| a.max(b))
+                .max(b_update.abs());
             if max_change < self.tol {
                 break;
             }
@@ -1663,7 +1871,9 @@ impl LinearSVC {
     }
 
     pub fn fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<f64>) -> Result<(), String> {
-        if X.is_empty() { return Err("Input array is empty".to_string()); }
+        if X.is_empty() {
+            return Err("Input array is empty".to_string());
+        }
         check_finite_2d(X)?;
         check_finite_1d(y)?;
 
@@ -1684,7 +1894,7 @@ impl LinearSVC {
                 y_bin[i] = if y[i] == classes[1] { 1.0 } else { -1.0 };
             }
             let (w, b) = self.fit_binary(&X.to_owned(), &y_bin, n_features)?;
-            
+
             let intercept = Array1::from(vec![b]);
             let mut coef = Array2::<f64>::zeros((1, n_features));
             for j in 0..n_features {
@@ -1702,7 +1912,11 @@ impl LinearSVC {
             for (c_idx, &cls) in classes.iter().enumerate() {
                 let mut y_bin = Array1::<f64>::zeros(y.len());
                 for i in 0..y.len() {
-                    y_bin[i] = if (y[i] - cls).abs() < f64::EPSILON { 1.0 } else { -1.0 };
+                    y_bin[i] = if (y[i] - cls).abs() < f64::EPSILON {
+                        1.0
+                    } else {
+                        -1.0
+                    };
                 }
                 let (w, b) = self.fit_binary(&X.to_owned(), &y_bin, n_features)?;
                 for j in 0..n_features {
@@ -1719,7 +1933,9 @@ impl LinearSVC {
     }
 
     pub fn fit_sparse(&mut self, X: &CsMat<f64>, y: &ArrayView1<f64>) -> Result<(), String> {
-        if X.rows() == 0 || X.cols() == 0 { return Err("Input array is empty".to_string()); }
+        if X.rows() == 0 || X.cols() == 0 {
+            return Err("Input array is empty".to_string());
+        }
         check_finite_1d(y)?;
 
         let mut unique_classes = y.to_vec();
@@ -1736,10 +1952,14 @@ impl LinearSVC {
         if classes.len() == 2 {
             let mut y_bin = Array1::<f64>::zeros(y.len());
             for i in 0..y.len() {
-                y_bin[i] = if (y[i] - classes[1]).abs() < f64::EPSILON { 1.0 } else { -1.0 };
+                y_bin[i] = if (y[i] - classes[1]).abs() < f64::EPSILON {
+                    1.0
+                } else {
+                    -1.0
+                };
             }
             let (w, b) = self.fit_binary_sparse(X, &y_bin, n_features)?;
-            
+
             let intercept = Array1::from(vec![b]);
             let mut coef = Array2::<f64>::zeros((1, n_features));
             for j in 0..n_features {
@@ -1757,7 +1977,11 @@ impl LinearSVC {
             for (c_idx, &cls) in classes.iter().enumerate() {
                 let mut y_bin = Array1::<f64>::zeros(y.len());
                 for i in 0..y.len() {
-                    y_bin[i] = if (y[i] - cls).abs() < f64::EPSILON { 1.0 } else { -1.0 };
+                    y_bin[i] = if (y[i] - cls).abs() < f64::EPSILON {
+                        1.0
+                    } else {
+                        -1.0
+                    };
                 }
                 let (w, b) = self.fit_binary_sparse(X, &y_bin, n_features)?;
                 for j in 0..n_features {

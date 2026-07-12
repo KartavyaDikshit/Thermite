@@ -55,12 +55,17 @@ It is organized as follows:
 ## Milestones
 | # | Name | Scope | Dependencies | Status | Conv ID |
 |---|------|-------|--------------|--------|---------|
-| 1 | Foundation & Preprocessing | Set up Cargo/Maturin workspace, implement `StandardScaler`, `MinMaxScaler`, `LabelEncoder`, `OneHotEncoder`, `train_test_split`. | None | IN_PROGRESS | 4f539ea2-b299-4cac-afb7-27d4a5777e72 |
-| 2 | Linear Models, Neighbors & Metrics | Implement `LinearRegression`, `Ridge`, `Lasso`, `LogisticRegression`, `KNeighborsClassifier`, and all metrics. | M1 | PLANNED | TBD |
-| 3 | Trees, Clustering & PCA | Implement `DecisionTree*`, `RandomForest*`, `GradientBoosting*`, `KMeans`, `DBSCAN`, `PCA` (with Rayon). | M1 | PLANNED | TBD |
-| 4 | Pipeline & Model Selection | Implement `Pipeline`, `cross_val_score`, `GridSearchCV`. | M1, M2, M3 | PLANNED | TBD |
-| 5 | E2E Integration & Hardening | Final verification of 100% E2E test pass + adversarial hardening (Tier 5). | M1, M2, M3, M4, E2E | PLANNED | TBD |
-| E2E | E2E Testing Track | Requirement-driven opaque-box test suite (Tiers 1-4) & runner. Publishes `TEST_READY.md`. | None | IN_PROGRESS | 2be0998b-3422-4735-8651-607c24e87f4a |
+| 1 | Foundation & Preprocessing | Set up Cargo/Maturin workspace, implement `StandardScaler`, `MinMaxScaler`, `LabelEncoder`, `OneHotEncoder`, `train_test_split`. | None | DONE | 4f539ea2-b299-4cac-afb7-27d4a5777e72 |
+| 2 | Linear Models, Neighbors & Metrics | Implement `LinearRegression`, `Ridge`, `Lasso`, `LogisticRegression`, `KNeighborsClassifier`, and all metrics. | M1 | DONE | TBD |
+| 3 | Trees, Clustering & PCA | Implement `DecisionTree*`, `RandomForest*`, `GradientBoosting*`, `KMeans`, `DBSCAN`, `PCA` (with Rayon). | M1 | DONE | TBD |
+| 4 | Pipeline & Model Selection | Implement `Pipeline`, `cross_val_score`, `GridSearchCV`. | M1, M2, M3 | DONE | TBD |
+| 5 | E2E Integration & Hardening | Final verification of 100% E2E test pass + adversarial hardening (Tier 5). | M1, M2, M3, M4, E2E | DONE | TBD |
+| E2E | E2E Testing Track | Requirement-driven opaque-box test suite (Tiers 1-4) & runner. Publishes `TEST_READY.md`. | None | DONE | 2be0998b-3422-4735-8651-607c24e87f4a |
+| F0 | Exploration & Architecture | Research code architecture, NaN points, SVM FFI, and BLAS config. | None | DONE | fc97c6b3-f083-4036-98f1-c39e0a8cfa0b |
+| F1 | NaN Support | Implement learned NaN routing in trees and mean-imputation in linear models. | F0 | DONE | a824cedd-5307-4b7b-aa98-d18e132fd0c3 |
+| F2 | Kernel SVM | Wrap/compile LIBSVM via C-bindings and implement SVC. | F0 | DONE | 2ab12a29-fb0d-4135-aa07-513a62a4157c |
+| F3 | BLAS/MKL Linkage | Configure dynamic BLAS/MKL feature flags in Cargo.toml. | F0 | DONE | 2da9c2e2-0084-4534-86a5-21433344c97c |
+| F4 | Final Integration & Audit | E2E tests, Challenger verification, and Forensic Audit. | F1, F2, F3 | PLANNED | TBD |
 
 ## Interface Contracts
 ### Python Wrappers  PyO3 Rust Bindings (`thermite._core`)

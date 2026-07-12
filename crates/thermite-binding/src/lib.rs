@@ -418,6 +418,7 @@ pub mod decomposition_bind;
 pub mod neighbors_bind;
 pub mod ensemble_bind;
 pub mod naive_bayes_bind;
+pub mod svm_bind;
 
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -435,5 +436,7 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     neighbors_bind::bind_neighbors(m)?;
     ensemble_bind::bind_ensemble(m)?;
     naive_bayes_bind::bind_naive_bayes(m)?;
+    svm_bind::bind_svm(m)?;
     Ok(())
 }
+
