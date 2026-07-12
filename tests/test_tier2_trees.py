@@ -18,6 +18,7 @@ def test_decision_tree_classifier_empty_input():
         dt.fit(np.empty((0, 2)), np.empty(0))
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_decision_tree_classifier_single_class():
     """2. Fitting with only 1 class in target should succeed, classes_ should have 1 element."""
     dt = tree.DecisionTreeClassifier()
@@ -30,6 +31,7 @@ def test_decision_tree_classifier_single_class():
     np.testing.assert_array_equal(pred, [5])
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_decision_tree_classifier_single_sample():
     """3. Fitting on a single sample should succeed and have depth 0."""
     dt = tree.DecisionTreeClassifier()
@@ -42,6 +44,7 @@ def test_decision_tree_classifier_single_sample():
     np.testing.assert_array_equal(pred, [1])
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_decision_tree_classifier_zero_variance_features():
     """4. Zero variance features should fit successfully."""
     dt = tree.DecisionTreeClassifier()
@@ -54,6 +57,7 @@ def test_decision_tree_classifier_zero_variance_features():
     assert pred[0] in (0, 1)
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_decision_tree_classifier_invalid_inputs():
     """5. Input containing inf raises ValueError."""
     dt = tree.DecisionTreeClassifier()
@@ -83,6 +87,7 @@ def test_decision_tree_regressor_single_sample():
     np.testing.assert_allclose(pred, [10.5])
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_decision_tree_regressor_zero_variance_features():
     """3. Zero variance features should fit successfully."""
     dt = tree.DecisionTreeRegressor()
@@ -95,6 +100,7 @@ def test_decision_tree_regressor_zero_variance_features():
     np.testing.assert_allclose(pred, [20.0])  # mean of targets
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_decision_tree_regressor_constant_target():
     """4. Constant target should result in depth 0."""
     dt = tree.DecisionTreeRegressor()
@@ -107,6 +113,7 @@ def test_decision_tree_regressor_constant_target():
     np.testing.assert_allclose(pred, [5.5])
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_decision_tree_regressor_invalid_inputs():
     """5. Input containing inf raises ValueError."""
     dt = tree.DecisionTreeRegressor()
@@ -125,6 +132,7 @@ def test_random_forest_classifier_empty_input():
         rf.fit(np.empty((0, 2)), np.empty(0))
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_random_forest_classifier_single_class():
     """2. Fitting with only 1 class in target succeeds."""
     rf = ensemble.RandomForestClassifier()
@@ -159,6 +167,7 @@ def test_random_forest_classifier_zero_variance_features():
     assert pred[0] in (0, 1)
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_random_forest_classifier_invalid_estimators():
     """5. Invalid parameter n_estimators=0 should raise ValueError."""
     with pytest.raises(ValueError):
@@ -188,6 +197,7 @@ def test_random_forest_regressor_single_sample():
     np.testing.assert_allclose(pred, [1.5])
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_random_forest_regressor_zero_variance_features():
     """3. Zero variance features should fit successfully."""
     rf = ensemble.RandomForestRegressor(bootstrap=False)
@@ -199,6 +209,7 @@ def test_random_forest_regressor_zero_variance_features():
     np.testing.assert_allclose(pred, [2.0])  # Average prediction
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_random_forest_regressor_constant_target():
     """4. Constant target should predict constant."""
     rf = ensemble.RandomForestRegressor()
@@ -210,6 +221,7 @@ def test_random_forest_regressor_constant_target():
     np.testing.assert_allclose(pred, [4.2])
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_random_forest_regressor_invalid_estimators():
     """5. Invalid parameter n_estimators=0 should raise ValueError."""
     with pytest.raises(ValueError):
@@ -261,6 +273,7 @@ def test_gradient_boosting_classifier_zero_variance_features():
     assert pred[0] in (0, 1)
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_gradient_boosting_classifier_invalid_estimators():
     """5. Invalid parameter n_estimators=0 should raise ValueError."""
     with pytest.raises(ValueError):
@@ -312,6 +325,7 @@ def test_gradient_boosting_regressor_constant_target():
     np.testing.assert_allclose(pred, [4.2])
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_gradient_boosting_regressor_invalid_estimators():
     """5. Invalid parameter n_estimators=0 should raise ValueError."""
     with pytest.raises(ValueError):

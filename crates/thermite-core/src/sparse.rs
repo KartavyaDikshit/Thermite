@@ -1,5 +1,4 @@
 use sprs::CsMat;
-use ndarray::Array1;
 
 pub fn build_csr(
     data: &[f64],

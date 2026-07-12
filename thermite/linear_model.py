@@ -1,11 +1,32 @@
 import numpy as np
+import warnings
 from . import _core
+
+def _catch_panic(func):
+    def wrapper(self, *args, **kwargs):
+        # basic input validation for all estimators
+        for arg in args:
+            if isinstance(arg, np.ndarray) and arg.size == 0:
+                raise ValueError("Empty input")
+            if isinstance(arg, (list, tuple)) and len(arg) == 0:
+                raise ValueError("Empty input")
+        
+        try:
+            return func(self, *args, **kwargs)
+        except BaseException as e:
+            err_str = str(e).lower()
+            if "panic" in err_str or "empty" in err_str or "bounds" in err_str or "singular" in err_str or "invalid" in err_str:
+                raise ValueError(str(e))
+            raise
+    return wrapper
+
 
 class LinearRegression:
     def __init__(self, *, fit_intercept=True):
         self.fit_intercept = fit_intercept
         self._model = _core.LinearRegression(fit_intercept=fit_intercept)
 
+    @_catch_panic
     def fit(self, X, y):
         X = np.asarray(X, dtype=np.float64)
         y = np.asarray(y, dtype=np.float64)
@@ -16,6 +37,7 @@ class LinearRegression:
         self._model.fit(X, y)
         return self
 
+    @_catch_panic
     def predict(self, X):
         X = np.asarray(X, dtype=np.float64)
         if X.ndim != 2:
@@ -37,6 +59,7 @@ class Ridge:
         self.fit_intercept = fit_intercept
         self._model = _core.Ridge(alpha=alpha, fit_intercept=fit_intercept)
 
+    @_catch_panic
     def fit(self, X, y):
         X = np.asarray(X, dtype=np.float64)
         y = np.asarray(y, dtype=np.float64)
@@ -47,6 +70,7 @@ class Ridge:
         self._model.fit(X, y)
         return self
 
+    @_catch_panic
     def predict(self, X):
         X = np.asarray(X, dtype=np.float64)
         if X.ndim != 2:
@@ -70,6 +94,7 @@ class Lasso:
         self.tol = tol
         self._model = _core.Lasso(alpha=alpha, fit_intercept=fit_intercept, max_iter=max_iter, tol=tol)
 
+    @_catch_panic
     def fit(self, X, y):
         X = np.asarray(X, dtype=np.float64)
         y = np.asarray(y, dtype=np.float64)
@@ -80,6 +105,7 @@ class Lasso:
         self._model.fit(X, y)
         return self
 
+    @_catch_panic
     def predict(self, X):
         X = np.asarray(X, dtype=np.float64)
         if X.ndim != 2:
@@ -103,6 +129,7 @@ class LogisticRegression:
         self.max_iter = max_iter
         self._model = _core.LogisticRegression(C=C, max_iter=max_iter, tol=tol, penalty=penalty)
 
+    @_catch_panic
     def fit(self, X, y):
         import scipy.sparse
         y = np.asarray(y, dtype=np.float64)
@@ -137,6 +164,7 @@ class LogisticRegression:
         self._model.partial_fit(X, y, classes)
         return self
 
+    @_catch_panic
     def predict(self, X):
         import scipy.sparse
         if scipy.sparse.issparse(X):
@@ -154,6 +182,7 @@ class LogisticRegression:
                 raise ValueError("Expected 2D array for X")
             return self._model.predict(X)
 
+    @_catch_panic
     def predict_proba(self, X):
         import scipy.sparse
         if scipy.sparse.issparse(X):
@@ -200,6 +229,7 @@ class LinearSVC:
         # Using subset of arguments internally, just accepting sklearn signature
         self._model = _core.LinearSVC(C=C, max_iter=max_iter, tol=tol)
 
+    @_catch_panic
     def fit(self, X, y):
         import scipy.sparse
         y = np.asarray(y, dtype=np.float64)
@@ -223,6 +253,7 @@ class LinearSVC:
             self._model.fit(X, y)
         return self
 
+    @_catch_panic
     def predict(self, X):
         import scipy.sparse
         if scipy.sparse.issparse(X):

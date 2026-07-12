@@ -1,7 +1,30 @@
+import numpy as np
+import warnings
+from . import _core
+
+def _catch_panic(func):
+    def wrapper(self, *args, **kwargs):
+        # basic input validation for all estimators
+        for arg in args:
+            if isinstance(arg, np.ndarray) and arg.size == 0:
+                raise ValueError("Empty input")
+            if isinstance(arg, (list, tuple)) and len(arg) == 0:
+                raise ValueError("Empty input")
+        
+        try:
+            return func(self, *args, **kwargs)
+        except BaseException as e:
+            err_str = str(e).lower()
+            if "panic" in err_str or "empty" in err_str or "bounds" in err_str or "singular" in err_str or "invalid" in err_str:
+                raise ValueError(str(e))
+            raise
+    return wrapper
+
 class Pipeline:
     def __init__(self, steps):
         self.steps = steps
 
+    @_catch_panic
     def fit(self, X, y=None, **fit_params):
         Xt = X
         for name, transform in self.steps[:-1]:
@@ -12,12 +35,14 @@ class Pipeline:
         self.steps[-1][1].fit(Xt, y, **fit_params)
         return self
 
+    @_catch_panic
     def predict(self, X):
         Xt = X
         for name, transform in self.steps[:-1]:
             Xt = transform.transform(Xt)
         return self.steps[-1][1].predict(Xt)
 
+    @_catch_panic
     def fit_predict(self, X, y=None, **fit_params):
         self.fit(X, y, **fit_params)
         return self.predict(X)
@@ -35,6 +60,7 @@ class Pipeline:
         else:
             return last_step.fit(Xt, y, **fit_params).transform(Xt)
 
+    @_catch_panic
     def predict_proba(self, X):
         Xt = X
         for name, transform in self.steps[:-1]:
@@ -47,6 +73,7 @@ class Pipeline:
             Xt = transform.transform(Xt)
         return self.steps[-1][1].score(Xt, y)
 
+    @_catch_panic
     def transform(self, X):
         Xt = X
         for name, transform in self.steps:
@@ -98,6 +125,7 @@ class ColumnTransformer:
                 
         return np.hstack(results) if results else np.empty((X.shape[0], 0))
         
+    @_catch_panic
     def transform(self, X):
         X = np.asarray(X)
         results = []
@@ -127,6 +155,7 @@ class ColumnTransformer:
                 
         return np.hstack(results) if results else np.empty((X.shape[0], 0))
         
+    @_catch_panic
     def fit(self, X, y=None):
         self.fit_transform(X, y)
         return self

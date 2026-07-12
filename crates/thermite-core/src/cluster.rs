@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-use ndarray::{Array1, Array2, ArrayView2, Axis};
+use ndarray::{Array2, ArrayView2, Axis};
 use rand::prelude::*;
 use rand::rngs::SmallRng;
 use rayon::prelude::*;

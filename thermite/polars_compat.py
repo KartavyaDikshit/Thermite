@@ -1,3 +1,25 @@
+import numpy as np
+import warnings
+from . import _core
+
+def _catch_panic(func):
+    def wrapper(self, *args, **kwargs):
+        # basic input validation for all estimators
+        for arg in args:
+            if isinstance(arg, np.ndarray) and arg.size == 0:
+                raise ValueError("Empty input")
+            if isinstance(arg, (list, tuple)) and len(arg) == 0:
+                raise ValueError("Empty input")
+        
+        try:
+            return func(self, *args, **kwargs)
+        except BaseException as e:
+            err_str = str(e).lower()
+            if "panic" in err_str or "empty" in err_str or "bounds" in err_str or "singular" in err_str or "invalid" in err_str:
+                raise ValueError(str(e))
+            raise
+    return wrapper
+
 """
 thermite.polars_compat - Zero-copy Polars DataFrame support.
 
@@ -132,16 +154,20 @@ class _PolarsCompatModel:
             return from_polars_y(y)
         return y
 
+    @_catch_panic
     def fit(self, X, y=None, **kwargs):
         self._model.fit(self._coerce(X), self._coerce_y(y) if y is not None else y, **kwargs)
         return self
 
+    @_catch_panic
     def predict(self, X, **kwargs):
         return self._model.predict(self._coerce(X), **kwargs)
 
+    @_catch_panic
     def predict_proba(self, X, **kwargs):
         return self._model.predict_proba(self._coerce(X), **kwargs)
 
+    @_catch_panic
     def transform(self, X, **kwargs):
         return self._model.transform(self._coerce(X), **kwargs)
 

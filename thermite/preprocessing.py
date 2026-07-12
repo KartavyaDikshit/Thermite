@@ -1,10 +1,31 @@
 import numpy as np
+import warnings
 from . import _core
+
+def _catch_panic(func):
+    def wrapper(self, *args, **kwargs):
+        # basic input validation for all estimators
+        for arg in args:
+            if isinstance(arg, np.ndarray) and arg.size == 0:
+                raise ValueError("Empty input")
+            if isinstance(arg, (list, tuple)) and len(arg) == 0:
+                raise ValueError("Empty input")
+        
+        try:
+            return func(self, *args, **kwargs)
+        except BaseException as e:
+            err_str = str(e).lower()
+            if "panic" in err_str or "empty" in err_str or "bounds" in err_str or "singular" in err_str or "invalid" in err_str:
+                raise ValueError(str(e))
+            raise
+    return wrapper
+
 
 class StandardScaler:
     def __init__(self, *, with_mean=True, with_std=True):
         self._scaler = _core.StandardScaler(with_mean=with_mean, with_std=with_std)
         
+    @_catch_panic
     def fit(self, X, y=None):
         X = np.asarray(X, dtype=np.float64)
         if X.ndim != 2:
@@ -12,6 +33,7 @@ class StandardScaler:
         self._scaler.fit(X)
         return self
         
+    @_catch_panic
     def transform(self, X):
         X = np.asarray(X, dtype=np.float64)
         if X.ndim != 2:
@@ -50,6 +72,7 @@ class MinMaxScaler:
     def __init__(self, feature_range=(0.0, 1.0)):
         self._scaler = _core.MinMaxScaler(feature_range=feature_range)
         
+    @_catch_panic
     def fit(self, X, y=None):
         X = np.asarray(X, dtype=np.float64)
         if X.ndim != 2:
@@ -57,6 +80,7 @@ class MinMaxScaler:
         self._scaler.fit(X)
         return self
         
+    @_catch_panic
     def transform(self, X):
         X = np.asarray(X, dtype=np.float64)
         if X.ndim != 2:
@@ -96,6 +120,7 @@ class LabelEncoder:
         self._encoder = _core.LabelEncoder()
         self.classes_ = None
         
+    @_catch_panic
     def fit(self, y):
         y = np.asarray(y)
         if y.ndim != 1:
@@ -115,6 +140,7 @@ class LabelEncoder:
             self.classes_ = np.array(self._encoder.get_classes_str())
         return self
         
+    @_catch_panic
     def transform(self, y):
         y = np.asarray(y)
         if y.ndim != 1:
@@ -152,6 +178,7 @@ class OneHotEncoder:
         self._encoder = _core.OneHotEncoder(handle_unknown=handle_unknown)
         self.categories_ = None
         
+    @_catch_panic
     def fit(self, X, y=None):
         X = np.asarray(X)
         if X.ndim != 2:
@@ -168,6 +195,7 @@ class OneHotEncoder:
         self.categories_ = [np.array(c) for c in raw_cats]
         return self
         
+    @_catch_panic
     def transform(self, X):
         X = np.asarray(X)
         if X.ndim != 2:

@@ -1,5 +1,25 @@
 import numpy as np
+import warnings
 from . import _core
+
+def _catch_panic(func):
+    def wrapper(self, *args, **kwargs):
+        # basic input validation for all estimators
+        for arg in args:
+            if isinstance(arg, np.ndarray) and arg.size == 0:
+                raise ValueError("Empty input")
+            if isinstance(arg, (list, tuple)) and len(arg) == 0:
+                raise ValueError("Empty input")
+        
+        try:
+            return func(self, *args, **kwargs)
+        except BaseException as e:
+            err_str = str(e).lower()
+            if "panic" in err_str or "empty" in err_str or "bounds" in err_str or "singular" in err_str or "invalid" in err_str:
+                raise ValueError(str(e))
+            raise
+    return wrapper
+
 
 class PCA:
     def __init__(self, n_components=2, *, random_state=None):
@@ -8,6 +28,7 @@ class PCA:
             random_state=random_state
         )
 
+    @_catch_panic
     def fit(self, X, y=None):
         X = np.asarray(X, dtype=np.float64)
         if X.ndim != 2:
@@ -15,6 +36,7 @@ class PCA:
         self._model.fit(X)
         return self
 
+    @_catch_panic
     def transform(self, X):
         X = np.asarray(X, dtype=np.float64)
         if X.ndim != 2:

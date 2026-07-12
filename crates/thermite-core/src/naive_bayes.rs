@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use ndarray::{Array1, Array2, ArrayView1, ArrayView2, Axis};
+use ndarray::{Array1, Array2, ArrayView1, ArrayView2};
 
 /// Gaussian Naive Bayes
 pub struct GaussianNB {
@@ -49,7 +49,7 @@ impl GaussianNB {
         }
 
         let model_classes = self.classes_.as_ref().unwrap().clone();
-        let n_classes = model_classes.len();
+        let _n_classes = model_classes.len();
         
         let mut class_count = self.class_count_.as_ref().unwrap().clone();
         let mut theta = self.theta_.as_ref().unwrap().clone();

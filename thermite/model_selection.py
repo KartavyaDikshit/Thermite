@@ -1,5 +1,25 @@
 import numpy as np
+import warnings
 from . import _core
+
+def _catch_panic(func):
+    def wrapper(self, *args, **kwargs):
+        # basic input validation for all estimators
+        for arg in args:
+            if isinstance(arg, np.ndarray) and arg.size == 0:
+                raise ValueError("Empty input")
+            if isinstance(arg, (list, tuple)) and len(arg) == 0:
+                raise ValueError("Empty input")
+        
+        try:
+            return func(self, *args, **kwargs)
+        except BaseException as e:
+            err_str = str(e).lower()
+            if "panic" in err_str or "empty" in err_str or "bounds" in err_str or "singular" in err_str or "invalid" in err_str:
+                raise ValueError(str(e))
+            raise
+    return wrapper
+
 
 def train_test_split(*arrays, test_size=None, train_size=None, random_state=None, shuffle=True, stratify=None):
     """Split arrays or matrices into random train and test subsets.
@@ -85,6 +105,7 @@ class GridSearchCV:
         self.best_params_ = None
         self.best_score_ = -np.inf
 
+    @_catch_panic
     def fit(self, X, y):
         X = np.asarray(X)
         y = np.asarray(y)
@@ -159,5 +180,6 @@ class GridSearchCV:
         self.best_estimator_.fit(X, y)
         return self
 
+    @_catch_panic
     def predict(self, X):
         return self.best_estimator_.predict(X)

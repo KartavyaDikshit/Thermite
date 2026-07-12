@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-use ndarray::{Array2, ArrayView2, Axis};
+use ndarray::{Array2, ArrayView2};
 use rand::rngs::SmallRng;
 use rand::seq::SliceRandom;
 use rand::SeedableRng;

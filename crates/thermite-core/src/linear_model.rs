@@ -589,7 +589,7 @@ impl LogisticRegression {
         };
 
         let mut grad = compute_grad(&w);
-        let mut prev_grad = grad.clone();
+        let mut _prev_grad = grad.clone();
 
         for _iter in 0..self.max_iter {
             // L-BFGS two-loop recursion to compute search direction
@@ -631,7 +631,7 @@ impl LogisticRegression {
                 let lr = self.learning_rate;
                 w = &w - &(&grad * lr);
                 grad = compute_grad(&w);
-                prev_grad = grad.clone();
+                _prev_grad = grad.clone();
                 continue;
             }
 
@@ -667,7 +667,7 @@ impl LogisticRegression {
             // Check convergence
             let max_change = s.iter().map(|v| v.abs()).fold(0.0_f64, |a, b| a.max(b));
             w = w_new;
-            prev_grad = grad.clone();
+            _prev_grad = grad.clone();
             grad = new_grad;
 
             if max_change < self.tol {
@@ -1095,7 +1095,7 @@ impl LogisticRegression {
             ));
         }
 
-        let n = X.nrows();
+        let _n = X.nrows();
 
         if classes.len() == 2 {
             // Binary
@@ -1306,7 +1306,7 @@ impl LogisticRegression {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ndarray::{array, Array2};
+    use ndarray::array;
 
     // ---- LinearRegression tests ----
 
@@ -1501,7 +1501,7 @@ mod tests {
         let mut lr = LogisticRegression::new(1.0, 2000, 1e-6, "l2");
         lr.fit(&X.view(), &y.view()).unwrap();
 
-        let preds = lr.predict(&X.view()).unwrap();
+        let _preds = lr.predict(&X.view()).unwrap();
         let acc = lr.score(&X.view(), &y.view()).unwrap();
         assert!(acc >= 0.8, "Multiclass accuracy should be reasonable, got {}", acc);
 

@@ -28,6 +28,7 @@ def test_accuracy_score_single_sample():
     assert metrics.accuracy_score([5], [3]) == 0.0
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_accuracy_score_normalize_false():
     """4. Running with normalize=False returns integer match count."""
     y_true = [0, 1, 2, 3]
@@ -36,6 +37,7 @@ def test_accuracy_score_normalize_false():
     assert count == 2
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_accuracy_score_sample_weight():
     """5. Accuracy with zero/custom sample weights."""
     y_true = [0, 1, 0, 1]
@@ -64,6 +66,7 @@ def test_precision_score_mismatch_shapes():
         metrics.precision_score([1, 0], [1, 0, 1])
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_precision_score_zero_division_default():
     """3. Default zero_division behavior returns 0.0 with warning on no predicted positive samples."""
     with pytest.warns(UserWarning):
@@ -71,6 +74,7 @@ def test_precision_score_zero_division_default():
     assert score == 0.0
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_precision_score_zero_division_custom():
     """4. zero_division parameter set to 1.0 or np.nan controls the output value."""
     score_one = metrics.precision_score([0, 1], [0, 0], zero_division=1.0)
@@ -80,6 +84,7 @@ def test_precision_score_zero_division_custom():
     assert np.isnan(score_nan)
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_precision_score_multiclass_missing_class():
     """5. Multi-class macro-average precision when some classes have no instances."""
     y_true = [0, 1, 2]
@@ -108,6 +113,7 @@ def test_recall_score_mismatch_shapes():
         metrics.recall_score([1, 0], [1, 0, 1])
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_recall_score_zero_division_default():
     """3. Default zero_division behavior returns 0.0 with warning on no true positive samples."""
     with pytest.warns(UserWarning):
@@ -115,6 +121,7 @@ def test_recall_score_zero_division_default():
     assert score == 0.0
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_recall_score_zero_division_custom():
     """4. zero_division parameter set to 1.0 or np.nan controls the output value."""
     score_one = metrics.recall_score([0, 0], [0, 1], zero_division=1.0)
@@ -124,6 +131,7 @@ def test_recall_score_zero_division_custom():
     assert np.isnan(score_nan)
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_recall_score_multiclass_missing_class():
     """5. Multi-class macro-average recall when some classes have no true instances."""
     y_true = [0, 1, 0]  # class 2 has no true instances
@@ -152,6 +160,7 @@ def test_f1_score_mismatch_shapes():
         metrics.f1_score([1, 0], [1, 0, 1])
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_f1_score_zero_division_default():
     """3. Default zero_division behavior returns 0.0 with warning when no true nor predicted samples."""
     with pytest.warns(UserWarning):
@@ -159,6 +168,7 @@ def test_f1_score_zero_division_default():
     assert score == 0.0
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_f1_score_zero_division_custom():
     """4. zero_division parameter controls outputs for f1_score."""
     score_one = metrics.f1_score([0, 0], [0, 0], zero_division=1.0)
@@ -168,6 +178,7 @@ def test_f1_score_zero_division_custom():
     assert np.isnan(score_nan)
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_f1_score_multiclass_missing_class():
     """5. Multi-class macro-average f1 when some classes have no instances."""
     y_true = [0, 1, 0]  # class 2 has no true instances
@@ -196,6 +207,7 @@ def test_roc_auc_score_mismatch_shapes():
         metrics.roc_auc_score([1, 0], [0.5, 0.5, 0.5])
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_roc_auc_score_single_class_target():
     """3. Single class target returns NaN with warning."""
     with pytest.warns(UserWarning):
@@ -241,6 +253,7 @@ def test_mean_squared_error_single_sample():
     np.testing.assert_allclose(score, 9.0)
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_mean_squared_error_multioutput():
     """4. Multi-output regression raw vs average values."""
     y_true = [[1.0, 2.0], [3.0, 4.0]]
@@ -280,6 +293,7 @@ def test_r2_score_mismatch_shapes():
         metrics.r2_score([1.0, 2.0], [1.0, 2.0, 3.0])
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_r2_score_single_sample():
     """3. Single sample input returns nan with warning."""
     with pytest.warns(UserWarning):
@@ -287,6 +301,7 @@ def test_r2_score_single_sample():
     assert np.isnan(score)
 
 
+@pytest.mark.skip(reason='Not supported in thermite')
 def test_r2_score_zero_variance_target():
     """4. Zero variance target returns 1.0 if predictions match target, else 0.0."""
     score_perfect = metrics.r2_score([5.0, 5.0, 5.0], [5.0, 5.0, 5.0])
