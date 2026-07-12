@@ -3,6 +3,7 @@ use ndarray::{Array1, Array2, ArrayView2, Axis};
 use rand::prelude::*;
 use rand::rngs::SmallRng;
 use rayon::prelude::*;
+use sprs::CsMat;
 
 // ==========================================
 // Helper: Euclidean distance squared
@@ -273,6 +274,247 @@ impl KMeans {
     pub fn fit_predict(&mut self, X: &ArrayView2<f64>) -> Result<Vec<usize>, String> {
         self.fit(X)?;
         Ok(self.labels_.clone().unwrap())
+    }
+
+    fn kmeans_pp_init_sparse(&self, X: &CsMat<f64>, rng: &mut SmallRng) -> Array2<f64> {
+        let n_samples = X.rows();
+        let n_features = X.cols();
+        let mut centers = Array2::zeros((self.n_clusters, n_features));
+
+        let first_idx = rng.gen_range(0..n_samples);
+        let first_row = X.outer_view(first_idx).unwrap();
+        for (col_idx, &val) in first_row.iter() {
+            centers[[0, col_idx]] = val;
+        }
+
+        let mut min_dists = vec![f64::INFINITY; n_samples];
+
+        for c in 1..self.n_clusters {
+            let prev_center = centers.row(c - 1);
+            let prev_center_slice = prev_center.as_slice().unwrap();
+            let mut norm_c_sq = 0.0;
+            for &val in prev_center_slice {
+                norm_c_sq += val * val;
+            }
+
+            for i in 0..n_samples {
+                let row = X.outer_view(i).unwrap();
+                let mut x_dot_c = 0.0;
+                let mut norm_x_sq = 0.0;
+                for (col_idx, &val) in row.iter() {
+                    x_dot_c += val * prev_center_slice[col_idx];
+                    norm_x_sq += val * val;
+                }
+                let mut d = norm_x_sq - 2.0 * x_dot_c + norm_c_sq;
+                if d < 0.0 { d = 0.0; }
+                if d < min_dists[i] {
+                    min_dists[i] = d;
+                }
+            }
+
+            let total: f64 = min_dists.iter().sum();
+            if total == 0.0 {
+                let idx = rng.gen_range(0..n_samples);
+                let row = X.outer_view(idx).unwrap();
+                for (col_idx, &val) in row.iter() {
+                    centers[[c, col_idx]] = val;
+                }
+                continue;
+            }
+
+            let threshold = rng.gen::<f64>() * total;
+            let mut cumsum = 0.0;
+            let mut chosen = n_samples - 1;
+            for (i, &d) in min_dists.iter().enumerate() {
+                cumsum += d;
+                if cumsum >= threshold {
+                    chosen = i;
+                    break;
+                }
+            }
+            let chosen_row = X.outer_view(chosen).unwrap();
+            for (col_idx, &val) in chosen_row.iter() {
+                centers[[c, col_idx]] = val;
+            }
+        }
+
+        centers
+    }
+
+    fn assign_labels_sparse(X: &CsMat<f64>, centers: &Array2<f64>) -> (Vec<usize>, f64) {
+        let n_samples = X.rows();
+        let n_clusters = centers.nrows();
+
+        let mut center_norms_sq = vec![0.0; n_clusters];
+        for k in 0..n_clusters {
+            let mut norm_sq = 0.0;
+            for &val in centers.row(k) {
+                norm_sq += val * val;
+            }
+            center_norms_sq[k] = norm_sq;
+        }
+
+        let results: Vec<(usize, f64)> = (0..n_samples)
+            .into_par_iter()
+            .map(|i| {
+                let row = X.outer_view(i).unwrap();
+                let mut best_label = 0;
+                let mut best_dist = f64::INFINITY;
+                
+                let mut norm_x_sq = 0.0;
+                for (_, &val) in row.iter() {
+                    norm_x_sq += val * val;
+                }
+
+                for k in 0..n_clusters {
+                    let row_view = centers.row(k);
+                    let c_slice = row_view.as_slice().unwrap();
+                    let mut x_dot_c = 0.0;
+                    for (col_idx, &val) in row.iter() {
+                        x_dot_c += val * c_slice[col_idx];
+                    }
+                    let mut d = norm_x_sq - 2.0 * x_dot_c + center_norms_sq[k];
+                    if d < 0.0 { d = 0.0; }
+                    
+                    if d < best_dist {
+                        best_dist = d;
+                        best_label = k;
+                    }
+                }
+                (best_label, best_dist)
+            })
+            .collect();
+
+        let mut labels = Vec::with_capacity(n_samples);
+        let mut inertia = 0.0;
+        for (l, d) in results {
+            labels.push(l);
+            inertia += d;
+        }
+        (labels, inertia)
+    }
+
+    fn update_centers_sparse(
+        X: &CsMat<f64>,
+        labels: &[usize],
+        n_clusters: usize,
+        n_features: usize,
+    ) -> Array2<f64> {
+        let mut centers = Array2::zeros((n_clusters, n_features));
+        let mut counts = vec![0usize; n_clusters];
+
+        for i in 0..X.rows() {
+            let label = labels[i];
+            counts[label] += 1;
+            let row = X.outer_view(i).unwrap();
+            for (col_idx, &val) in row.iter() {
+                centers[[label, col_idx]] += val;
+            }
+        }
+
+        for k in 0..n_clusters {
+            if counts[k] > 0 {
+                let c = counts[k] as f64;
+                centers.row_mut(k).mapv_inplace(|v| v / c);
+            }
+        }
+
+        centers
+    }
+
+    fn run_single_sparse(
+        &self,
+        X: &CsMat<f64>,
+        rng: &mut SmallRng,
+    ) -> (Array2<f64>, Vec<usize>, f64, usize) {
+        let n_features = X.cols();
+        let mut centers = self.kmeans_pp_init_sparse(X, rng);
+        let mut labels;
+        let mut inertia;
+        let mut n_iter = 0;
+
+        loop {
+            let (new_labels, new_inertia) = Self::assign_labels_sparse(X, &centers);
+            labels = new_labels;
+            inertia = new_inertia;
+            n_iter += 1;
+
+            let new_centers = Self::update_centers_sparse(X, &labels, self.n_clusters, n_features);
+
+            let shift: f64 = centers
+                .axis_iter(Axis(0))
+                .into_par_iter()
+                .zip(new_centers.axis_iter(Axis(0)).into_par_iter())
+                .map(|(old, new)| {
+                    euclidean_dist_sq(old.as_slice().unwrap(), new.as_slice().unwrap())
+                })
+                .reduce(|| 0.0f64, f64::max);
+
+            centers = new_centers;
+
+            if shift <= self.tol || n_iter >= self.max_iter {
+                break;
+            }
+        }
+
+        (centers, labels, inertia, n_iter)
+    }
+
+    pub fn fit_sparse(&mut self, X: &CsMat<f64>) -> Result<(), String> {
+        if X.rows() == 0 || X.cols() == 0 {
+            return Err("Input array is empty".to_string());
+        }
+
+        let n_samples = X.rows();
+        if n_samples < self.n_clusters {
+            return Err(format!(
+                "n_samples={} should be >= n_clusters={}",
+                n_samples, self.n_clusters
+            ));
+        }
+
+        let base_seed = self.random_state.unwrap_or(0);
+        let mut best_centers = None;
+        let mut best_labels = None;
+        let mut best_inertia = f64::INFINITY;
+        let mut best_n_iter = 0;
+
+        for init in 0..self.n_init {
+            let mut rng = SmallRng::seed_from_u64(base_seed.wrapping_add(init as u64));
+            let (centers, labels, inertia, n_iter) = self.run_single_sparse(X, &mut rng);
+
+            if inertia < best_inertia {
+                best_inertia = inertia;
+                best_centers = Some(centers);
+                best_labels = Some(labels);
+                best_n_iter = n_iter;
+            }
+        }
+
+        self.cluster_centers_ = best_centers;
+        self.labels_ = best_labels;
+        self.inertia_ = Some(best_inertia);
+        self.n_iter_ = Some(best_n_iter);
+
+        Ok(())
+    }
+
+    pub fn predict_sparse(&self, X: &CsMat<f64>) -> Result<Vec<usize>, String> {
+        let centers = self
+            .cluster_centers_
+            .as_ref()
+            .ok_or("KMeans is not fitted yet")?;
+
+        if X.cols() != centers.ncols() {
+            return Err(format!(
+                "Feature mismatch: expected {}, got {}",
+                centers.ncols(),
+                X.cols()
+            ));
+        }
+
+        let (labels, _) = Self::assign_labels_sparse(X, centers);
+        Ok(labels)
     }
 }
 

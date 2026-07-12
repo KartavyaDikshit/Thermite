@@ -19,7 +19,7 @@ scikit-learn is the most widely-used ML library in the world (40M+ monthly downl
 ### Supported Models & Tools (Phase 1 Complete!)
 - **Linear Models**: LinearRegression, Ridge, Lasso, LogisticRegression (Binary & Multiclass OvR, Native Sparse CSR support), LinearSVC (Binary & Multiclass OvR, Native Sparse CSR support)
 - **Tree & Ensemble Models**: DecisionTreeClassifier, DecisionTreeRegressor, RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier, GradientBoostingRegressor (All support Native Categorical Splits, avoiding memory-heavy one-hot encoding)
-- **Clustering**: KMeans
+- **Clustering**: KMeans (Native Sparse CSR support)
 - **Decomposition**: PCA (Subspace iteration optimized)
 - **Probabilistic Models**: GaussianNB (Includes `partial_fit` for Out-of-Core online learning)
 - **Pipelines & Tuning**: Fully compliant `Pipeline` and `ColumnTransformer`. `GridSearchCV` and `RandomizedSearchCV` support true multiprocessing (GIL released in Rust) with zero pickling overhead!
