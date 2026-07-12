@@ -32,8 +32,11 @@ from .time_series import AutoRegressive
 from .survival import SurvivalForest
 from .multi_output import MultiOutputRegressor
 from .graph import Node2Vec
+from .recommender import ALS
+from .quantum import QSVC
+from .causal import TLearner
 
-__version__ = "1.7.0"
+__version__ = "1.8.0"
 __all__ = [
     "ping",
     "StandardScaler",
@@ -95,6 +98,9 @@ __all__ = [
     "StratifiedKFold",
     "TimeSeriesSplit",
     "GroupKFold",
+    "ALS",
+    "QSVC",
+    "TLearner",
 ]
 
 def __getattr__(name):

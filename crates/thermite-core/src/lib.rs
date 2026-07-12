@@ -32,6 +32,9 @@ pub mod graph;
 pub mod hyperband;
 pub mod federated;
 pub mod rag;
+pub mod recommender;
+pub mod causal;
+
 pub fn core_ping() -> &'static str {
     "core_pong"
 }

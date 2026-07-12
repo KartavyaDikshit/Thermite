@@ -1,6 +1,7 @@
 import numpy as np
 import warnings
 from . import _core
+from .model_card import ModelCard
 
 def _catch_panic(func):
     def wrapper(self, *args, **kwargs):
@@ -42,7 +43,7 @@ class RandomForestClassifier:
         )
 
     @_catch_panic
-    def fit(self, X, y, categorical_features=None):
+    def fit(self, X, y, categorical_features=None, generate_model_card=False):
         X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
         if self.device == "gpu" and X.shape[0] * X.shape[1] < 10000:
@@ -53,6 +54,8 @@ class RandomForestClassifier:
         if y.ndim != 1:
             raise ValueError("Expected 1D array for y")
         self._model.fit(X, y, categorical_features)
+        if generate_model_card:
+            ModelCard.generate(self, f"{self.__class__.__name__}_model_card.md")
         return self
 
     @_catch_panic
@@ -95,7 +98,7 @@ class RandomForestRegressor:
         )
 
     @_catch_panic
-    def fit(self, X, y, categorical_features=None):
+    def fit(self, X, y, categorical_features=None, generate_model_card=False):
         X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
         if self.device == "gpu" and X.shape[0] * X.shape[1] < 10000:
@@ -106,6 +109,8 @@ class RandomForestRegressor:
         if y.ndim != 1:
             raise ValueError("Expected 1D array for y")
         self._model.fit(X, y, categorical_features)
+        if generate_model_card:
+            ModelCard.generate(self, f"{self.__class__.__name__}_model_card.md")
         return self
 
     @_catch_panic

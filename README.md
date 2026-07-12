@@ -131,7 +131,8 @@ While scikit-learn dominates the ML ecosystem (with over 100+ algorithms and ext
 
 **Why Thermite is unique:**
 1. **Rust-Native & Zero-Copy:** While similar projects like `Intel(R) Extension for Scikit-learn` try to accelerate operations by monkey-patching Cython with daal4py, Thermite is rewritten ground-up in Rust. We achieve true zero-copy data transmission for Apache Arrow/Polars AND Deep Learning frameworks (PyTorch/JAX via `DLPack`).
-2. **Distributed Computing Preparedness:** Thermite's Rust estimators derive `Serde` enabling high-speed `bincode` serialization out-of-the-box. This natively plugs into distributed execution engines like `Ray` and `Dask` without the heavy overhead of Python's standard `pickle`.
+2. **GPU Native without Heavy Dependencies:** Unlike `RAPIDS cuML` which requires a massive CUDA toolkit installation and strict version matching, Thermite utilizes `wgpu` to compile compute shaders on-the-fly, allowing it to seamlessly run GPU-accelerated code across Apple Metal, Vulkan, and DirectX 12 hardware without gigabytes of CUDA bloat.
+3. **Distributed Computing Preparedness:** Thermite's Rust estimators derive `Serde` enabling high-speed `bincode` serialization out-of-the-box. This natively plugs into distributed execution engines like `Ray` and `Dask` without the heavy overhead of Python's standard `pickle`.
 3. **Rust AutoML:** Instead of looping cross-validation in Python, Thermite provides a fast native `BayesianOptimizer`.
 4. **Scale-up Milestones v1.3.0:**
    - **Text Preprocessing:** Blazing fast `CountVectorizer` and `TfidfVectorizer` utilizing Rust's hash maps.
@@ -155,3 +156,8 @@ While scikit-learn dominates the ML ecosystem (with over 100+ algorithms and ext
    - **Federated Learning Infrastructure**: Parameter Server to seamlessly aggregate `SGDClassifier` weights.
    - **Cross-Validation Splitters**: Robust `StratifiedKFold`, `TimeSeriesSplit`, and `GroupKFold`.
    - **Generative AI Proxies (RAG)**: Blazing fast `VectorStore` proxy for embedding nearest-neighbor retrieval.
+8. **Scale-up Milestones v1.8.0:**
+   - **Sparse Tensor Algebra Enhancements**: Built-in Alternating Least Squares (ALS) sparse recommender system.
+   - **Quantum Machine Learning (QML)**: Quantum Support Vector Classifier (`QSVC`) placeholder, bridging `qiskit` into native pipelines.
+   - **Advanced Causal Inference**: Built-in `TLearner` estimating Conditional Average Treatment Effects (CATE).
+   - **Auto-Documentation & Model Cards**: Automated transparent model documentation generating Markdown Model Cards instantly (`generate_model_card=True`).

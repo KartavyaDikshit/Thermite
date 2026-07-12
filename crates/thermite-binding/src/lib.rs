@@ -433,6 +433,8 @@ pub mod manifold_bind;
 pub mod federated_bind;
 pub mod model_selection_bind;
 pub mod rag_bind;
+pub mod recommender_bind;
+pub mod causal_bind;
 
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -465,6 +467,8 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     federated_bind::bind_federated(m)?;
     model_selection_bind::bind_model_selection(m)?;
     rag_bind::bind_rag(m)?;
+    recommender_bind::bind_recommender(m)?;
+    causal_bind::bind_causal(m)?;
     Ok(())
 }
 
