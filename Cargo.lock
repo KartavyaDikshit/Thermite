@@ -2001,7 +2001,7 @@ dependencies = [
 
 [[package]]
 name = "thermite-binding"
-version = "0.1.0"
+version = "1.1.0"
 dependencies = [
  "ndarray",
  "numpy",
@@ -2013,7 +2013,7 @@ dependencies = [
 
 [[package]]
 name = "thermite-core"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "accelerate-src",
  "cc",
@@ -2028,7 +2028,7 @@ dependencies = [
 
 [[package]]
 name = "thermite-gpu"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "bytemuck",
  "ndarray",
