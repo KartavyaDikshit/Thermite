@@ -3,6 +3,13 @@ from . import _core
 
 class RandomForestClassifier:
     def __init__(self, n_estimators=100, *, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, n_jobs=None):
+        self.n_estimators = n_estimators
+        self.max_depth = max_depth
+        self.min_samples_split = min_samples_split
+        self.min_samples_leaf = min_samples_leaf
+        self.max_features = max_features
+        self.random_state = random_state
+        self.n_jobs = n_jobs
         self._model = _core.RandomForestClassifier(
             n_estimators=n_estimators,
             max_depth=max_depth,
@@ -38,6 +45,13 @@ class RandomForestClassifier:
 
 class RandomForestRegressor:
     def __init__(self, n_estimators=100, *, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, n_jobs=None):
+        self.n_estimators = n_estimators
+        self.max_depth = max_depth
+        self.min_samples_split = min_samples_split
+        self.min_samples_leaf = min_samples_leaf
+        self.max_features = max_features
+        self.random_state = random_state
+        self.n_jobs = n_jobs
         self._model = _core.RandomForestRegressor(
             n_estimators=n_estimators,
             max_depth=max_depth,
@@ -73,6 +87,10 @@ class RandomForestRegressor:
 
 class GradientBoostingClassifier:
     def __init__(self, n_estimators=100, learning_rate=0.1, *, max_depth=3, random_state=None):
+        self.n_estimators = n_estimators
+        self.learning_rate = learning_rate
+        self.max_depth = max_depth
+        self.random_state = random_state
         self._model = _core.GradientBoostingClassifier(
             n_estimators=n_estimators,
             learning_rate=learning_rate,
@@ -108,6 +126,10 @@ class GradientBoostingClassifier:
 
 class GradientBoostingRegressor:
     def __init__(self, n_estimators=100, learning_rate=0.1, *, max_depth=3, random_state=None):
+        self.n_estimators = n_estimators
+        self.learning_rate = learning_rate
+        self.max_depth = max_depth
+        self.random_state = random_state
         self._model = _core.GradientBoostingRegressor(
             n_estimators=n_estimators,
             learning_rate=learning_rate,

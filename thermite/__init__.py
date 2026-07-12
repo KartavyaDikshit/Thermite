@@ -1,6 +1,6 @@
 from ._core import ping
 from .preprocessing import StandardScaler, MinMaxScaler, LabelEncoder, OneHotEncoder
-from .model_selection import train_test_split
+from .model_selection import train_test_split, GridSearchCV, KFold
 from .linear_model import LinearRegression, Ridge, Lasso, LogisticRegression, LinearSVC
 from .metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
@@ -11,7 +11,7 @@ from .cluster import KMeans, DBSCAN
 from .decomposition import PCA
 from .neighbors import KNeighborsClassifier
 from .ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier, GradientBoostingRegressor
-from .pipeline import Pipeline
+from .pipeline import Pipeline, ColumnTransformer
 
 __version__ = "0.1.0"
 __all__ = [
