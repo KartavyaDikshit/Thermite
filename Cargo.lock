@@ -1206,6 +1206,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "ndarray"
+version = "0.17.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "520080814a7a6b4a6e9070823bb24b4531daac8c4627e08ba5de8c5ef2f2752d"
+dependencies = [
+ "matrixmultiply",
+ "num-complex 0.4.6",
+ "num-integer",
+ "num-traits",
+ "portable-atomic",
+ "portable-atomic-util",
+ "rawpointer",
+]
+
+[[package]]
 name = "ndk-sys"
 version = "0.5.0+25.2.9519653"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1269,7 +1284,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec170733ca37175f5d75a5bea5911d6ff45d2cd52849ce98b685394e4f2f37f4"
 dependencies = [
  "libc",
- "ndarray",
+ "ndarray 0.15.6",
  "num-complex 0.4.6",
  "num-integer",
  "num-traits",
@@ -1436,6 +1451,15 @@ name = "portable-atomic"
 version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c33a9471896f1c69cecef8d20cbe2f7accd12527ce60845ff44c153bb2a21b49"
+
+[[package]]
+name = "portable-atomic-util"
+version = "0.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2a106d1259c23fac8e543272398ae0e3c0b8d33c88ed73d0cc71b0f1d902618"
+dependencies = [
+ "portable-atomic",
+]
 
 [[package]]
 name = "potential_utf"
@@ -1889,7 +1913,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6dca58a33be2188d4edc71534f8bafa826e787cc28ca1c47f31be3423f0d6e55"
 dependencies = [
  "alga",
- "ndarray",
+ "ndarray 0.17.2",
  "num-complex 0.4.6",
  "num-traits",
  "num_cpus",
@@ -2001,9 +2025,9 @@ dependencies = [
 
 [[package]]
 name = "thermite-binding"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
- "ndarray",
+ "ndarray 0.15.6",
  "numpy",
  "pyo3",
  "sprs",
@@ -2013,12 +2037,12 @@ dependencies = [
 
 [[package]]
 name = "thermite-core"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "accelerate-src",
  "cc",
  "intel-mkl-src",
- "ndarray",
+ "ndarray 0.15.6",
  "openblas-src",
  "rand",
  "rayon",
@@ -2028,10 +2052,10 @@ dependencies = [
 
 [[package]]
 name = "thermite-gpu"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "bytemuck",
- "ndarray",
+ "ndarray 0.15.6",
  "pollster",
  "rayon",
  "wgpu",
@@ -2233,9 +2257,9 @@ checksum = "b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be"
 
 [[package]]
 name = "uuid"
-version = "1.23.4"
+version = "1.23.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf80a72845275afea99e7f2b434723d3bc7e38470fcd1c7ed39a599c73319a53"
+checksum = "ea5fab0d6c3c01ae70085a09cb03d4c7a1d6314e2b3e075392783396d724ca0a"
 dependencies = [
  "getrandom 0.4.3",
  "js-sys",
