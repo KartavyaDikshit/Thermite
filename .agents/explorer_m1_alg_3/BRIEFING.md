@@ -1,17 +1,17 @@
-# BRIEFING — 2026-07-12T11:24:09Z
+# BRIEFING  2026-07-12T11:24:09Z
 
 ## Mission
 Design the implementation of the algorithms and utilities for Milestones M1-2 and M1-3 in Thermite (train_test_split, StandardScaler, MinMaxScaler, LabelEncoder, OneHotEncoder).
 
-## 🔒 My Identity
+##  My Identity
 - Archetype: explorer
 - Roles: Teamwork explorer, read-only investigator, analyzer
 - Working directory: /Users/kartavyadikshit/Projects/Thermite/.agents/explorer_m1_alg_3
 - Original parent: 4f539ea2-b299-4cac-afb7-27d4a5777e72
 - Milestone: Milestone 1 - Foundation & Preprocessing (Algorithms & Utilities Design)
 
-## 🔒 Key Constraints
-- Read-only investigation — do NOT implement (do NOT write any code directly in the codebase outside of our own agent directory)
+##  Key Constraints
+- Read-only investigation  do NOT implement (do NOT write any code directly in the codebase outside of our own agent directory)
 - Must design:
   1. `train_test_split`: shuffle/split logic using ndarray, rand (SmallRng). Wrap via PyO3 to accept/return numpy arrays.
   2. `StandardScaler`: store mean, var, scale, n_samples_seen; use Rayon for parallel mean/var; fit/transform/fit_transform/inverse_transform.
@@ -35,4 +35,4 @@ Design the implementation of the algorithms and utilities for Milestones M1-2 an
 - Used Rayon columns par_iter for parallel fit and transform computations.
 
 ## Artifact Index
-- `/Users/kartavyadikshit/Projects/Thermite/.agents/explorer_m1_alg_3/handoff.md` — Proposed design and templates for algorithms and utilities (M1-2, M1-3).
+- `/Users/kartavyadikshit/Projects/Thermite/.agents/explorer_m1_alg_3/handoff.md`  Proposed design and templates for algorithms and utilities (M1-2, M1-3).

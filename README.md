@@ -1,8 +1,8 @@
-# 🔥 Thermite
+#  Thermite
 
-**A blazing-fast, Rust-accelerated machine learning library for Python — drop-in compatible with scikit-learn.**
+**A blazing-fast, Rust-accelerated machine learning library for Python  drop-in compatible with scikit-learn.**
 
-> *Thermite: an exothermic reaction that burns at 2500°C. Your ML training should be just as fast.*
+> *Thermite: an exothermic reaction that burns at 2500C. Your ML training should be just as fast.*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
@@ -12,7 +12,7 @@
 
 ## Why Thermite?
 
-scikit-learn is the most widely-used ML library in the world (40M+ monthly downloads), but its internals are built on NumPy/SciPy/Cython — fast for 2010, slow by 2026 standards.
+scikit-learn is the most widely-used ML library in the world (40M+ monthly downloads), but its internals are built on NumPy/SciPy/Cython  fast for 2010, slow by 2026 standards.
 
 **Thermite** rewrites the compute-heavy core in Rust and exposes the same Python API you already know. No new syntax. No migration guide. Just `import thermite` instead of `import sklearn`.
 
@@ -25,7 +25,7 @@ scikit-learn is the most widely-used ML library in the world (40M+ monthly downl
 | StandardScaler.transform | TBD | TBD | TBD |
 | PCA.fit_transform | TBD | TBD | TBD |
 
-> Benchmarks coming soon — we're building the foundations first.
+> Benchmarks coming soon  we're building the foundations first.
 
 ## Installation
 
@@ -57,22 +57,22 @@ print(f"Accuracy: {clf.score(X_test, y_test):.4f}")
 
 ```
 thermite/
-├── crates/
-│   ├── thermite-core/        # Rust ML algorithms
-│   ├── thermite-linalg/      # Linear algebra primitives
-│   └── thermite-io/          # Fast data loading/serialization
-├── python/
-│   └── thermite/             # Python API (PyO3)
-│       ├── linear_model/     # Linear/Logistic Regression, Ridge, Lasso
-│       ├── tree/             # Decision Trees
-│       ├── ensemble/         # Random Forest, Gradient Boosting
-│       ├── cluster/          # KMeans, DBSCAN
-│       ├── preprocessing/    # Scalers, Encoders, Imputers
-│       ├── model_selection/  # Cross-validation, Grid Search
-│       ├── decomposition/    # PCA, SVD
-│       └── metrics/          # Scoring functions
-├── benchmarks/               # Head-to-head vs scikit-learn
-└── docs/                     # Documentation
+ crates/
+    thermite-core/        # Rust ML algorithms
+    thermite-linalg/      # Linear algebra primitives
+    thermite-io/          # Fast data loading/serialization
+ python/
+    thermite/             # Python API (PyO3)
+        linear_model/     # Linear/Logistic Regression, Ridge, Lasso
+        tree/             # Decision Trees
+        ensemble/         # Random Forest, Gradient Boosting
+        cluster/          # KMeans, DBSCAN
+        preprocessing/    # Scalers, Encoders, Imputers
+        model_selection/  # Cross-validation, Grid Search
+        decomposition/    # PCA, SVD
+        metrics/          # Scoring functions
+ benchmarks/               # Head-to-head vs scikit-learn
+ docs/                     # Documentation
 ```
 
 ## How It Works
@@ -84,15 +84,15 @@ thermite/
 
 ## Built With
 
-- [Rust](https://www.rust-lang.org/) — Systems programming language
-- [PyO3](https://github.com/PyO3/pyo3) — Rust ↔ Python interop
-- [maturin](https://github.com/PyO3/maturin) — Build and publish Rust-backed Python packages
-- [Rayon](https://github.com/rayon-rs/rayon) — Data parallelism for Rust
-- [ndarray](https://github.com/rust-ndarray/ndarray) — N-dimensional arrays for Rust
+- [Rust](https://www.rust-lang.org/)  Systems programming language
+- [PyO3](https://github.com/PyO3/pyo3)  Rust  Python interop
+- [maturin](https://github.com/PyO3/maturin)  Build and publish Rust-backed Python packages
+- [Rayon](https://github.com/rayon-rs/rayon)  Data parallelism for Rust
+- [ndarray](https://github.com/rust-ndarray/ndarray)  N-dimensional arrays for Rust
 
 ## Contributing
 
-Thermite is in active development. Contributions welcome — see [DEVLOG.md](DEVLOG.md) for the current roadmap.
+Thermite is in active development. Contributions welcome  see [DEVLOG.md](DEVLOG.md) for the current roadmap.
 
 ## License
 

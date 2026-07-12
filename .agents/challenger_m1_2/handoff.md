@@ -167,12 +167,12 @@ To verify these results independently:
 - **Mitigation**: Add checks in python/Rust to validate `X.shape[0] > 0` and `X.shape[1] > 0` before processing.
 
 ### Stress Test Results
-- **NaN / Inf in fit/transform** → Raise `ValueError` → Raised `ValueError` → **PASS**
-- **Empty input in MinMaxScaler/StandardScaler fit** → Raise `ValueError` → Raised `ValueError` → **PASS**
-- **Empty input in MinMaxScaler/StandardScaler transform** → Raise `ValueError` → Returned empty array (no error) → **FAIL (DIVERGENCE)**
-- **OneHotEncoder empty fit** → Raise `ValueError` → Succeeded (no error) → **FAIL (DIVERGENCE)**
-- **train_test_split stratify with 1 sample** → Raise `ValueError` → Succeeded (no error) → **FAIL (DIVERGENCE)**
-- **train_test_split shuffle=False split order** → Train first, test last → Test first, train last → **FAIL (DIVERGENCE)**
+- **NaN / Inf in fit/transform**  Raise `ValueError`  Raised `ValueError`  **PASS**
+- **Empty input in MinMaxScaler/StandardScaler fit**  Raise `ValueError`  Raised `ValueError`  **PASS**
+- **Empty input in MinMaxScaler/StandardScaler transform**  Raise `ValueError`  Returned empty array (no error)  **FAIL (DIVERGENCE)**
+- **OneHotEncoder empty fit**  Raise `ValueError`  Succeeded (no error)  **FAIL (DIVERGENCE)**
+- **train_test_split stratify with 1 sample**  Raise `ValueError`  Succeeded (no error)  **FAIL (DIVERGENCE)**
+- **train_test_split shuffle=False split order**  Train first, test last  Test first, train last  **FAIL (DIVERGENCE)**
 
 ### Unchallenged Areas
 - Rayon parallel performance scaling was not stress-tested under high CPU core counts due to single-machine execution environment limitations.

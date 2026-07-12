@@ -1,9 +1,9 @@
-# BRIEFING — 2026-07-12T13:28:00Z
+# BRIEFING  2026-07-12T13:28:00Z
 
 ## Mission
 Review the correctness, completeness, and quality of the Milestone 1 implementation of Thermite.
 
-## 🔒 My Identity
+##  My Identity
 - Archetype: Reviewer and adversarial critic
 - Roles: reviewer, critic
 - Working directory: /Users/kartavyadikshit/Projects/Thermite/.agents/reviewer_m1_1
@@ -11,8 +11,8 @@ Review the correctness, completeness, and quality of the Milestone 1 implementat
 - Milestone: Milestone 1
 - Instance: 1 of 1
 
-## 🔒 Key Constraints
-- Review-only — do NOT modify implementation code
+##  Key Constraints
+- Review-only  do NOT modify implementation code
 - CODE_ONLY network mode: no access to external websites or services, no HTTP clients targeting external URLs.
 - Only write to my folder `.agents/reviewer_m1_1/`.
 
@@ -30,8 +30,8 @@ Review the correctness, completeness, and quality of the Milestone 1 implementat
 - Identify type/behavior conformance gaps between Thermite and scikit-learn.
 
 ## Artifact Index
-- `/Users/kartavyadikshit/Projects/Thermite/.agents/reviewer_m1_1/handoff.md` — Handoff and review findings report.
-- `/Users/kartavyadikshit/Projects/Thermite/.agents/reviewer_m1_1/progress.md` — Liveness and step tracking.
+- `/Users/kartavyadikshit/Projects/Thermite/.agents/reviewer_m1_1/handoff.md`  Handoff and review findings report.
+- `/Users/kartavyadikshit/Projects/Thermite/.agents/reviewer_m1_1/progress.md`  Liveness and step tracking.
 
 ## Review Checklist
 - **Items reviewed**: `crates/thermite-core`, `crates/thermite-binding`, `thermite/` package, `verify_m1.py`, `tests/` E2E test suite.

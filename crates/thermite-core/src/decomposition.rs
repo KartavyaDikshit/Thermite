@@ -153,31 +153,8 @@ impl PCA {
             1.0
         };
 
-        // Compute X_c^T * X_c  (n_features x n_features)
-        let mut cov = Array2::zeros((n_features, n_features));
-        // Use parallel computation for the upper triangle, then mirror
-        let cov_entries: Vec<(usize, usize, f64)> = (0..n_features)
-            .into_par_iter()
-            .flat_map(|i| {
-                let X_c = &X_centered;
-                (i..n_features)
-                    .map(move |j| {
-                        let col_i = X_c.column(i);
-                        let col_j = X_c.column(j);
-                        let val = col_i.dot(&col_j) / denom;
-                        (i, j, val)
-                    })
-                    .collect::<Vec<_>>()
-            })
-            .collect();
-
-        for (i, j, val) in cov_entries {
-            cov[[i, j]] = val;
-            if i != j {
-                cov[[j, i]] = val;
-            }
-        }
-
+        let mut cov = X_centered.t().dot(&X_centered);
+        cov.mapv_inplace(|v| v / denom);
         // Total variance for ratio computation
         let total_variance: f64 = (0..n_features).map(|i| cov[[i, i]]).sum();
 
@@ -249,7 +226,7 @@ impl PCA {
             ));
         }
 
-        // X_original ≈ X_transformed * components + mean
+        // X_original  X_transformed * components + mean
         let mut X_original = X_transformed.dot(components);
         X_original
             .axis_iter_mut(Axis(0))

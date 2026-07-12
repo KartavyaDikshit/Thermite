@@ -7,10 +7,10 @@
 **Verdict**: CLEAN
 
 ### Phase Results
-- **Hardcoded test results check**: PASS — Analyzed `crates/thermite-core/src/preprocessing.rs` and `crates/thermite-core/src/model_selection.rs` and confirmed no test results or expected values are hardcoded in the primary logic. The only assertions are standard test assertions in `#[cfg(test)]` blocks.
-- **Facade or dummy implementations check**: PASS — Confirmed that all mathematical calculations (such as mean, variance, scale, category mapping, one-hot encoding, and indices splitting/stratification) are fully computed and implemented using Rayon, ndarray, rand, etc. No dummy/facade implementations returning fixed values without computation were found.
-- **External APIs or commands cheating check**: PASS — Inspected source code and verified that no external calls or API interactions are used to cheat or bypass calculations during verification.
-- **Behavioral verification (build & test)**: PASS — Rust cargo tests pass successfully. Running the verification suite `verify_m1.py` against both scikit-learn and thermite succeeds with exact matching.
+- **Hardcoded test results check**: PASS  Analyzed `crates/thermite-core/src/preprocessing.rs` and `crates/thermite-core/src/model_selection.rs` and confirmed no test results or expected values are hardcoded in the primary logic. The only assertions are standard test assertions in `#[cfg(test)]` blocks.
+- **Facade or dummy implementations check**: PASS  Confirmed that all mathematical calculations (such as mean, variance, scale, category mapping, one-hot encoding, and indices splitting/stratification) are fully computed and implemented using Rayon, ndarray, rand, etc. No dummy/facade implementations returning fixed values without computation were found.
+- **External APIs or commands cheating check**: PASS  Inspected source code and verified that no external calls or API interactions are used to cheat or bypass calculations during verification.
+- **Behavioral verification (build & test)**: PASS  Rust cargo tests pass successfully. Running the verification suite `verify_m1.py` against both scikit-learn and thermite succeeds with exact matching.
 
 ---
 
@@ -19,7 +19,7 @@
 ### 1. Observation
 I directly observed and audited the following source code files:
 * **`crates/thermite-core/src/preprocessing.rs`**:
-  * Line 48–59: Parallel column-wise statistics for `StandardScaler`:
+  * Line 4859: Parallel column-wise statistics for `StandardScaler`:
     ```rust
     let stats: Vec<(f64, f64)> = X.axis_iter(Axis(1))
         .into_par_iter()
@@ -34,7 +34,7 @@ I directly observed and audited the following source code files:
         })
         .collect();
     ```
-  * Line 181–192: Parallel min/max statistics for `MinMaxScaler`:
+  * Line 181192: Parallel min/max statistics for `MinMaxScaler`:
     ```rust
     let stats: Vec<(f64, f64)> = X.axis_iter(Axis(1))
         .into_par_iter()
@@ -48,7 +48,7 @@ I directly observed and audited the following source code files:
             (col, min, max) ...
         })
     ```
-  * Line 291–362: Sorting and deduplication logic for `LabelEncoderCore`:
+  * Line 291362: Sorting and deduplication logic for `LabelEncoderCore`:
     ```rust
     pub fn fit_int(&mut self, y: &[i64]) {
         let mut sorted = y.to_vec();
@@ -58,7 +58,7 @@ I directly observed and audited the following source code files:
         self.classes_str = None;
     }
     ```
-  * Line 418–457: One-hot encoding transformation using binary search on class categories:
+  * Line 418457: One-hot encoding transformation using binary search on class categories:
     ```rust
     match cats.binary_search(&val) {
         Ok(idx) => {
@@ -69,8 +69,8 @@ I directly observed and audited the following source code files:
     ```
 
 * **`crates/thermite-core/src/model_selection.rs`**:
-  * Line 40–140: Stratification split logic using a grouped mapping and the **Largest Remainder Method** to distribute leftover slots.
-  * Line 141–157: Non-stratified shuffle split using `SmallRng` from the `rand` library.
+  * Line 40140: Stratification split logic using a grouped mapping and the **Largest Remainder Method** to distribute leftover slots.
+  * Line 141157: Non-stratified shuffle split using `SmallRng` from the `rand` library.
 
 * **`crates/thermite-binding/src/lib.rs`**:
   * Direct PyO3 binding implementation mapping numpy arrays to Rust ndarray structures (`PyReadonlyArray1`, `PyReadonlyArray2`).

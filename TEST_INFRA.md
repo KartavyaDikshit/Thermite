@@ -64,10 +64,10 @@ The E2E test suite covers all **29 features** specified in the Thermite requirem
 ### Directory Layout
 ```
 /Users/kartavyadikshit/Projects/Thermite/
-├── tests/
-│   ├── conftest.py           # Backend switcher and module resolution helper
-│   ├── test_infra_check.py   # Basic verification of switcher setup
-│   ├── ...                   # Future E2E tier tests
+ tests/
+    conftest.py           # Backend switcher and module resolution helper
+    test_infra_check.py   # Basic verification of switcher setup
+    ...                   # Future E2E tier tests
 ```
 
 ### The Backend Switcher (`tests/conftest.py`)

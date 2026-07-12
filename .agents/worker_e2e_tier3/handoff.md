@@ -1,4 +1,4 @@
-# Handoff Report — Milestone E2E-4
+# Handoff Report  Milestone E2E-4
 
 ## 1. Observation
 - Created test suite file: `/Users/kartavyadikshit/Projects/Thermite/tests/test_tier3_combinations.py`

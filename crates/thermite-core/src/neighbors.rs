@@ -311,7 +311,7 @@ mod tests {
         let mut knn = KNeighborsClassifier::new(3, WeightType::Distance);
         knn.fit(&X_train.view(), &y_train.view()).unwrap();
 
-        // Point very close to [0,0] → class 0
+        // Point very close to [0,0]  class 0
         let X_test = array![[0.01, 0.0]];
         let pred = knn.predict(&X_test.view()).unwrap();
         assert_eq!(pred[0], 0);

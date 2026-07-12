@@ -1,4 +1,4 @@
-# Handoff Report — Build Setup & Packaging (M1-1)
+# Handoff Report  Build Setup & Packaging (M1-1)
 
 ## 1. Observation
 We observed and confirmed the following facts:
@@ -25,11 +25,11 @@ We observed and confirmed the following facts:
   ```
 * Running `maturin develop` successfully compiled the crate and installed the package:
   ```
-  🍹 Building a mixed python/rust project
-  🐍 Found CPython 3.14 at /Users/kartavyadikshit/Projects/Thermite/.venv/bin/python
-  🔗 Found pyo3 bindings with abi3-py3.8 support
-  ✏️ Setting installed package as editable
-  🛠 Installed thermite-0.1.0
+   Building a mixed python/rust project
+   Found CPython 3.14 at /Users/kartavyadikshit/Projects/Thermite/.venv/bin/python
+   Found pyo3 bindings with abi3-py3.8 support
+   Setting installed package as editable
+   Installed thermite-0.1.0
   ```
 * Running `/Users/kartavyadikshit/Projects/Thermite/.venv/bin/python -c "import thermite; print(thermite.ping())"` successfully imported and printed `pong`.
 

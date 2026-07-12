@@ -1,16 +1,16 @@
-# BRIEFING — 2026-07-12T13:25:00+02:00
+# BRIEFING  2026-07-12T13:25:00+02:00
 
 ## Mission
 Write a comprehensive happy-path test suite (Tier 1) for the 29 features listed in TEST_INFRA.md, ensuring 145+ test cases.
 
-## 🔒 My Identity
+##  My Identity
 - Archetype: worker
 - Roles: implementer, qa, specialist
 - Working directory: /Users/kartavyadikshit/Projects/Thermite/.agents/worker_e2e_tier1
 - Original parent: 2be0998b-3422-4735-8651-607c24e87f4a
 - Milestone: E2E-2 (Tier 1 Feature Coverage)
 
-## 🔒 Key Constraints
+##  Key Constraints
 - All imports of thermite modules must be dynamically loaded via `get_module` from `tests.conftest`.
 - Run tests via `USE_SKLEARN=1 pytest tests/test_tier1_*.py` using homebrew environment `.venv_homebrew/bin/pytest`.
 - Do not cheat (no hardcoded test results, fake implementations).

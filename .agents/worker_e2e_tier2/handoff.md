@@ -1,4 +1,4 @@
-# Handoff Report — Tier 2 Boundary Cases
+# Handoff Report  Tier 2 Boundary Cases
 
 ## 1. Observation
 - Located requirements in `TEST_INFRA.md` which lists the 29 features across 9 modules/categories that require 5 boundary and corner-case tests each.

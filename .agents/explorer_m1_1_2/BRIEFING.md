@@ -1,17 +1,17 @@
-# BRIEFING — 2026-07-12T13:22:00+02:00
+# BRIEFING  2026-07-12T13:22:00+02:00
 
 ## Mission
 Explore, design, and recommend the build setup and packaging files for Thermite.
 
-## 🔒 My Identity
+##  My Identity
 - Archetype: explorer
 - Roles: Teamwork explorer
 - Working directory: /Users/kartavyadikshit/Projects/Thermite/.agents/explorer_m1_1_2
 - Original parent: 4f539ea2-b299-4cac-afb7-27d4a5777e72
 - Milestone: M1-1
 
-## 🔒 Key Constraints
-- Read-only investigation — do NOT implement
+##  Key Constraints
+- Read-only investigation  do NOT implement
 - CODE_ONLY network mode
 - Write only to your folder; read any folder
 
@@ -31,4 +31,4 @@ Explore, design, and recommend the build setup and packaging files for Thermite.
 - Introduce a minimal `ping()` function in PyO3 bindings to verify setup compiles and installs.
 
 ## Artifact Index
-- /Users/kartavyadikshit/Projects/Thermite/.agents/explorer_m1_1_2/handoff.md — Design and recommendations handoff report.
+- /Users/kartavyadikshit/Projects/Thermite/.agents/explorer_m1_1_2/handoff.md  Design and recommendations handoff report.

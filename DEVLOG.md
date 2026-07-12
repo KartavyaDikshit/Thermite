@@ -1,9 +1,9 @@
-# 🔥 Thermite — Development Log
+#  Thermite  Development Log
 
-> **Project**: Thermite — A Rust-accelerated, scikit-learn-compatible ML library for Python
+> **Project**: Thermite  A Rust-accelerated, scikit-learn-compatible ML library for Python
 > **Repository**: https://github.com/KartavyaDikshit/Thermite
 > **Started**: 2026-07-12
-> **Status**: 🟡 Planning & Architecture
+> **Status**:  Planning & Architecture
 
 ---
 
@@ -49,13 +49,13 @@
 
 ## Decision Log
 
-### 2026-07-12 — Project Selection
+### 2026-07-12  Project Selection
 **Decision**: Build a Rust-accelerated scikit-learn replacement
 **Rationale**:
-- scikit-learn has 40M+ monthly PyPI downloads — largest untapped Rust acceleration opportunity
+- scikit-learn has 40M+ monthly PyPI downloads  largest untapped Rust acceleration opportunity
 - Follows the proven Polars/Pydantic/uv playbook (Rust core + Python API via PyO3)
 - `linfa` exists as pure Rust ML but has NO Python-facing drop-in replacement
-- Clear startup/acquisition path — OpenAI acquired Astral, Cloudflare acquired VoidZero for similar projects
+- Clear startup/acquisition path  OpenAI acquired Astral, Cloudflare acquired VoidZero for similar projects
 - Rust's parallelism gives massive wins on CPU-bound ML algorithms (trees, ensembles, clustering)
 
 **Alternatives Considered**:
@@ -67,11 +67,11 @@
 | TS Type Checker | stc failed; 5+ year effort for a large team |
 | Rust Load Testing | k6 (Go) already fast enough |
 
-### 2026-07-12 — Architecture Decisions
+### 2026-07-12  Architecture Decisions
 **Tech Stack**:
 - **Rust core**: Workspace with multiple crates (`thermite-core`, `thermite-linalg`, `thermite-io`)
 - **Python bindings**: PyO3 + maturin for build/packaging
-- **API design**: sklearn-compatible — `fit()`, `predict()`, `transform()`, `fit_transform()`
+- **API design**: sklearn-compatible  `fit()`, `predict()`, `transform()`, `fit_transform()`
 - **Data format**: Accept numpy arrays, return numpy arrays (via numpy PyO3 bindings)
 - **Parallelism**: Rayon for data parallelism within algorithms
 
@@ -79,7 +79,7 @@
 
 ## Work Log
 
-### 2026-07-12 13:15 — Project Kickoff
+### 2026-07-12 13:15  Project Kickoff
 - Completed comprehensive research on the Rust rewrite ecosystem
 - Mapped 50+ existing Rust rewrites, identified gaps
 - Selected scikit-learn acceleration as the target project
@@ -89,14 +89,14 @@
 - Created initial README.md
 - Beginning teamwork prompt crafting for multi-agent implementation
 
-### 2026-07-12 13:20 — Teamwork Build Session 1 (paused at rate limit)
+### 2026-07-12 13:20  Teamwork Build Session 1 (paused at rate limit)
 **Duration**: ~11 minutes before API quota exhaustion
 **Agents deployed**: 20+ agents (sentinel, orchestrator, 2 sub-orchestrators, workers, reviewers, challengers, explorers, auditors)
 
 **What was built**:
 - **Rust workspace**: `Cargo.toml` with `thermite-core` and `thermite-binding` crates
 - **thermite-core** (23KB+ Rust):
-  - `preprocessing.rs`: StandardScaler, MinMaxScaler, LabelEncoder, OneHotEncoder — full fit/transform implementations
+  - `preprocessing.rs`: StandardScaler, MinMaxScaler, LabelEncoder, OneHotEncoder  full fit/transform implementations
   - `model_selection.rs`: train_test_split with stratification support
 - **thermite-binding** (14KB+ Rust):
   - PyO3 bindings exposing all preprocessing and model_selection to Python
@@ -104,7 +104,7 @@
 - **Python package** (`thermite/`):
   - `__init__.py`, `preprocessing.py`, `model_selection.py`, `metrics.py`, `linear_model.py`
   - sklearn-compatible class names and method signatures
-- **Compiled binary**: `_core.abi3.so` (4.8MB) — working Python extension
+- **Compiled binary**: `_core.abi3.so` (4.8MB)  working Python extension
 - **Test suite** (15 files, ~125KB):
   - Tier 1: Unit tests for all algorithm categories
   - Tier 2: Integration tests comparing thermite vs sklearn outputs
@@ -114,23 +114,23 @@
 - **Build config**: pyproject.toml with maturin, Cargo workspace
 
 **What still needs to be built** (remaining from requirements):
-- [ ] Linear models (LinearRegression, Ridge, Lasso, LogisticRegression) — Rust implementations
-- [ ] Tree-based models (DecisionTree, RandomForest, GradientBoosting) — Rust implementations
-- [ ] Clustering (KMeans, DBSCAN) — Rust implementations
-- [ ] Decomposition (PCA) — Rust implementation
-- [ ] KNeighborsClassifier — Rust implementation
-- [ ] Metrics module — Rust implementations
-- [ ] Pipeline — Rust/Python implementation
-- [ ] cross_val_score, GridSearchCV — complete implementations
+- [ ] Linear models (LinearRegression, Ridge, Lasso, LogisticRegression)  Rust implementations
+- [ ] Tree-based models (DecisionTree, RandomForest, GradientBoosting)  Rust implementations
+- [ ] Clustering (KMeans, DBSCAN)  Rust implementations
+- [ ] Decomposition (PCA)  Rust implementation
+- [ ] KNeighborsClassifier  Rust implementation
+- [ ] Metrics module  Rust implementations
+- [ ] Pipeline  Rust/Python implementation
+- [ ] cross_val_score, GridSearchCV  complete implementations
 - [ ] Benchmarks suite
 - [ ] API documentation
 - [ ] GitHub Actions CI/CD
 - [ ] Migration guide
 
-**Committed & pushed**: `5eef490` → GitHub
+**Committed & pushed**: `5eef490`  GitHub
 **Resume**: Quota resets ~18:20 local time. Will re-launch teamwork to continue from here.
 
-### 2026-07-12 14:27 — Single-agent Execution (Post-Quota)
+### 2026-07-12 14:27  Single-agent Execution (Post-Quota)
 **What was built**:
 - **Thermite Core**: Completed the Rust implementations for core algorithms.
   - Linear Models: LinearRegression, Ridge, Lasso, LogisticRegression (with coordinate descent & gaussian elimination)

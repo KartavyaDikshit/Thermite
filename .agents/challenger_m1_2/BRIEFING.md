@@ -1,9 +1,9 @@
-# BRIEFING — 2026-07-12T13:29:40+02:00
+# BRIEFING  2026-07-12T13:29:40+02:00
 
 ## Mission
 Empirically test the robustness and correctness of the Milestone 1 implementation of Thermite (preprocessing and train_test_split).
 
-## 🔒 My Identity
+##  My Identity
 - Archetype: Empirical Challenger
 - Roles: critic, specialist
 - Working directory: `/Users/kartavyadikshit/Projects/Thermite/.agents/challenger_m1_2`
@@ -11,7 +11,7 @@ Empirically test the robustness and correctness of the Milestone 1 implementatio
 - Milestone: Milestone 1
 - Instance: 1 of 1
 
-## 🔒 Key Constraints
+##  Key Constraints
 - Run verification code directly and do not trust worker's claims or logs.
 - Focus on testing extreme edge cases:
   1. Infinite / NaN values in scaler inputs (should raise ValueError).
@@ -58,6 +58,6 @@ Empirically test the robustness and correctness of the Milestone 1 implementatio
 - **Core methodology**: Using Antigravity framework for building and testing, following rules.
 
 ## Artifact Index
-- `/Users/kartavyadikshit/Projects/Thermite/.agents/challenger_m1_2/challenge_m1_2.py` — Test runner script
-- `/Users/kartavyadikshit/Projects/Thermite/.agents/challenger_m1_2/handoff.md` — Result handoff document
-- `/Users/kartavyadikshit/Projects/Thermite/.agents/challenger_m1_2/progress.md` — Progress tracker
+- `/Users/kartavyadikshit/Projects/Thermite/.agents/challenger_m1_2/challenge_m1_2.py`  Test runner script
+- `/Users/kartavyadikshit/Projects/Thermite/.agents/challenger_m1_2/handoff.md`  Result handoff document
+- `/Users/kartavyadikshit/Projects/Thermite/.agents/challenger_m1_2/progress.md`  Progress tracker

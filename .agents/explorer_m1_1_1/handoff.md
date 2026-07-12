@@ -72,7 +72,7 @@ build-backend = "maturin"
 [project]
 name = "thermite-ml"
 version = "0.1.0"
-description = "A blazing-fast, Rust-accelerated machine learning library for Python — drop-in compatible with scikit-learn."
+description = "A blazing-fast, Rust-accelerated machine learning library for Python  drop-in compatible with scikit-learn."
 readme = "README.md"
 requires-python = ">=3.9"
 authors = [

@@ -1,4 +1,4 @@
-# Handoff Report — Build Setup & Packaging (M1-1)
+# Handoff Report  Build Setup & Packaging (M1-1)
 
 ## 1. Observation
 We examined the project documentation and workspace structure:

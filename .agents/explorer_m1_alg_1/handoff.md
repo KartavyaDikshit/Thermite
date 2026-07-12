@@ -1,4 +1,4 @@
-# Handoff Report — Algorithm & Preprocessing Design (M1-2 & M1-3)
+# Handoff Report  Algorithm & Preprocessing Design (M1-2 & M1-3)
 
 This report details the architectural designs, Rust implementation templates, and PyO3 dynamic bindings for `train_test_split`, `StandardScaler`, `MinMaxScaler`, `LabelEncoder`, and `OneHotEncoder`.
 

@@ -1,4 +1,4 @@
-# Handoff Report — Milestone 1 Quality and Adversarial Review
+# Handoff Report  Milestone 1 Quality and Adversarial Review
 
 ## 1. Quality Review Report
 

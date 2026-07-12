@@ -1,16 +1,16 @@
-# BRIEFING — 2026-07-12T13:24:00+02:00
+# BRIEFING  2026-07-12T13:24:00+02:00
 
 ## Mission
 Implement the build setup and packaging for Thermite with PyO3/Maturin bindings.
 
-## 🔒 My Identity
+##  My Identity
 - Archetype: worker_m1_1
 - Roles: implementer, qa, specialist
 - Working directory: /Users/kartavyadikshit/Projects/Thermite/.agents/worker_m1_1
 - Original parent: 4f539ea2-b299-4cac-afb7-27d4a5777e72
 - Milestone: M1-1
 
-## 🔒 Key Constraints
+##  Key Constraints
 - CODE_ONLY network mode. No external network requests, no curl, wget, etc.
 - No hardcoded test results, facade implementations, or cheating.
 
@@ -52,6 +52,6 @@ Implement the build setup and packaging for Thermite with PyO3/Maturin bindings.
 - Exclude `thermite-binding` from test target in Cargo.toml via `test = false` under `[lib]` to prevent PyO3 linker errors on macOS when running cargo test.
 
 ## Artifact Index
-- /Users/kartavyadikshit/Projects/Thermite/.agents/worker_m1_1/handoff.md — Handoff report
-- /Users/kartavyadikshit/Projects/Thermite/.agents/worker_m1_1/progress.md — Progress tracker
+- /Users/kartavyadikshit/Projects/Thermite/.agents/worker_m1_1/handoff.md  Handoff report
+- /Users/kartavyadikshit/Projects/Thermite/.agents/worker_m1_1/progress.md  Progress tracker
 

@@ -117,25 +117,11 @@ fn add_intercept_column(X: &ArrayView2<f64>) -> Array2<f64> {
 // Helper: mat-mul  (A^T * B)
 // ==========================================
 fn at_b(A: &Array2<f64>, B: &Array2<f64>) -> Array2<f64> {
-    // A is (n, p), B is (n, m) -> result (p, m)
-    let p = A.ncols();
-    let m = B.ncols();
-    let n = A.nrows();
-    let mut out = Array2::<f64>::zeros((p, m));
-    for i in 0..p {
-        for j in 0..m {
-            let mut sum = 0.0;
-            for k in 0..n {
-                sum += A[[k, i]] * B[[k, j]];
-            }
-            out[[i, j]] = sum;
-        }
-    }
-    out
+    A.t().dot(B)
 }
 
 // ==========================================
-// LinearRegression — OLS via normal equation
+// LinearRegression  OLS via normal equation
 // ==========================================
 pub struct LinearRegression {
     pub coef_: Option<Array1<f64>>,
@@ -241,7 +227,7 @@ impl LinearRegression {
 }
 
 // ==========================================
-// Ridge — OLS + L2 penalty
+// Ridge  OLS + L2 penalty
 // ==========================================
 pub struct Ridge {
     pub coef_: Option<Array1<f64>>,
@@ -351,7 +337,7 @@ impl Ridge {
 }
 
 // ==========================================
-// Lasso — Coordinate Descent with L1 penalty
+// Lasso  Coordinate Descent with L1 penalty
 // ==========================================
 pub struct Lasso {
     pub coef_: Option<Array1<f64>>,
@@ -411,11 +397,8 @@ impl Lasso {
             let y_mean = y.mean().unwrap();
 
             let mut X_centered = X.to_owned();
-            for mut row in X_centered.axis_iter_mut(Axis(0)) {
-                for j in 0..p {
-                    row[j] -= x_mean[j];
-                }
-            }
+            X_centered -= &x_mean;
+            
             let y_centered: Array1<f64> = y.mapv(|v| v - y_mean);
             (X_centered, y_centered, x_mean, y_mean)
         } else {
@@ -427,7 +410,7 @@ impl Lasso {
         let col_norms_sq: Vec<f64> = (0..p)
             .into_par_iter()
             .map(|j| {
-                X_work.column(j).iter().map(|&v| v * v).sum::<f64>()
+                X_work.column(j).dot(&X_work.column(j))
             })
             .collect();
 
@@ -443,12 +426,7 @@ impl Lasso {
                 let old_coef = coef[j];
 
                 // Compute partial residual correlation
-                let mut rho = 0.0;
-                for i in 0..n {
-                    rho += X_work[[i, j]] * residual[i];
-                }
-                // Add back contribution of current feature
-                rho += old_coef * col_norms_sq[j];
+                let rho = X_work.column(j).dot(&residual) + old_coef * col_norms_sq[j];
 
                 let new_coef = if col_norms_sq[j] == 0.0 {
                     0.0
@@ -459,9 +437,7 @@ impl Lasso {
                 let delta = new_coef - old_coef;
                 if delta.abs() > 0.0 {
                     // Update residual
-                    for i in 0..n {
-                        residual[i] -= delta * X_work[[i, j]];
-                    }
+                    ndarray::Zip::from(&mut residual).and(&X_work.column(j)).for_each(|r, &x| *r -= delta * x);
                     coef[j] = new_coef;
                     max_change = max_change.max(delta.abs());
                 }
@@ -520,7 +496,7 @@ impl Lasso {
 }
 
 // ==========================================
-// LogisticRegression — gradient descent
+// LogisticRegression  gradient descent
 // Binary / multiclass (one-vs-rest)
 // ==========================================
 pub struct LogisticRegression {
@@ -565,8 +541,7 @@ impl LogisticRegression {
         y_binary: &Array1<f64>, // 0/1 labels
         n_features: usize,
     ) -> Result<(Array1<f64>, f64), String> {
-        let n = X.nrows();
-        let n_f64 = n as f64;
+        let n_f64 = X.nrows() as f64;
         let lambda = 1.0 / self.C;
 
         let mut w = Array1::<f64>::zeros(n_features);
@@ -574,36 +549,23 @@ impl LogisticRegression {
         let lr = self.learning_rate;
 
         for _iter in 0..self.max_iter {
-            // Compute gradients
-            let mut grad_w = Array1::<f64>::zeros(n_features);
-            let mut grad_b = 0.0_f64;
+            let z = X.dot(&w) + bias;
+            let h = z.mapv(Self::sigmoid);
+            let diff = h - y_binary;
 
-            for i in 0..n {
-                let mut z = bias;
-                for j in 0..n_features {
-                    z += X[[i, j]] * w[j];
-                }
-                let h = Self::sigmoid(z);
-                let diff = h - y_binary[i];
+            let mut grad_w = X.t().dot(&diff);
+            grad_w /= n_f64;
+            grad_w = grad_w + lambda * &w;
+            
+            let grad_b = diff.sum() / n_f64;
 
-                for j in 0..n_features {
-                    grad_w[j] += diff * X[[i, j]];
-                }
-                grad_b += diff;
-            }
+            let w_update = &grad_w * lr;
+            w = w - &w_update;
+            let b_update = grad_b * lr;
+            bias -= b_update;
 
-            // Average + regularization
-            let mut max_change = 0.0_f64;
-            for j in 0..n_features {
-                grad_w[j] = grad_w[j] / n_f64 + lambda * w[j];
-                let update = lr * grad_w[j];
-                w[j] -= update;
-                max_change = max_change.max(update.abs());
-            }
-            grad_b /= n_f64;
-            let update_b = lr * grad_b;
-            bias -= update_b;
-            max_change = max_change.max(update_b.abs());
+            let max_w_change = w_update.iter().map(|v| v.abs()).fold(0.0_f64, |a, b| a.max(b));
+            let max_change = max_w_change.max(b_update.abs());
 
             if max_change < self.tol {
                 break;
@@ -855,7 +817,7 @@ mod tests {
         lr.fit(&X.view(), &y.view()).unwrap();
 
         let coef = lr.coef_.as_ref().unwrap();
-        // x0 and x1 are collinear so coef[0]+coef[1] ≈ 3.0
+        // x0 and x1 are collinear so coef[0]+coef[1]  3.0
         assert!((coef[0] + coef[1] - 3.0).abs() < 1e-6);
         assert!((lr.intercept_ - 3.0).abs() < 1e-6);
     }
@@ -929,7 +891,7 @@ mod tests {
             [4.0, 0.4],
             [5.0, 0.5]
         ];
-        let y = array![2.0, 4.0, 6.0, 8.0, 10.0]; // y ≈ 2*x0
+        let y = array![2.0, 4.0, 6.0, 8.0, 10.0]; // y  2*x0
         let mut lasso = Lasso::new(5.0, true, 10000, 1e-8);
         lasso.fit(&X.view(), &y.view()).unwrap();
 

@@ -1,9 +1,9 @@
-# BRIEFING — 2026-07-12T13:28:30+02:00
+# BRIEFING  2026-07-12T13:28:30+02:00
 
 ## Mission
 Review the correctness, completeness, quality, and robustness of the Milestone 1 implementations in Thermite (Rust core, PyO3 bindings, and Python wrappers).
 
-## 🔒 My Identity
+##  My Identity
 - Archetype: reviewer_and_adversarial_critic
 - Roles: reviewer, critic
 - Working directory: /Users/kartavyadikshit/Projects/Thermite/.agents/reviewer_m1_2
@@ -11,8 +11,8 @@ Review the correctness, completeness, quality, and robustness of the Milestone 1
 - Milestone: Milestone 1
 - Instance: 1 of 1
 
-## 🔒 Key Constraints
-- Review-only — do NOT modify implementation code
+##  Key Constraints
+- Review-only  do NOT modify implementation code
 
 ## Current Parent
 - Conversation ID: 4f539ea2-b299-4cac-afb7-27d4a5777e72
@@ -28,7 +28,7 @@ Review the correctness, completeness, quality, and robustness of the Milestone 1
 - Issued verdict: REQUEST_CHANGES due to E2E preprocessing failures on the thermite backend.
 
 ## Artifact Index
-- `/Users/kartavyadikshit/Projects/Thermite/.agents/reviewer_m1_2/handoff.md` — Final review and challenge report
+- `/Users/kartavyadikshit/Projects/Thermite/.agents/reviewer_m1_2/handoff.md`  Final review and challenge report
 
 ## Review Checklist
 - **Items reviewed**: `crates/thermite-core`, `crates/thermite-binding`, `thermite/` Python wrappers and packaging

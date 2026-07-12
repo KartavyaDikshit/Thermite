@@ -1,20 +1,20 @@
-# BRIEFING — 2026-07-12T13:23:55+02:00
+# BRIEFING  2026-07-12T13:23:55+02:00
 
 ## Mission
 Set up E2E test infrastructure for Thermite, including the backend switcher in conftest.py and compiling the TEST_INFRA.md specification.
 
-## 🔒 My Identity
+##  My Identity
 - Archetype: teamwork_preview_worker
 - Roles: implementer, qa, specialist
 - Working directory: /Users/kartavyadikshit/Projects/Thermite/.agents/worker_e2e_infra
 - Original parent: 2be0998b-3422-4735-8651-607c24e87f4a
 - Milestone: E2E-1 (Test Infra Setup)
 
-## 🔒 Key Constraints
+##  Key Constraints
 - Requirement-driven, opaque-box E2E test suite setup.
 - Support `USE_SKLEARN` environment variable to test against scikit-learn.
 - Maintain minimal change principle: touch only E2E test setup and docs.
-- Maintain real state and behavior — no cheating.
+- Maintain real state and behavior  no cheating.
 
 ## Current Parent
 - Conversation ID: 2be0998b-3422-4735-8651-607c24e87f4a
@@ -54,5 +54,5 @@ Set up E2E test infrastructure for Thermite, including the backend switcher in c
 - Using Homebrew Python3 virtual environment to run tests and avoid macOS dynamic library code signature validation errors on unsigned third-party PyPI wheels.
 
 ## Artifact Index
-- /Users/kartavyadikshit/Projects/Thermite/.agents/worker_e2e_infra/progress.md — progress tracking
-- /Users/kartavyadikshit/Projects/Thermite/.agents/worker_e2e_infra/BRIEFING.md — persistent briefing state
+- /Users/kartavyadikshit/Projects/Thermite/.agents/worker_e2e_infra/progress.md  progress tracking
+- /Users/kartavyadikshit/Projects/Thermite/.agents/worker_e2e_infra/BRIEFING.md  persistent briefing state

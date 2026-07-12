@@ -1,16 +1,16 @@
-# BRIEFING — 2026-07-12T13:29:47+02:00
+# BRIEFING  2026-07-12T13:29:47+02:00
 
 ## Mission
 Fix identified compatibility and correctness bugs in Milestone 1 preprocessing and model_selection implementation.
 
-## 🔒 My Identity
+##  My Identity
 - Archetype: worker_m1_fix
 - Roles: implementer, qa, specialist
 - Working directory: /Users/kartavyadikshit/Projects/Thermite/.agents/worker_m1_fix
 - Original parent: 4f539ea2-b299-4cac-afb7-27d4a5777e72
 - Milestone: Milestone 1
 
-## 🔒 Key Constraints
+##  Key Constraints
 - CODE_ONLY network mode: No external network access.
 - Minimal change principle.
 - No hardcoded test results, facade implementations, or cheating.

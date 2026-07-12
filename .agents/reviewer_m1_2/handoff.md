@@ -1,4 +1,4 @@
-# Handoff Report — Milestone 1 Review (Reviewer 2)
+# Handoff Report  Milestone 1 Review (Reviewer 2)
 
 ## 1. Observation
 

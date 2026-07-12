@@ -1,4 +1,4 @@
-# Handoff Report — worker_e2e_infra
+# Handoff Report  worker_e2e_infra
 
 ## Observation
 - Verified that the `tests/` directory was successfully created.

@@ -1,17 +1,17 @@
-# BRIEFING — 2026-07-12T13:22:00+02:00
+# BRIEFING  2026-07-12T13:22:00+02:00
 
 ## Mission
 Explore, design, and recommend the Cargo workspace, Maturin/PyO3 Python packaging (pyproject.toml), and Python package structure (thermite/) for Thermite.
 
-## 🔒 My Identity
+##  My Identity
 - Archetype: explorer
 - Roles: Teamwork explorer, read-only investigator
 - Working directory: /Users/kartavyadikshit/Projects/Thermite/.agents/explorer_m1_1_3
 - Original parent: 4f539ea2-b299-4cac-afb7-27d4a5777e72
 - Milestone: M1-1 (Build Setup & Packaging)
 
-## 🔒 Key Constraints
-- Read-only investigation — do NOT implement (no code/config files in codebase root/crates)
+##  Key Constraints
+- Read-only investigation  do NOT implement (no code/config files in codebase root/crates)
 - Write only to own folder (/Users/kartavyadikshit/Projects/Thermite/.agents/explorer_m1_1_3/)
 - Focus strictly on Cargo workspace, Maturin/PyO3 integration, and Python structure
 
@@ -38,5 +38,5 @@ Explore, design, and recommend the Cargo workspace, Maturin/PyO3 Python packagin
 - Configured stable ABI support (`abi3-py38`) to allow single-wheel building for multiple Python versions.
 
 ## Artifact Index
-- /Users/kartavyadikshit/Projects/Thermite/.agents/explorer_m1_1_3/handoff.md — Analysis and recommended configurations
-- /Users/kartavyadikshit/Projects/Thermite/.agents/explorer_m1_1_3/progress.md — Liveness heartbeat and step progress
+- /Users/kartavyadikshit/Projects/Thermite/.agents/explorer_m1_1_3/handoff.md  Analysis and recommended configurations
+- /Users/kartavyadikshit/Projects/Thermite/.agents/explorer_m1_1_3/progress.md  Liveness heartbeat and step progress

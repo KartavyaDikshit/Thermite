@@ -1,16 +1,16 @@
-# BRIEFING — 2026-07-12T13:29:52+02:00
+# BRIEFING  2026-07-12T13:29:52+02:00
 
 ## Mission
 Implement and verify a comprehensive cross-feature combination test suite (Tier 3) for Thermite.
 
-## 🔒 My Identity
+##  My Identity
 - Archetype: worker
 - Roles: implementer, qa, specialist
 - Working directory: /Users/kartavyadikshit/Projects/Thermite/.agents/worker_e2e_tier3
 - Original parent: 2be0998b-3422-4735-8651-607c24e87f4a
 - Milestone: E2E-4
 
-## 🔒 Key Constraints
+##  Key Constraints
 - All imports of `thermite` modules must be dynamically loaded via `get_module` from `tests.conftest`.
 - Create `tests/test_tier3_combinations.py` with at least 20 distinct combination test cases.
 - Verify combinations using `.venv_homebrew/bin/pytest` under `USE_SKLEARN=1`.
@@ -29,7 +29,7 @@ Implement and verify a comprehensive cross-feature combination test suite (Tier 
 
 ## Change Tracker
 - **Files modified**:
-  - `tests/test_tier3_combinations.py` — Created test suite containing 25 distinct combination tests.
+  - `tests/test_tier3_combinations.py`  Created test suite containing 25 distinct combination tests.
 - **Build status**: PASS
 - **Pending issues**: None
 
@@ -46,4 +46,4 @@ Implement and verify a comprehensive cross-feature combination test suite (Tier 
 - Used `sparse_output=False` parameter for OneHotEncoder to be compliant with latest sklearn and project guidelines.
 
 ## Artifact Index
-- `tests/test_tier3_combinations.py` — The Tier 3 cross-feature combination test suite.
+- `tests/test_tier3_combinations.py`  The Tier 3 cross-feature combination test suite.

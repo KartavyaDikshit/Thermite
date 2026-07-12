@@ -1,16 +1,16 @@
-# BRIEFING — 2026-07-12T13:21:40+02:00
+# BRIEFING  2026-07-12T13:21:40+02:00
 
 ## Mission
 Design and implement the E2E Testing Track for Thermite, producing a comprehensive requirement-driven, opaque-box test suite across 4 tiers of testing, and publish TEST_READY.md.
 
-## 🔒 My Identity
+##  My Identity
 - Archetype: teamwork_preview_orchestrator
 - Roles: orchestrator, user_liaison, human_reporter, successor
 - Working directory: /Users/kartavyadikshit/Projects/Thermite/.agents/sub_orch_e2e
 - Original parent: parent
 - Original parent conversation ID: c15516ce-455a-4e1d-b630-a14e7016d775
 
-## 🔒 My Workflow
+##  My Workflow
 - **Pattern**: Project (Sub-orchestrator)
 - **Scope document**: /Users/kartavyadikshit/Projects/Thermite/.agents/sub_orch_e2e/SCOPE.md
 1. **Decompose**: Decomposed into 6 milestones (E2E-1 to E2E-6) as defined in SCOPE.md.
@@ -34,7 +34,7 @@ Design and implement the E2E Testing Track for Thermite, producing a comprehensi
 - **Current phase**: 1
 - **Current focus**: E2E-5
 
-## 🔒 Key Constraints
+##  Key Constraints
 - Requirement-driven, opaque-box E2E test suite covering all features in ORIGINAL_REQUEST.md.
 - pytest.
 - Tier 1: Feature coverage (>=5 test cases per feature/algorithm).
@@ -42,7 +42,7 @@ Design and implement the E2E Testing Track for Thermite, producing a comprehensi
 - Tier 3: Cross-Feature Combinations (pairwise coverage of major feature pairs).
 - Tier 4: Real-World Application Scenarios (>=5 realistic application-level scenarios).
 - Publish TEST_READY.md at project root.
-- Never reuse a subagent after it has delivered its handoff — always spawn fresh.
+- Never reuse a subagent after it has delivered its handoff  always spawn fresh.
 - Do not write source code or tests directly. Use subagents.
 
 ## Current Parent
@@ -76,9 +76,9 @@ Design and implement the E2E Testing Track for Thermite, producing a comprehensi
 - Heartbeat cron: 2be0998b-3422-4735-8651-607c24e87f4a/task-21
 - Safety timer: none
 - On succession: kill all timers before spawning successor
-- On context truncation: run `manage_task(Action="list")` — re-create if missing
+- On context truncation: run `manage_task(Action="list")`  re-create if missing
 
 ## Artifact Index
-- /Users/kartavyadikshit/Projects/Thermite/.agents/sub_orch_e2e/progress.md — progress tracking
-- /Users/kartavyadikshit/Projects/Thermite/.agents/sub_orch_e2e/SCOPE.md — sub-orchestrator scope
-- /Users/kartavyadikshit/Projects/Thermite/.agents/sub_orch_e2e/BRIEFING.md — persistent briefing state
+- /Users/kartavyadikshit/Projects/Thermite/.agents/sub_orch_e2e/progress.md  progress tracking
+- /Users/kartavyadikshit/Projects/Thermite/.agents/sub_orch_e2e/SCOPE.md  sub-orchestrator scope
+- /Users/kartavyadikshit/Projects/Thermite/.agents/sub_orch_e2e/BRIEFING.md  persistent briefing state

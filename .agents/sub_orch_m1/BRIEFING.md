@@ -1,16 +1,16 @@
-# BRIEFING — 2026-07-12T13:21:40+02:00
+# BRIEFING  2026-07-12T13:21:40+02:00
 
 ## Mission
 Drive implementation of Milestone 1 (Foundation & Preprocessing) to completion.
 
-## 🔒 My Identity
+##  My Identity
 - Archetype: sub-orchestrator
 - Roles: orchestrator, user_liaison, human_reporter, successor
 - Working directory: /Users/kartavyadikshit/Projects/Thermite/.agents/sub_orch_m1
 - Original parent: orchestrator
 - Original parent conversation ID: c15516ce-455a-4e1d-b630-a14e7016d775
 
-## 🔒 My Workflow
+##  My Workflow
 - **Pattern**: Project
 - **Scope document**: /Users/kartavyadikshit/Projects/Thermite/.agents/sub_orch_m1/SCOPE.md
 1. **Decompose**: We follow the milestones in SCOPE.md:
@@ -41,11 +41,11 @@ Drive implementation of Milestone 1 (Foundation & Preprocessing) to completion.
 - **Current phase**: 1
 - **Current focus**: M1-1: Build Setup & Packaging
 
-## 🔒 Key Constraints
+##  Key Constraints
 - NEVER write, modify, or create source code files directly.
-- NEVER run build/test commands yourself — require workers to do so.
+- NEVER run build/test commands yourself  require workers to do so.
 - You MAY use file-editing tools ONLY for metadata/state files (.md) in your .agents/ folder.
-- Never reuse a subagent after it has delivered its handoff — always spawn fresh
+- Never reuse a subagent after it has delivered its handoff  always spawn fresh
 
 ## Current Parent
 - Conversation ID: c15516ce-455a-4e1d-b630-a14e7016d775
@@ -83,8 +83,8 @@ Drive implementation of Milestone 1 (Foundation & Preprocessing) to completion.
 - Heartbeat cron: task-19
 - Safety timer: none
 - On succession: kill all timers before spawning successor
-- On context truncation: run `manage_task(Action="list")` — re-create if missing
+- On context truncation: run `manage_task(Action="list")`  re-create if missing
 
 ## Artifact Index
-- /Users/kartavyadikshit/Projects/Thermite/.agents/sub_orch_m1/ORIGINAL_REQUEST.md — Original User Request
-- /Users/kartavyadikshit/Projects/Thermite/.agents/sub_orch_m1/SCOPE.md — Milestone 1 Scope
+- /Users/kartavyadikshit/Projects/Thermite/.agents/sub_orch_m1/ORIGINAL_REQUEST.md  Original User Request
+- /Users/kartavyadikshit/Projects/Thermite/.agents/sub_orch_m1/SCOPE.md  Milestone 1 Scope

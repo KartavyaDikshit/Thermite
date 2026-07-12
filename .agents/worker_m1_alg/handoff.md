@@ -1,4 +1,4 @@
-# Handoff Report — Algorithm & Preprocessing Implementation (worker_m1_alg)
+# Handoff Report  Algorithm & Preprocessing Implementation (worker_m1_alg)
 
 This handoff report details the implementation of core algorithms, PyO3 bindings, and Python wrappers for `train_test_split` (M1-2) and Preprocessing Scalers/Encoders (M1-3).
 
@@ -15,11 +15,11 @@ We directly observed and executed the following steps:
 2. **Compilation**:
    - Ran `maturin develop` to build and install the package:
      ```
-     🍹 Building a mixed python/rust project
-     🐍 Found CPython 3.14 at /Users/kartavyadikshit/Projects/Thermite/.venv/bin/python
-     🔗 Found pyo3 bindings with abi3-py3.8 support
-     📡 Using build options features from pyproject.toml
-     🛠 Installed thermite-0.1.0
+      Building a mixed python/rust project
+      Found CPython 3.14 at /Users/kartavyadikshit/Projects/Thermite/.venv/bin/python
+      Found pyo3 bindings with abi3-py3.8 support
+      Using build options features from pyproject.toml
+      Installed thermite-0.1.0
      ```
 3. **Rust Unit Tests**:
    - Ran `cargo test` and all 7 tests passed:

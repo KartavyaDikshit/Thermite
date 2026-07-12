@@ -5,6 +5,6 @@ edition = "2021"
 description = "Core Rust implementation of Thermite machine learning algorithms"
 
 [dependencies]
-ndarray = { workspace = true }
+ndarray = { workspace = true, features = ["blas"] }
 rayon = { workspace = true }
 rand = { workspace = true }

@@ -1,4 +1,4 @@
-# Handoff Report — Algorithms & Utilities Design (M1-2 & M1-3)
+# Handoff Report  Algorithms & Utilities Design (M1-2 & M1-3)
 
 ## 1. Observation
 We observed and confirmed the following facts about the codebase and requirements:

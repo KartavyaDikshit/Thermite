@@ -1,4 +1,4 @@
-# Progress Log — reviewer_m1_1
+# Progress Log  reviewer_m1_1
 
 Last visited: 2026-07-12T13:28:00+02:00
 

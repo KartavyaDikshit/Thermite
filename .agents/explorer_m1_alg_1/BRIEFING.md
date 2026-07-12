@@ -1,17 +1,17 @@
-# BRIEFING — 2026-07-12T13:24:00Z
+# BRIEFING  2026-07-12T13:24:00Z
 
 ## Mission
 Design the implementation of algorithms and utilities for Milestones M1-2 and M1-3.
 
-## 🔒 My Identity
+##  My Identity
 - Archetype: Explorer
 - Roles: Read-only investigator, Algorithm designer
 - Working directory: /Users/kartavyadikshit/Projects/Thermite/.agents/explorer_m1_alg_1
 - Original parent: 4f539ea2-b299-4cac-afb7-27d4a5777e72
 - Milestone: Milestone 1 (M1-2 and M1-3)
 
-## 🔒 Key Constraints
-- Read-only investigation — do NOT implement in the codebase
+##  Key Constraints
+- Read-only investigation  do NOT implement in the codebase
 - All designs and code templates must be written to handoff.md and progress.md in the agent folder
 - Design algorithms: train_test_split, StandardScaler, MinMaxScaler, LabelEncoder, OneHotEncoder
 - Rust-side optimizations: use Rayon, SmallRng, ndarray, and PyO3 numpy bindings
@@ -31,5 +31,5 @@ Design the implementation of algorithms and utilities for Milestones M1-2 and M1
 - Use conditional Python-wrapper type casts (e.g. string lists, int64 arrays) to delegate simple, fast specialized functions in the Rust library (e.g. `fit_int` / `fit_str`), reducing PyO3 overhead.
 
 ## Artifact Index
-- /Users/kartavyadikshit/Projects/Thermite/.agents/explorer_m1_alg_1/handoff.md — Analysis, recommendations, and Rust/Python code templates
-- /Users/kartavyadikshit/Projects/Thermite/.agents/explorer_m1_alg_1/progress.md — Progress log/heartbeat
+- /Users/kartavyadikshit/Projects/Thermite/.agents/explorer_m1_alg_1/handoff.md  Analysis, recommendations, and Rust/Python code templates
+- /Users/kartavyadikshit/Projects/Thermite/.agents/explorer_m1_alg_1/progress.md  Progress log/heartbeat

@@ -1,18 +1,18 @@
-# BRIEFING — 2026-07-12T13:28:00+02:00
+# BRIEFING  2026-07-12T13:28:00+02:00
 
 ## Mission
 Audit the Milestone 1 implementation in the Thermite repository for integrity.
 
-## 🔒 My Identity
+##  My Identity
 - Archetype: forensic_auditor
 - Roles: critic, specialist, auditor
 - Working directory: /Users/kartavyadikshit/Projects/Thermite/.agents/auditor_m1
 - Original parent: 4f539ea2-b299-4cac-afb7-27d4a5777e72
 - Target: Milestone 1
 
-## 🔒 Key Constraints
-- Audit-only — do NOT modify implementation code
-- Trust NOTHING — verify everything independently
+##  Key Constraints
+- Audit-only  do NOT modify implementation code
+- Trust NOTHING  verify everything independently
 - Check for hardcoded test results
 - Check for facade/dummy implementations (scaling, splitting, encoding must be computed in Rust/Python, not mock-returned)
 - Check for external API calls/commands to cheat on verification
@@ -45,7 +45,7 @@ Audit the Milestone 1 implementation in the Thermite repository for integrity.
 - Confirmed `verify_m1.py` runs and verifies equivalence against scikit-learn.
 
 ## Artifact Index
-- /Users/kartavyadikshit/Projects/Thermite/.agents/auditor_m1/handoff.md — Forensic audit report and verdict.
+- /Users/kartavyadikshit/Projects/Thermite/.agents/auditor_m1/handoff.md  Forensic audit report and verdict.
 
 ## Attack Surface
 - **Hypotheses tested**:

@@ -1,6 +1,6 @@
 # Original User Request
 
-## Initial Request — 2026-07-12T13:21:40+02:00
+## Initial Request  2026-07-12T13:21:40+02:00
 
 You are the E2E Testing Track Orchestrator for Thermite.
 Your working directory is `/Users/kartavyadikshit/Projects/Thermite/.agents/sub_orch_e2e`.

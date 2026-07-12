@@ -1,13 +1,13 @@
 # Original User Request
 
-## Initial Request — 2026-07-12T11:20:59Z
+## Initial Request  2026-07-12T11:20:59Z
 
-Build **Thermite** — a production-ready, Rust-accelerated machine learning library for Python that is API-compatible with scikit-learn. The Rust core implements ML algorithms with automatic parallelism via Rayon, exposed to Python via PyO3 bindings. Users should be able to `pip install thermite-ml` and swap `from sklearn` → `from thermite` with zero code changes. This is a serious open-source project with startup/commercial ambitions.
+Build **Thermite**  a production-ready, Rust-accelerated machine learning library for Python that is API-compatible with scikit-learn. The Rust core implements ML algorithms with automatic parallelism via Rayon, exposed to Python via PyO3 bindings. Users should be able to `pip install thermite-ml` and swap `from sklearn`  `from thermite` with zero code changes. This is a serious open-source project with startup/commercial ambitions.
 
 Working directory: /Users/kartavyadikshit/Projects/Thermite
 Integrity mode: development
 
-**Important**: The repository is already initialized with a README.md, DEVLOG.md, and .gitignore on the `main` branch. Build on top of the existing files — do not overwrite or delete them. Update DEVLOG.md with a work log entry at the end of the build documenting what was done, decisions made, and any issues encountered.
+**Important**: The repository is already initialized with a README.md, DEVLOG.md, and .gitignore on the `main` branch. Build on top of the existing files  do not overwrite or delete them. Update DEVLOG.md with a work log entry at the end of the build documenting what was done, decisions made, and any issues encountered.
 
 ## Requirements
 
@@ -50,14 +50,14 @@ The benchmark script must be runnable via a single command (e.g., `python benchm
 - GitHub Actions workflow for: Rust tests, Python tests, benchmarks, linting (clippy + ruff)
 - pyproject.toml configured for PyPI publishing via maturin
 - At least 80% test coverage on Rust core algorithms (unit tests with known expected outputs)
-- Python integration tests that verify sklearn API compatibility (same inputs → equivalent outputs within floating-point tolerance)
+- Python integration tests that verify sklearn API compatibility (same inputs  equivalent outputs within floating-point tolerance)
 
 ## Acceptance Criteria
 
 ### Functional Correctness
 - [ ] All algorithms listed in R1 are implemented and pass unit tests
 - [ ] Python integration tests verify that for each algorithm, given the same input data, Thermite produces outputs equivalent to scikit-learn (within 1e-6 tolerance for floating point)
-- [ ] `from thermite.ensemble import RandomForestClassifier` works — full sklearn import path compatibility
+- [ ] `from thermite.ensemble import RandomForestClassifier` works  full sklearn import path compatibility
 - [ ] Pipeline chains transformers and estimators correctly
 - [ ] cross_val_score and GridSearchCV work end-to-end
 

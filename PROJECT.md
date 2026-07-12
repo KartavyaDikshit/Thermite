@@ -18,38 +18,38 @@ It is organized as follows:
 ## Code Layout
 ```
 /Users/kartavyadikshit/Projects/Thermite/
-├── Cargo.toml                # Rust workspace configuration
-├── pyproject.toml            # Maturin and python packaging
-├── Cargo.lock
-├── crates/
-│   ├── thermite-core/        # Rust ML algorithms core
-│   │   ├── Cargo.toml
-│   │   └── src/
-│   │       ├── lib.rs
-│   │       ├── linear_model.rs
-│   │       ├── tree.rs
-│   │       ├── cluster.rs
-│   │       ├── preprocessing.rs
-│   │       ├── neighbors.rs
-│   │       └── metrics.rs
-│   └── thermite-binding/     # PyO3 bindings crate
-│       ├── Cargo.toml
-│       └── src/
-│           └── lib.rs
-├── thermite/                 # Python API package
-│   ├── __init__.py
-│   ├── linear_model.py
-│   ├── tree.py
-│   ├── ensemble.py
-│   ├── cluster.py
-│   ├── preprocessing.py
-│   ├── model_selection.py
-│   ├── decomposition.py
-│   ├── metrics.py
-│   └── pipeline.py
-├── tests/                    # E2E and unit test suites
-├── benchmarks/               # Performance benchmark suite
-└── docs/                     # Documentation files
+ Cargo.toml                # Rust workspace configuration
+ pyproject.toml            # Maturin and python packaging
+ Cargo.lock
+ crates/
+    thermite-core/        # Rust ML algorithms core
+       Cargo.toml
+       src/
+           lib.rs
+           linear_model.rs
+           tree.rs
+           cluster.rs
+           preprocessing.rs
+           neighbors.rs
+           metrics.rs
+    thermite-binding/     # PyO3 bindings crate
+        Cargo.toml
+        src/
+            lib.rs
+ thermite/                 # Python API package
+    __init__.py
+    linear_model.py
+    tree.py
+    ensemble.py
+    cluster.py
+    preprocessing.py
+    model_selection.py
+    decomposition.py
+    metrics.py
+    pipeline.py
+ tests/                    # E2E and unit test suites
+ benchmarks/               # Performance benchmark suite
+ docs/                     # Documentation files
 ```
 
 ## Milestones
@@ -63,7 +63,7 @@ It is organized as follows:
 | E2E | E2E Testing Track | Requirement-driven opaque-box test suite (Tiers 1-4) & runner. Publishes `TEST_READY.md`. | None | IN_PROGRESS | 2be0998b-3422-4735-8651-607c24e87f4a |
 
 ## Interface Contracts
-### Python Wrappers ↔ PyO3 Rust Bindings (`thermite._core`)
+### Python Wrappers  PyO3 Rust Bindings (`thermite._core`)
 - Inputs are validated NumPy arrays. PyO3 bindings accept NumPy arrays (using `numpy-rust` or similar, e.g., `PyReadonlyArray2` for features $X$ and `PyReadonlyArray1` for targets $y$).
 - Outputs are returned as NumPy arrays (e.g., `PyArray2`, `PyArray1`).
 - All class parameters (e.g. `n_estimators`, `max_depth`, `n_jobs`) are passed from Python wrappers to PyO3 classes upon initialization or `fit`.
