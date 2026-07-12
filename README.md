@@ -11,7 +11,7 @@
 
 ---
 
-## 🚀 Why Thermite?
+##  Why Thermite?
 
 scikit-learn is the most widely-used ML library in the world (40M+ monthly downloads), but its internals are built on NumPy/SciPy/Cython — fast for 2010, but bottlenecked by 2026 standards. 
 
@@ -27,7 +27,7 @@ No new syntax. No migration guide. Just `import thermite` instead of `import skl
 
 ---
 
-## 📈 The Numbers (Performance Superiority)
+##  The Numbers (Performance Superiority)
 
 Thermite offers incredible performance boosts while maintaining 100% accuracy parity.
 
@@ -44,7 +44,7 @@ Thermite offers incredible performance boosts while maintaining 100% accuracy pa
 
 ---
 
-## 🛠 Installation
+##  Installation
 
 Thermite v1.0.0 is distributed as pre-compiled wheels for macOS, Linux, and Windows. No Rust toolchain required!
 
@@ -54,7 +54,7 @@ pip install thermite-ml
 
 ---
 
-## ⚡ Quick Start: scikit-learn Drop-In
+##  Quick Start: scikit-learn Drop-In
 
 ```python
 # The API is 100% identical to scikit-learn
@@ -77,7 +77,7 @@ print(f"Accuracy: {clf.score(X_test, y_test):.4f}")
 
 ---
 
-## 🐻‍❄️ Zero-Copy Polars Integration
+##  Zero-Copy Polars Integration
 
 Traditional scikit-learn forces you to convert `polars` DataFrames to `pandas` or `numpy`, triggering a massive memory copy. Thermite natively ingests the underlying Apache Arrow memory buffers:
 
@@ -95,7 +95,7 @@ model.fit(df.select(pl.exclude("target")), df["target"])
 
 ---
 
-## 🏗 System Architecture
+##  System Architecture
 
 Thermite is structured to provide safety, performance, and portability:
 
@@ -106,7 +106,7 @@ Thermite is structured to provide safety, performance, and portability:
 
 ---
 
-## 📦 Supported Algorithms
+##  Supported Algorithms
 
 - **Linear Models:** `LinearRegression`, `Ridge`, `Lasso`, `LogisticRegression` (Binary & Multinomial OvR), `LinearSVC`.
 - **Ensembles:** `RandomForestClassifier`, `RandomForestRegressor`, `GradientBoostingClassifier`, `GradientBoostingRegressor`.
