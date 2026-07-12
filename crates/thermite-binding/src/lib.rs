@@ -410,6 +410,13 @@ impl OneHotEncoder {
     }
 }
 
+pub mod linear_model_bind;
+pub mod metrics_bind;
+pub mod tree_bind;
+pub mod cluster_bind;
+pub mod decomposition_bind;
+pub mod neighbors_bind;
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(ping, m)?)?;
@@ -418,5 +425,11 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<MinMaxScaler>()?;
     m.add_class::<LabelEncoder>()?;
     m.add_class::<OneHotEncoder>()?;
+    linear_model_bind::bind_linear_model(m)?;
+    metrics_bind::bind_metrics(m)?;
+    tree_bind::bind_tree(m)?;
+    cluster_bind::bind_cluster(m)?;
+    decomposition_bind::bind_decomposition(m)?;
+    neighbors_bind::bind_neighbors(m)?;
     Ok(())
 }
