@@ -30,27 +30,34 @@ impl DecisionTreeClassifier {
     }
 
     #[pyo3(signature = (X, y, categorical_features=None))]
-    fn fit(&mut self, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>, categorical_features: Option<Vec<usize>>) -> PyResult<()> {
-        let y_slice = match y.as_slice() {
-            Ok(s) => s,
-            Err(_) => return Err(pyo3::exceptions::PyValueError::new_err("y must be contiguous")),
-        };
+    fn fit(&mut self, py: Python<'_>, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>, categorical_features: Option<Vec<usize>>) -> PyResult<()> {
         if let Some(cf) = categorical_features {
             self.core.categorical_features = cf;
         } else {
             self.core.categorical_features = Vec::new();
         }
-        self.core.fit(&X.as_array(), y_slice);
+        let x_view = X.as_array();
+        // Since y_slice is just a slice, we can borrow the array here instead of y_slice
+        let y_view = y.as_array();
+        py.allow_threads(|| {
+            self.core.fit(&x_view, y_view.as_slice().unwrap());
+        });
         Ok(())
     }
 
     fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<f64>>> {
-        let preds = self.core.predict(&X.as_array());
+        let x_view = X.as_array();
+        let preds = py.allow_threads(|| {
+            self.core.predict(&x_view)
+        });
         Ok(PyArray1::from_vec_bound(py, preds))
     }
 
     fn predict_proba<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray2<f64>>> {
-        let probs = self.core.predict_proba(&X.as_array());
+        let x_view = X.as_array();
+        let probs = py.allow_threads(|| {
+            self.core.predict_proba(&x_view)
+        });
         Ok(PyArray2::from_array_bound(py, &probs))
     }
 }
@@ -83,22 +90,25 @@ impl DecisionTreeRegressor {
     }
 
     #[pyo3(signature = (X, y, categorical_features=None))]
-    fn fit(&mut self, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>, categorical_features: Option<Vec<usize>>) -> PyResult<()> {
-        let y_slice = match y.as_slice() {
-            Ok(s) => s,
-            Err(_) => return Err(pyo3::exceptions::PyValueError::new_err("y must be contiguous")),
-        };
+    fn fit(&mut self, py: Python<'_>, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>, categorical_features: Option<Vec<usize>>) -> PyResult<()> {
         if let Some(cf) = categorical_features {
             self.core.categorical_features = cf;
         } else {
             self.core.categorical_features = Vec::new();
         }
-        self.core.fit(&X.as_array(), y_slice);
+        let x_view = X.as_array();
+        let y_view = y.as_array();
+        py.allow_threads(|| {
+            self.core.fit(&x_view, y_view.as_slice().unwrap());
+        });
         Ok(())
     }
 
     fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<f64>>> {
-        let preds = self.core.predict(&X.as_array());
+        let x_view = X.as_array();
+        let preds = py.allow_threads(|| {
+            self.core.predict(&x_view)
+        });
         Ok(PyArray1::from_vec_bound(py, preds))
     }
 }

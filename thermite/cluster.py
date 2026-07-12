@@ -3,6 +3,11 @@ from . import _core
 
 class KMeans:
     def __init__(self, n_clusters=8, *, max_iter=300, tol=1e-4, n_init=10, random_state=None):
+        self.n_clusters = n_clusters
+        self.max_iter = max_iter
+        self.tol = tol
+        self.n_init = n_init
+        self.random_state = random_state
         self._model = _core.KMeans(
             n_clusters=n_clusters,
             max_iter=max_iter,
@@ -49,6 +54,8 @@ class KMeans:
 
 class DBSCAN:
     def __init__(self, eps=0.5, *, min_samples=5):
+        self.eps = eps
+        self.min_samples = min_samples
         self._model = _core.DBSCAN(
             eps=eps,
             min_samples=min_samples

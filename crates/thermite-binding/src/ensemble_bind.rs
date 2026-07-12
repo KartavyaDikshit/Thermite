@@ -37,17 +37,24 @@ impl RandomForestClassifier {
     }
 
     #[pyo3(signature = (X, y, categorical_features=None))]
-    fn fit(&mut self, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>, categorical_features: Option<Vec<usize>>) -> PyResult<()> {
+    fn fit(&mut self, py: Python<'_>, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>, categorical_features: Option<Vec<usize>>) -> PyResult<()> {
         if let Some(cf) = categorical_features {
             self.core.categorical_features = cf;
         } else {
             self.core.categorical_features = Vec::new();
         }
-        self.core.fit(&X.as_array(), &y.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)
+        let x_view = X.as_array();
+        let y_view = y.as_array();
+        py.allow_threads(|| {
+            self.core.fit(&x_view, &y_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })
     }
 
     fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<f64>>> {
-        let preds = self.core.predict(&X.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)?;
+        let x_view = X.as_array();
+        let preds = py.allow_threads(|| {
+            self.core.predict(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })?;
         Ok(PyArray1::from_array_bound(py, &preds))
     }
 
@@ -84,17 +91,24 @@ impl RandomForestRegressor {
     }
 
     #[pyo3(signature = (X, y, categorical_features=None))]
-    fn fit(&mut self, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>, categorical_features: Option<Vec<usize>>) -> PyResult<()> {
+    fn fit(&mut self, py: Python<'_>, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>, categorical_features: Option<Vec<usize>>) -> PyResult<()> {
         if let Some(cf) = categorical_features {
             self.core.categorical_features = cf;
         } else {
             self.core.categorical_features = Vec::new();
         }
-        self.core.fit(&X.as_array(), &y.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)
+        let x_view = X.as_array();
+        let y_view = y.as_array();
+        py.allow_threads(|| {
+            self.core.fit(&x_view, &y_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })
     }
 
     fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<f64>>> {
-        let preds = self.core.predict(&X.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)?;
+        let x_view = X.as_array();
+        let preds = py.allow_threads(|| {
+            self.core.predict(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })?;
         Ok(PyArray1::from_array_bound(py, &preds))
     }
 
@@ -130,17 +144,24 @@ impl GradientBoostingRegressor {
     }
 
     #[pyo3(signature = (X, y, categorical_features=None))]
-    fn fit(&mut self, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>, categorical_features: Option<Vec<usize>>) -> PyResult<()> {
+    fn fit(&mut self, py: Python<'_>, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>, categorical_features: Option<Vec<usize>>) -> PyResult<()> {
         if let Some(cf) = categorical_features {
             self.core.categorical_features = cf;
         } else {
             self.core.categorical_features = Vec::new();
         }
-        self.core.fit(&X.as_array(), &y.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)
+        let x_view = X.as_array();
+        let y_view = y.as_array();
+        py.allow_threads(|| {
+            self.core.fit(&x_view, &y_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })
     }
 
     fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<f64>>> {
-        let preds = self.core.predict(&X.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)?;
+        let x_view = X.as_array();
+        let preds = py.allow_threads(|| {
+            self.core.predict(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })?;
         Ok(PyArray1::from_array_bound(py, &preds))
     }
 }
@@ -166,22 +187,32 @@ impl GradientBoostingClassifier {
     }
 
     #[pyo3(signature = (X, y, categorical_features=None))]
-    fn fit(&mut self, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>, categorical_features: Option<Vec<usize>>) -> PyResult<()> {
+    fn fit(&mut self, py: Python<'_>, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>, categorical_features: Option<Vec<usize>>) -> PyResult<()> {
         if let Some(cf) = categorical_features {
             self.core.categorical_features = cf;
         } else {
             self.core.categorical_features = Vec::new();
         }
-        self.core.fit(&X.as_array(), &y.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)
+        let x_view = X.as_array();
+        let y_view = y.as_array();
+        py.allow_threads(|| {
+            self.core.fit(&x_view, &y_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })
     }
 
     fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<f64>>> {
-        let preds = self.core.predict(&X.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)?;
+        let x_view = X.as_array();
+        let preds = py.allow_threads(|| {
+            self.core.predict(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })?;
         Ok(PyArray1::from_array_bound(py, &preds))
     }
 
     fn predict_proba<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray2<f64>>> {
-        let preds = self.core.predict_proba(&X.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)?;
+        let x_view = X.as_array();
+        let preds = py.allow_threads(|| {
+            self.core.predict_proba(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })?;
         Ok(PyArray2::from_array_bound(py, &preds))
     }
 }

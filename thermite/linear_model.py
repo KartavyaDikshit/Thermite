@@ -3,6 +3,7 @@ from . import _core
 
 class LinearRegression:
     def __init__(self, *, fit_intercept=True):
+        self.fit_intercept = fit_intercept
         self._model = _core.LinearRegression(fit_intercept=fit_intercept)
 
     def fit(self, X, y):
@@ -32,6 +33,8 @@ class LinearRegression:
 
 class Ridge:
     def __init__(self, alpha=1.0, *, fit_intercept=True):
+        self.alpha = alpha
+        self.fit_intercept = fit_intercept
         self._model = _core.Ridge(alpha=alpha, fit_intercept=fit_intercept)
 
     def fit(self, X, y):
@@ -61,6 +64,10 @@ class Ridge:
 
 class Lasso:
     def __init__(self, alpha=1.0, *, fit_intercept=True, max_iter=1000, tol=1e-4):
+        self.alpha = alpha
+        self.fit_intercept = fit_intercept
+        self.max_iter = max_iter
+        self.tol = tol
         self._model = _core.Lasso(alpha=alpha, fit_intercept=fit_intercept, max_iter=max_iter, tol=tol)
 
     def fit(self, X, y):
@@ -90,6 +97,10 @@ class Lasso:
 
 class LogisticRegression:
     def __init__(self, penalty='l2', *, C=1.0, tol=1e-4, max_iter=100):
+        self.penalty = penalty
+        self.C = C
+        self.tol = tol
+        self.max_iter = max_iter
         self._model = _core.LogisticRegression(C=C, max_iter=max_iter, tol=tol, penalty=penalty)
 
     def fit(self, X, y):
@@ -163,6 +174,18 @@ class LogisticRegression:
 
 class LinearSVC:
     def __init__(self, penalty='l2', loss='squared_hinge', *, dual=True, tol=1e-4, C=1.0, multi_class='ovr', fit_intercept=True, intercept_scaling=1, class_weight=None, verbose=0, random_state=None, max_iter=1000):
+        self.penalty = penalty
+        self.loss = loss
+        self.dual = dual
+        self.tol = tol
+        self.C = C
+        self.multi_class = multi_class
+        self.fit_intercept = fit_intercept
+        self.intercept_scaling = intercept_scaling
+        self.class_weight = class_weight
+        self.verbose = verbose
+        self.random_state = random_state
+        self.max_iter = max_iter
         # Using subset of arguments internally, just accepting sklearn signature
         self._model = _core.LinearSVC(C=C, max_iter=max_iter, tol=tol)
 

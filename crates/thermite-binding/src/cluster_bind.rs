@@ -23,12 +23,18 @@ impl KMeans {
         }
     }
 
-    fn fit(&mut self, X: PyReadonlyArray2<f64>) -> PyResult<()> {
-        self.core.fit(&X.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)
+    fn fit(&mut self, py: Python<'_>, X: PyReadonlyArray2<f64>) -> PyResult<()> {
+        let x_view = X.as_array();
+        py.allow_threads(|| {
+            self.core.fit(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })
     }
 
     fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<usize>>> {
-        let preds = self.core.predict(&X.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)?;
+        let x_view = X.as_array();
+        let preds = py.allow_threads(|| {
+            self.core.predict(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })?;
         Ok(PyArray1::from_vec_bound(py, preds))
     }
 
@@ -79,8 +85,11 @@ impl DBSCAN {
         }
     }
 
-    fn fit(&mut self, X: PyReadonlyArray2<f64>) -> PyResult<()> {
-        self.core.fit(&X.as_array()).map_err(pyo3::exceptions::PyValueError::new_err)
+    fn fit(&mut self, py: Python<'_>, X: PyReadonlyArray2<f64>) -> PyResult<()> {
+        let x_view = X.as_array();
+        py.allow_threads(|| {
+            self.core.fit(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })
     }
 
     fn fit_predict<'py>(&mut self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<i64>>> {

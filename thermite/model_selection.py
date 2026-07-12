@@ -25,7 +25,7 @@ def train_test_split(*arrays, test_size=None, train_size=None, random_state=None
 
 import itertools
 import copy
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 
 class KFold:
     def __init__(self, n_splits=5, shuffle=False, random_state=None):
@@ -126,7 +126,7 @@ class GridSearchCV:
                 for f_idx, (train_idx, test_idx) in enumerate(folds):
                     tasks.append((p_idx, params, train_idx, test_idx))
             
-            with ProcessPoolExecutor(max_workers=self.n_jobs if self.n_jobs > 0 else None) as executor:
+            with ThreadPoolExecutor(max_workers=self.n_jobs if self.n_jobs > 0 else None) as executor:
                 futures = [executor.submit(_fit_and_score_standalone, estimator_class, base_params, t[1], X, y, t[2], t[3]) for t in tasks]
                 results = [f.result() for f in futures]
             
