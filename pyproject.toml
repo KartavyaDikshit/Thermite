@@ -59,6 +59,6 @@ Repository = "https://github.com/KartavyaDikshit/Thermite"
 Issues = "https://github.com/KartavyaDikshit/Thermite/issues"
 
 [tool.maturin]
-features = ["pyo3/extension-module", "accelerate"]
+features = ["pyo3/extension-module"]
 manifest-path = "crates/thermite-binding/Cargo.toml"
 module-name = "thermite._core"
