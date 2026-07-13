@@ -89,10 +89,10 @@ pub fn ensemble_majority_vote(
     n_samples: usize,
     device: DeviceKind,
 ) -> Vec<f32> {
-    // GPU reduction for this case: large n_estimators * n_samples
-    // For now, always use highly-optimised parallel CPU path.
-    // wgpu kernel can be plugged in identically to matmul_gpu.
-    let _ = device; // device reserved for future GPU dispatch
+    #[cfg(feature = "wgpu")]
+    if device == DeviceKind::Gpu {
+        return gpu::majority_vote_gpu(predictions, n_estimators, n_samples);
+    }
     cpu::majority_vote_cpu(predictions, n_estimators, n_samples)
 }
 
@@ -104,7 +104,10 @@ pub fn ensemble_row_mean(
     n_samples: usize,
     device: DeviceKind,
 ) -> Vec<f32> {
-    let _ = device;
+    #[cfg(feature = "wgpu")]
+    if device == DeviceKind::Gpu {
+        return gpu::row_mean_gpu(predictions, n_estimators, n_samples);
+    }
     cpu::row_mean_cpu(predictions, n_estimators, n_samples)
 }
 
@@ -204,7 +207,7 @@ mod gpu {
                         label: Some("thermite-gpu"),
                         required_features: wgpu::Features::empty(),
                         required_limits: wgpu::Limits::default(),
-                        memory_hints: Default::default(),
+                        
                     },
                     None,
                 )
@@ -243,6 +246,53 @@ mod gpu {
             let i = gid.x;
             if i >= arrayLength(&X) { return; }
             Y[i] = 1.0 / (1.0 + exp(-X[i]));
+        }
+    ";
+
+    const ROW_MEAN_SHADER: &str = r"
+        struct Params { n_estimators: u32, n_samples: u32, _pad1: u32, _pad2: u32 }
+        @group(0) @binding(0) var<storage, read>       preds  : array<f32>;
+        @group(0) @binding(1) var<storage, read_write> means  : array<f32>;
+        @group(0) @binding(2) var<uniform>             params : Params;
+
+        @compute @workgroup_size(256)
+        fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+            let s = gid.x;
+            if s >= params.n_samples { return; }
+            var sum: f32 = 0.0;
+            for (var e: u32 = 0u; e < params.n_estimators; e++) {
+                sum += preds[e * params.n_samples + s];
+            }
+            means[s] = sum / f32(params.n_estimators);
+        }
+    ";
+
+    const MAJORITY_VOTE_SHADER: &str = r"
+        struct Params { n_estimators: u32, n_samples: u32, _pad1: u32, _pad2: u32 }
+        @group(0) @binding(0) var<storage, read>       preds   : array<u32>;
+        @group(0) @binding(1) var<storage, read_write> winners : array<u32>;
+        @group(0) @binding(2) var<uniform>             params  : Params;
+
+        @compute @workgroup_size(256)
+        fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+            let s = gid.x;
+            if s >= params.n_samples { return; }
+            var best_val: u32 = 0u;
+            var max_count: u32 = 0u;
+            for (var i: u32 = 0u; i < params.n_estimators; i++) {
+                let val = preds[i * params.n_samples + s];
+                var count: u32 = 0u;
+                for (var j: u32 = 0u; j < params.n_estimators; j++) {
+                    if preds[j * params.n_samples + s] == val {
+                        count++;
+                    }
+                }
+                if count > max_count {
+                    max_count = count;
+                    best_val = val;
+                }
+            }
+            winners[s] = best_val;
         }
     ";
 
@@ -296,7 +346,7 @@ mod gpu {
         });
         let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
             label: Some("matmul"), layout: Some(&pipeline_layout),
-            module: &shader, entry_point: "main", compilation_options: Default::default(), cache: None,
+            module: &shader, entry_point: "main",
         });
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -334,13 +384,212 @@ mod gpu {
     }
 
     pub fn sigmoid_gpu(x: &[f32]) -> Vec<f32> {
-        // Stub: call CPU fallback for now; full wgpu dispatch follows same pattern as matmul_gpu
-        super::cpu::sigmoid_cpu(x)
+        let (device, queue) = init_gpu();
+        let out_size = x.len();
+
+        let buf_x = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("X"), contents: bytemuck::cast_slice(x), usage: wgpu::BufferUsages::STORAGE,
+        });
+        let buf_y = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Y"), size: (out_size * 4) as u64,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC, mapped_at_creation: false,
+        });
+        let buf_staging = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("staging"), size: (out_size * 4) as u64,
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false,
+        });
+
+        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("sigmoid"), source: wgpu::ShaderSource::Wgsl(SIGMOID_SHADER.into()),
+        });
+
+        let bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: None,
+            entries: &[
+                wgpu::BindGroupLayoutEntry { binding: 0, visibility: wgpu::ShaderStages::COMPUTE, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Storage { read_only: true }, has_dynamic_offset: false, min_binding_size: None }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 1, visibility: wgpu::ShaderStages::COMPUTE, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Storage { read_only: false }, has_dynamic_offset: false, min_binding_size: None }, count: None },
+            ],
+        });
+
+        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: None, bind_group_layouts: &[&bgl], push_constant_ranges: &[] });
+        let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+            label: Some("sigmoid"), layout: Some(&pipeline_layout), module: &shader, entry_point: "main",
+        });
+
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None, layout: &bgl,
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: buf_x.as_entire_binding() },
+                wgpu::BindGroupEntry { binding: 1, resource: buf_y.as_entire_binding() },
+            ],
+        });
+
+        let mut encoder = device.create_command_encoder(&Default::default());
+        {
+            let mut pass = encoder.begin_compute_pass(&Default::default());
+            pass.set_pipeline(&pipeline);
+            pass.set_bind_group(0, &bind_group, &[]);
+            pass.dispatch_workgroups(((out_size + 255) / 256) as u32, 1, 1);
+        }
+        encoder.copy_buffer_to_buffer(&buf_y, 0, &buf_staging, 0, (out_size * 4) as u64);
+        queue.submit([encoder.finish()]);
+
+        let slice = buf_staging.slice(..);
+        let (tx, rx) = std::sync::mpsc::channel();
+        slice.map_async(wgpu::MapMode::Read, move |r| { tx.send(r).unwrap(); });
+        device.poll(wgpu::Maintain::Wait);
+        rx.recv().unwrap().unwrap();
+
+        let data = slice.get_mapped_range();
+        bytemuck::cast_slice::<u8, f32>(&data).to_vec()
     }
 
     pub fn dot_gpu(a: &[f32], b: &[f32]) -> f32 {
-        // Stub: call CPU fallback; can be replaced with a wgpu reduction kernel
-        super::cpu::dot_cpu(a, b)
+        super::cpu::dot_cpu(a, b) // Reduction on GPU is slower for single vectors due to PCIe, keeping on CPU
+    }
+
+    pub fn row_mean_gpu(preds: &[f32], n_estimators: usize, n_samples: usize) -> Vec<f32> {
+        let (device, queue) = init_gpu();
+        let out_size = n_samples;
+
+        #[repr(C)]
+        #[derive(Copy, Clone, Pod, Zeroable)]
+        struct MeanParams { n_estimators: u32, n_samples: u32, _pad1: u32, _pad2: u32 }
+
+        let params = MeanParams { n_estimators: n_estimators as u32, n_samples: n_samples as u32, _pad1: 0, _pad2: 0 };
+
+        let buf_preds = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("preds"), contents: bytemuck::cast_slice(preds), usage: wgpu::BufferUsages::STORAGE,
+        });
+        let buf_means = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("means"), size: (out_size * 4) as u64,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC, mapped_at_creation: false,
+        });
+        let buf_params = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("params"), contents: bytemuck::bytes_of(&params), usage: wgpu::BufferUsages::UNIFORM,
+        });
+        let buf_staging = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("staging"), size: (out_size * 4) as u64,
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false,
+        });
+
+        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("row_mean"), source: wgpu::ShaderSource::Wgsl(ROW_MEAN_SHADER.into()),
+        });
+
+        let bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: None,
+            entries: &[
+                wgpu::BindGroupLayoutEntry { binding: 0, visibility: wgpu::ShaderStages::COMPUTE, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Storage { read_only: true }, has_dynamic_offset: false, min_binding_size: None }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 1, visibility: wgpu::ShaderStages::COMPUTE, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Storage { read_only: false }, has_dynamic_offset: false, min_binding_size: None }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 2, visibility: wgpu::ShaderStages::COMPUTE, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None }, count: None },
+            ],
+        });
+
+        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: None, bind_group_layouts: &[&bgl], push_constant_ranges: &[] });
+        let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+            label: Some("row_mean"), layout: Some(&pipeline_layout), module: &shader, entry_point: "main",
+        });
+
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None, layout: &bgl,
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: buf_preds.as_entire_binding() },
+                wgpu::BindGroupEntry { binding: 1, resource: buf_means.as_entire_binding() },
+                wgpu::BindGroupEntry { binding: 2, resource: buf_params.as_entire_binding() },
+            ],
+        });
+
+        let mut encoder = device.create_command_encoder(&Default::default());
+        {
+            let mut pass = encoder.begin_compute_pass(&Default::default());
+            pass.set_pipeline(&pipeline);
+            pass.set_bind_group(0, &bind_group, &[]);
+            pass.dispatch_workgroups(((out_size + 255) / 256) as u32, 1, 1);
+        }
+        encoder.copy_buffer_to_buffer(&buf_means, 0, &buf_staging, 0, (out_size * 4) as u64);
+        queue.submit([encoder.finish()]);
+
+        let slice = buf_staging.slice(..);
+        let (tx, rx) = std::sync::mpsc::channel();
+        slice.map_async(wgpu::MapMode::Read, move |r| { tx.send(r).unwrap(); });
+        device.poll(wgpu::Maintain::Wait);
+        rx.recv().unwrap().unwrap();
+
+        let data = slice.get_mapped_range();
+        bytemuck::cast_slice::<u8, f32>(&data).to_vec()
+    }
+
+    pub fn majority_vote_gpu(preds: &[f32], n_estimators: usize, n_samples: usize) -> Vec<f32> {
+        let (device, queue) = init_gpu();
+        let out_size = n_samples;
+
+        #[repr(C)]
+        #[derive(Copy, Clone, Pod, Zeroable)]
+        struct VoteParams { n_estimators: u32, n_samples: u32, _pad1: u32, _pad2: u32 }
+
+        let params = VoteParams { n_estimators: n_estimators as u32, n_samples: n_samples as u32, _pad1: 0, _pad2: 0 };
+
+        let buf_preds = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("preds"), contents: bytemuck::cast_slice(preds), usage: wgpu::BufferUsages::STORAGE,
+        });
+        let buf_winners = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("winners"), size: (out_size * 4) as u64,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC, mapped_at_creation: false,
+        });
+        let buf_params = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("params"), contents: bytemuck::bytes_of(&params), usage: wgpu::BufferUsages::UNIFORM,
+        });
+        let buf_staging = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("staging"), size: (out_size * 4) as u64,
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false,
+        });
+
+        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("majority_vote"), source: wgpu::ShaderSource::Wgsl(MAJORITY_VOTE_SHADER.into()),
+        });
+
+        let bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: None,
+            entries: &[
+                wgpu::BindGroupLayoutEntry { binding: 0, visibility: wgpu::ShaderStages::COMPUTE, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Storage { read_only: true }, has_dynamic_offset: false, min_binding_size: None }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 1, visibility: wgpu::ShaderStages::COMPUTE, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Storage { read_only: false }, has_dynamic_offset: false, min_binding_size: None }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 2, visibility: wgpu::ShaderStages::COMPUTE, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None }, count: None },
+            ],
+        });
+
+        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: None, bind_group_layouts: &[&bgl], push_constant_ranges: &[] });
+        let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+            label: Some("majority_vote"), layout: Some(&pipeline_layout), module: &shader, entry_point: "main",
+        });
+
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None, layout: &bgl,
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: buf_preds.as_entire_binding() },
+                wgpu::BindGroupEntry { binding: 1, resource: buf_winners.as_entire_binding() },
+                wgpu::BindGroupEntry { binding: 2, resource: buf_params.as_entire_binding() },
+            ],
+        });
+
+        let mut encoder = device.create_command_encoder(&Default::default());
+        {
+            let mut pass = encoder.begin_compute_pass(&Default::default());
+            pass.set_pipeline(&pipeline);
+            pass.set_bind_group(0, &bind_group, &[]);
+            pass.dispatch_workgroups(((out_size + 255) / 256) as u32, 1, 1);
+        }
+        encoder.copy_buffer_to_buffer(&buf_winners, 0, &buf_staging, 0, (out_size * 4) as u64);
+        queue.submit([encoder.finish()]);
+
+        let slice = buf_staging.slice(..);
+        let (tx, rx) = std::sync::mpsc::channel();
+        slice.map_async(wgpu::MapMode::Read, move |r| { tx.send(r).unwrap(); });
+        device.poll(wgpu::Maintain::Wait);
+        rx.recv().unwrap().unwrap();
+
+        let data = slice.get_mapped_range();
+        bytemuck::cast_slice::<u8, f32>(&data).to_vec()
     }
 }
 

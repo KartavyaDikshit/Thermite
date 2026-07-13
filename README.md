@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Rust](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org/)
-[![PyPI](https://img.shields.io/badge/PyPI-v2.6.5-blue)](https://pypi.org/project/thermite-ml/)
+[![PyPI](https://img.shields.io/badge/PyPI-v2.6.6-blue)](https://pypi.org/project/thermite-ml/)
 
 ---
 
@@ -23,7 +23,7 @@ No new syntax. No migration guide. Just `import thermite` instead of `import skl
 - **GPU Acceleration (wgpu):** Native WebGPU/CUDA hardware acceleration backend `thermite-gpu`. Dispatch compute shaders for massive ensemble aggregations and matrix multiplications instantly by simply adding `device='gpu'`.
 - **True Parallelism (No GIL):** Unlike Scikit-Learn which relies on heavy multiprocess pickling via `joblib`, Thermite releases the Python GIL during heavy computation. `GridSearchCV` and `RandomizedSearchCV` effortlessly scale across all your cores with zero IPC overhead.
 - **Native Categorical & Sparse Support:** Decision Trees handle categorical features natively (bypassing One-Hot Encoding overhead). `LinearRegression` and `KMeans` natively ingest and optimize `scipy.sparse` matrices.
-- **Out-of-Core Learning:** Memory too small? Use `.partial_fit()` to train `GaussianNB` or `LogisticRegression` on streaming datasets incrementally.
+- **Enterprise Capabilities Built-in:** Includes `save_checkpoint` for distributed resumable training and `generate_model_card=True` for automated documentation and audit generation.
 - **Drop-In Compatibility Trap:** If you import a function that Thermite hasn't natively ported yet, it will automatically fall back and import it from `sklearn` seamlessly.
 
 ---
@@ -47,7 +47,7 @@ To push the framework to its limits, we conducted a comprehensive benchmarking s
 
 ## Installation
 ```bash
-pip install thermite-ml==2.6.5
+pip install thermite-ml==2.6.6
 ```
 
 ---
@@ -67,10 +67,14 @@ X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
 # Opt-in to Hardware Acceleration with `device='gpu'`
+# Automatically generate a markdown Model Card for audits
 clf = RandomForestClassifier(n_estimators=100, n_jobs=-1, device='gpu')
-clf.fit(X_train, y_train)
+clf.fit(X_train, y_train, generate_model_card=True)
 
 print(f"Accuracy: {clf.score(X_test, y_test):.4f}")
+
+# Save state directly to disk without pickling overhead
+clf.save_checkpoint("model_checkpoint.bin")
 ```
 
 ---
@@ -97,12 +101,14 @@ model.fit(df.select(pl.exclude("target")), df["target"])
 
 - **Linear Models:** `LinearRegression`, `Ridge`, `Lasso`, `LogisticRegression` (Binary & Multinomial OvR), `LinearSVC`.
 - **Ensembles:** `RandomForestClassifier`, `RandomForestRegressor`, `GradientBoostingClassifier`, `GradientBoostingRegressor`, `HistGradientBoostingClassifier`, `HistGradientBoostingRegressor`, `IsolationForest`.
+- **Support Vector Machines:** `SVC` (Kernel SVMs via direct C-bindings for maximal speed).
 - **Trees:** `DecisionTreeClassifier`, `DecisionTreeRegressor`.
 - **Clustering:** `KMeans`, `MiniBatchKMeans`, `DBSCAN`, `SpectralClustering`.
 - **Decomposition:** `PCA`.
 - **Probabilistic:** `GaussianNB`.
 - **Preprocessing:** `StandardScaler`, `MinMaxScaler`, `OneHotEncoder`, `LabelEncoder`.
 - **Pipelines:** `Pipeline`, `ColumnTransformer`, `GridSearchCV`, `RandomizedSearchCV`, `SuccessiveHalvingSearchCV`.
+- **Next-Gen Extensions:** `TLearner` (Causal Inference), `VectorStore` (RAG Retrieval), `ParameterServer` (Federated Learning), `QSVC` (Quantum SVM).
 - **Deep Learning Connectivity:** Native `__dlpack__` integrations for PyTorch/JAX `from_dlpack` zero-copy tensor passing.
 - **NLP & Text:** `CountVectorizer`, `TfidfVectorizer`, `Word2Vec`.
 - **AutoML:** Rust native `BayesianOptimizer` utilizing `Ridge` surrogates.
@@ -115,6 +121,7 @@ model.fit(df.select(pl.exclude("target")), df["target"])
 1. **Rust-Native & Zero-Copy:** While similar projects like `Intel(R) Extension for Scikit-learn` try to accelerate operations by monkey-patching Cython with daal4py, Thermite is rewritten ground-up in Rust. We achieve true zero-copy data transmission for Apache Arrow/Polars AND Deep Learning frameworks (PyTorch/JAX via `DLPack`).
 2. **GPU Native without Heavy Dependencies:** Unlike `RAPIDS cuML` which requires a massive CUDA toolkit installation and strict version matching, Thermite utilizes `wgpu` to compile compute shaders on-the-fly, allowing it to seamlessly run GPU-accelerated code across Apple Metal, Vulkan, and DirectX 12 hardware without gigabytes of CUDA bloat.
 3. **Distributed Computing Preparedness:** Thermite's Rust estimators derive `Serde` enabling high-speed `bincode` serialization out-of-the-box. This natively plugs into distributed execution engines like `Ray` and `Dask` without the heavy overhead of Python's standard `pickle`.
-4. **Rust AutoML:** Instead of looping cross-validation in Python, Thermite provides a fast native `BayesianOptimizer`.
-5. **Native ONNX Export:** Export trained core models directly to ONNX binaries with `.to_onnx()` without overhead.
-6. **Advanced Data Imputation:** `IterativeImputer` handles missing values dynamically via Ridge regression.
+4. **Federated Learning Ready:** Utilize the built-in `ParameterServer` class to securely aggregate model gradients (like SGD) from distributed client nodes.
+5. **Rust AutoML:** Instead of looping cross-validation in Python, Thermite provides a fast native `BayesianOptimizer`.
+6. **Native ONNX Export:** Export trained core models directly to ONNX binaries with `.to_onnx()` without overhead.
+7. **Advanced Data Imputation:** `IterativeImputer` handles missing values dynamically via Ridge regression.
