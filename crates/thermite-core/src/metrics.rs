@@ -491,29 +491,57 @@ pub fn pairwise_distances(
     }
 
     use rayon::prelude::*;
-    let distances: Vec<f64> = (0..n_samples_x)
-        .into_par_iter()
-        .flat_map(|i| {
-            let x_row = &x[i * n_features..(i + 1) * n_features];
-            let mut row_dists = Vec::with_capacity(n_samples_y);
-            for j in 0..n_samples_y {
-                let y_row = &y[j * n_features..(j + 1) * n_features];
-                match metric {
-                    "cosine" => {
-                        let mut dot = 0.0;
-                        let mut norm_x = 0.0;
-                        let mut norm_y = 0.0;
-                        for (&xi, &yi) in x_row.iter().zip(y_row.iter()) {
-                            dot += xi * yi;
-                            norm_x += xi * xi;
-                            norm_y += yi * yi;
-                        }
-                        if norm_x == 0.0 || norm_y == 0.0 {
-                            row_dists.push(1.0);
-                        } else {
-                            row_dists.push(1.0 - (dot / (norm_x.sqrt() * norm_y.sqrt())));
-                        }
-                    }
+
+    let x_norms: Vec<f64> = if metric == "cosine" {
+        (0..n_samples_x).into_par_iter().map(|i| {
+            let mut norm = 0.0;
+            for &xi in &x[i * n_features..(i + 1) * n_features] {
+                norm += xi * xi;
+            }
+            norm.sqrt()
+        }).collect()
+    } else {
+        vec![]
+    };
+
+    let y_norms: Vec<f64> = if metric == "cosine" {
+        (0..n_samples_y).into_par_iter().map(|j| {
+            let mut norm = 0.0;
+            for &yi in &y[j * n_features..(j + 1) * n_features] {
+                norm += yi * yi;
+            }
+            norm.sqrt()
+        }).collect()
+    } else {
+        vec![]
+    };
+
+    let distances: Vec<f64> = if metric == "cosine" {
+        let x_mat = ndarray::ArrayView2::from_shape((n_samples_x, n_features), x).unwrap();
+        let y_mat = ndarray::ArrayView2::from_shape((n_samples_y, n_features), y).unwrap();
+        let dot_product = x_mat.dot(&y_mat.t());
+        
+        dot_product.into_raw_vec().into_iter().enumerate().map(|(idx, dot)| {
+            let i = idx / n_samples_y;
+            let j = idx % n_samples_y;
+            let norm_x = x_norms[i];
+            let norm_y = y_norms[j];
+            if norm_x == 0.0 || norm_y == 0.0 {
+                1.0
+            } else {
+                1.0 - (dot / (norm_x * norm_y))
+            }
+        }).collect()
+    } else {
+        (0..n_samples_x)
+            .into_par_iter()
+            .flat_map(|i| {
+                let x_row = &x[i * n_features..(i + 1) * n_features];
+                let mut row_dists = Vec::with_capacity(n_samples_y);
+                for j in 0..n_samples_y {
+                    let y_row = &y[j * n_features..(j + 1) * n_features];
+                    match metric {
+                        "cosine" => unreachable!(),
                     "manhattan" => {
                         let mut dist = 0.0;
                         for (&xi, &yi) in x_row.iter().zip(y_row.iter()) {
@@ -537,7 +565,8 @@ pub fn pairwise_distances(
             }
             row_dists
         })
-        .collect();
+        .collect()
+    };
     Ok(distances)
 }
 

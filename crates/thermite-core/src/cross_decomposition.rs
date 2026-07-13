@@ -97,7 +97,7 @@ impl CCA {
     }
 
     pub fn fit(&mut self, X: &ArrayView2<f64>, _y: &ArrayView2<f64>) -> Result<(), String> {
-        let mut coef = Array2::zeros((X.ncols(), _y.ncols()));
+        let coef = Array2::zeros((X.ncols(), _y.ncols()));
         self.coef_ = Some(coef);
         Ok(())
     }

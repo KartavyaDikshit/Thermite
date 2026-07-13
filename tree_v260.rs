@@ -143,16 +143,15 @@ impl DecisionTreeClassifier {
 
     pub fn fit(&mut self, X: &ArrayView2<f64>, y: &[f64]) {
         let n_samples = X.nrows();
-        let indices: Vec<usize> = (0..n_samples).collect();
-        self.fit_with_indices(X, y, &indices);
-    }
-
-    pub fn fit_with_indices(&mut self, X: &ArrayView2<f64>, y: &[f64], indices: &[usize]) {
-        let n_samples = indices.len();
+        assert_eq!(
+            n_samples,
+            y.len(),
+            "X and y must have the same number of samples"
+        );
         assert!(n_samples > 0, "Cannot fit on empty data");
 
         // Discover classes (sorted unique values)
-        let mut classes: Vec<f64> = y.iter().cloned().collect();
+        let mut classes: Vec<f64> = y.to_vec();
         classes.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
         classes.dedup();
         self.n_classes = classes.len();
@@ -163,19 +162,15 @@ impl DecisionTreeClassifier {
             None => SmallRng::from_entropy(),
         };
 
-        let mut y_encoded = vec![0; y.len()];
-        for i in 0..y.len() {
-            y_encoded[i] = self.classes.iter().position(|&c| (c - y[i]).abs() < 1e-7).unwrap();
-        }
-
+        let indices: Vec<usize> = (0..n_samples).collect();
         self.nodes.clear();
-        self.build_classifier_tree(X, &y_encoded, indices, 0, &mut rng);
+        self.build_classifier_tree(X, y, &indices, 0, &mut rng);
     }
 
     fn build_classifier_tree(
         &mut self,
         X: &ArrayView2<f64>,
-        y_encoded: &[usize],
+        y: &[f64],
         indices: &[usize],
         depth: usize,
         rng: &mut SmallRng,
@@ -184,7 +179,7 @@ impl DecisionTreeClassifier {
         let n_features = X.ncols();
 
         // Compute class counts for current node
-        let class_counts = self.compute_class_counts(y_encoded, indices);
+        let class_counts = self.compute_class_counts(y, indices);
         let total = n as f64;
 
         // Check stopping conditions
@@ -204,7 +199,7 @@ impl DecisionTreeClassifier {
         let candidate_features = select_features(n_features, self.max_features, rng);
         let best_split = self.find_best_classification_split(
             X,
-            y_encoded,
+            y,
             indices,
             &candidate_features,
             &class_counts,
@@ -230,8 +225,8 @@ impl DecisionTreeClassifier {
                 let node_idx = self.nodes.len();
                 self.nodes.push(TreeNode::leaf(vec![], n));
 
-                let left_child = self.build_classifier_tree(X, y_encoded, &left_indices, depth + 1, rng);
-                let right_child = self.build_classifier_tree(X, y_encoded, &right_indices, depth + 1, rng);
+                let left_child = self.build_classifier_tree(X, y, &left_indices, depth + 1, rng);
+                let right_child = self.build_classifier_tree(X, y, &right_indices, depth + 1, rng);
 
                 let probs: Vec<f64> = class_counts.iter().map(|&c| c / total).collect();
                 self.nodes[node_idx] = TreeNode {
@@ -250,10 +245,15 @@ impl DecisionTreeClassifier {
         }
     }
 
-    fn compute_class_counts(&self, y_encoded: &[usize], indices: &[usize]) -> Vec<f64> {
+    fn compute_class_counts(&self, y: &[f64], indices: &[usize]) -> Vec<f64> {
         let mut counts = vec![0.0; self.n_classes];
         for &i in indices {
-            counts[y_encoded[i]] += 1.0;
+            let class_idx = self
+                .classes
+                .iter()
+                .position(|&c| (c - y[i]).abs() < 1e-7)
+                .unwrap();
+            counts[class_idx] += 1.0;
         }
         counts
     }
@@ -261,7 +261,7 @@ impl DecisionTreeClassifier {
     fn find_best_classification_split(
         &self,
         X: &ArrayView2<f64>,
-        y_encoded: &[usize],
+        y: &[f64],
         indices: &[usize],
         candidate_features: &[usize],
         parent_counts: &[f64],
@@ -277,7 +277,11 @@ impl DecisionTreeClassifier {
                 let mut cat_counts = std::collections::HashMap::new();
                 for &idx in indices {
                     let val = X[[idx, feat]];
-                    let c = y_encoded[idx];
+                    let c = self
+                        .classes
+                        .iter()
+                        .position(|&c| (c - y[idx]).abs() < 1e-7)
+                        .unwrap();
                     let entry = cat_counts
                         .entry(val.to_bits())
                         .or_insert((0.0, vec![0.0; self.n_classes]));
@@ -337,13 +341,22 @@ impl DecisionTreeClassifier {
 
                     if gain > best_gain {
                         best_gain = gain;
+                        let mut left_idx = Vec::with_capacity(left_total as usize);
+                        let mut right_idx = Vec::with_capacity(right_total as usize);
+                        for &idx in indices {
+                            if current_left_cats.contains(&X[[idx, feat]]) {
+                                left_idx.push(idx);
+                            } else {
+                                right_idx.push(idx);
+                            }
+                        }
                         best_split = Some((
                             feat,
                             0.0,
                             true,
                             current_left_cats.clone(),
-                            vec![],
-                            vec![],
+                            left_idx,
+                            right_idx,
                             false,
                         ));
                     }
@@ -361,21 +374,35 @@ impl DecisionTreeClassifier {
                 let mut nan_counts = vec![0.0; self.n_classes];
                 let mut nan_total = 0.0;
                 for &idx in &nan_indices {
-                    nan_counts[y_encoded[idx]] += 1.0;
+                    let class_idx = self
+                        .classes
+                        .iter()
+                        .position(|&c| (c - y[idx]).abs() < 1e-7)
+                        .unwrap();
+                    nan_counts[class_idx] += 1.0;
                     nan_total += 1.0;
                 }
 
                 let mut left_non_nan_counts = vec![0.0; self.n_classes];
                 let mut right_non_nan_counts = vec![0.0; self.n_classes];
                 for &idx in &sorted {
-                    right_non_nan_counts[y_encoded[idx]] += 1.0;
+                    let class_idx = self
+                        .classes
+                        .iter()
+                        .position(|&c| (c - y[idx]).abs() < 1e-7)
+                        .unwrap();
+                    right_non_nan_counts[class_idx] += 1.0;
                 }
                 let mut left_non_nan_total = 0.0;
                 let mut right_non_nan_total = sorted.len() as f64;
 
                 for i in 0..sorted.len() - 1 {
                     let idx = sorted[i];
-                    let class_idx = y_encoded[idx];
+                    let class_idx = self
+                        .classes
+                        .iter()
+                        .position(|&c| (c - y[idx]).abs() < 1e-7)
+                        .unwrap();
                     left_non_nan_counts[class_idx] += 1.0;
                     right_non_nan_counts[class_idx] -= 1.0;
                     left_non_nan_total += 1.0;
@@ -407,8 +434,11 @@ impl DecisionTreeClassifier {
                         if gain > best_gain {
                             best_gain = gain;
                             let threshold = (val + next_val) / 2.0;
+                            let mut left_idx = sorted[..=i].to_vec();
+                            left_idx.extend(&nan_indices);
+                            let right_idx = sorted[i + 1..].to_vec();
                             best_split =
-                                Some((feat, threshold, false, vec![], vec![], vec![], true));
+                                Some((feat, threshold, false, vec![], left_idx, right_idx, true));
                         }
                     }
 
@@ -431,31 +461,18 @@ impl DecisionTreeClassifier {
                         if gain > best_gain {
                             best_gain = gain;
                             let threshold = (val + next_val) / 2.0;
+                            let left_idx = sorted[..=i].to_vec();
+                            let mut right_idx = sorted[i + 1..].to_vec();
+                            right_idx.extend(&nan_indices);
                             best_split =
-                                Some((feat, threshold, false, vec![], vec![], vec![], false));
+                                Some((feat, threshold, false, vec![], left_idx, right_idx, false));
                         }
                     }
                 }
             }
         }
 
-        if let Some((feat, threshold, is_categorical, left_categories, _, _, nans_go_left)) = best_split {
-            let mut left_idx = Vec::with_capacity(indices.len() / 2);
-            let mut right_idx = Vec::with_capacity(indices.len() / 2);
-            for &idx in indices {
-                let val = X[[idx, feat]];
-                if val.is_nan() {
-                    if nans_go_left { left_idx.push(idx); } else { right_idx.push(idx); }
-                } else if is_categorical {
-                    if left_categories.contains(&val) { left_idx.push(idx); } else { right_idx.push(idx); }
-                } else {
-                    if val <= threshold { left_idx.push(idx); } else { right_idx.push(idx); }
-                }
-            }
-            return Some((feat, threshold, is_categorical, left_categories, left_idx, right_idx, nans_go_left));
-        }
-
-        None
+        best_split
     }
 
     pub fn predict(&self, X: &ArrayView2<f64>) -> Vec<f64> {
@@ -505,7 +522,7 @@ impl DecisionTreeClassifier {
             if node.is_leaf() {
                 return &node.value;
             }
-            let val = unsafe { *X.uget((sample_idx, node.feature_idx)) };
+            let val = X[[sample_idx, node.feature_idx]];
             if val.is_nan() {
                 if node.nan_go_left {
                     node_idx = node.left;
@@ -542,8 +559,6 @@ pub struct DecisionTreeRegressor {
     pub random_state: Option<u64>,
     pub nodes: Vec<TreeNode>,
     pub categorical_features: Vec<usize>,
-    pub is_binned: bool,
-    pub max_bins: usize,
 }
 
 impl DecisionTreeRegressor {
@@ -562,19 +577,16 @@ impl DecisionTreeRegressor {
             random_state,
             nodes: Vec::new(),
             categorical_features: Vec::new(),
-            is_binned: false,
-            max_bins: 256,
         }
     }
 
     pub fn fit(&mut self, X: &ArrayView2<f64>, y: &[f64]) {
         let n_samples = X.nrows();
-        let indices: Vec<usize> = (0..n_samples).collect();
-        self.fit_with_indices(X, y, &indices);
-    }
-
-    pub fn fit_with_indices(&mut self, X: &ArrayView2<f64>, y: &[f64], indices: &[usize]) {
-        let n_samples = indices.len();
+        assert_eq!(
+            n_samples,
+            y.len(),
+            "X and y must have the same number of samples"
+        );
         assert!(n_samples > 0, "Cannot fit on empty data");
 
         let mut rng = match self.random_state {
@@ -582,8 +594,9 @@ impl DecisionTreeRegressor {
             None => SmallRng::from_entropy(),
         };
 
+        let indices: Vec<usize> = (0..n_samples).collect();
         self.nodes.clear();
-        self.build_regressor_tree(X, y, indices, 0, &mut rng);
+        self.build_regressor_tree(X, y, &indices, 0, &mut rng);
     }
 
     fn build_regressor_tree(
@@ -680,125 +693,6 @@ impl DecisionTreeRegressor {
         let mut best_split: Option<(usize, f64, bool, Vec<f64>, Vec<usize>, Vec<usize>, bool)> =
             None;
 
-        if self.is_binned {
-            let max_bins = self.max_bins;
-            let n_candidates = candidate_features.len();
-            
-            let mut hists_count = vec![0.0; n_candidates * max_bins];
-            let mut hists_sum = vec![0.0; n_candidates * max_bins];
-            let mut hists_sum_sq = vec![0.0; n_candidates * max_bins];
-            let mut non_nan_counts = vec![0.0; n_candidates];
-            let mut non_nan_sums = vec![0.0; n_candidates];
-            let mut non_nan_sums_sq = vec![0.0; n_candidates];
-
-            for &idx in indices {
-                let target = unsafe { *y.get_unchecked(idx) };
-                let target_sq = target * target;
-
-                for (f_idx, &feat) in candidate_features.iter().enumerate() {
-                    let val = unsafe { *X.uget((idx, feat)) };
-                    let bin = val as usize;
-                    if bin < max_bins {
-                        let offset = f_idx * max_bins + bin;
-                        unsafe {
-                            *hists_count.get_unchecked_mut(offset) += 1.0;
-                            *hists_sum.get_unchecked_mut(offset) += target;
-                            *hists_sum_sq.get_unchecked_mut(offset) += target_sq;
-                            *non_nan_counts.get_unchecked_mut(f_idx) += 1.0;
-                            *non_nan_sums.get_unchecked_mut(f_idx) += target;
-                            *non_nan_sums_sq.get_unchecked_mut(f_idx) += target_sq;
-                        }
-                    }
-                }
-            }
-
-            for (f_idx, &feat) in candidate_features.iter().enumerate() {
-                let non_nan_count = non_nan_counts[f_idx];
-                if non_nan_count < 2.0 { continue; }
-
-                let non_nan_sum = non_nan_sums[f_idx];
-                let non_nan_sum_sq = non_nan_sums_sq[f_idx];
-
-                let nan_count = total_count - non_nan_count;
-                let nan_sum = total_sum - non_nan_sum;
-                let nan_sum_sq = total_sum_sq - non_nan_sum_sq;
-
-                let mut left_non_nan_sum = 0.0;
-                let mut left_non_nan_sum_sq = 0.0;
-                let mut left_non_nan_count = 0.0;
-
-                let mut right_non_nan_sum = non_nan_sum;
-                let mut right_non_nan_sum_sq = non_nan_sum_sq;
-                let mut right_non_nan_count = non_nan_count;
-
-                for bin in 0..max_bins - 1 {
-                    let offset = f_idx * max_bins + bin;
-                    let c = unsafe { *hists_count.get_unchecked(offset) };
-                    if c == 0.0 { continue; }
-
-                    let s = unsafe { *hists_sum.get_unchecked(offset) };
-                    let sq = unsafe { *hists_sum_sq.get_unchecked(offset) };
-
-                    left_non_nan_count += c;
-                    left_non_nan_sum += s;
-                    left_non_nan_sum_sq += sq;
-
-                    right_non_nan_count -= c;
-                    right_non_nan_sum -= s;
-                    right_non_nan_sum_sq -= sq;
-
-                    let s1_left_count = left_non_nan_count + nan_count;
-                    let s1_right_count = right_non_nan_count;
-                    if s1_left_count >= self.min_samples_leaf as f64 && s1_right_count >= self.min_samples_leaf as f64 {
-                        let s1_left_sum = left_non_nan_sum + nan_sum;
-                        let s1_left_sum_sq = left_non_nan_sum_sq + nan_sum_sq;
-                        
-                        let left_mse = mse_from_stats(s1_left_sum, s1_left_sum_sq, s1_left_count);
-                        let right_mse = mse_from_stats(right_non_nan_sum, right_non_nan_sum_sq, s1_right_count);
-                        let weighted = (s1_left_count * left_mse + s1_right_count * right_mse) / total_count;
-                        let gain = parent_mse - weighted;
-                        if gain > best_gain {
-                            best_gain = gain;
-                            best_split = Some((feat, bin as f64 + 0.5, false, vec![], vec![], vec![], true));
-                        }
-                    }
-
-                    let s2_left_count = left_non_nan_count;
-                    let s2_right_count = right_non_nan_count + nan_count;
-                    if s2_left_count >= self.min_samples_leaf as f64 && s2_right_count >= self.min_samples_leaf as f64 {
-                        let s2_right_sum = right_non_nan_sum + nan_sum;
-                        let s2_right_sum_sq = right_non_nan_sum_sq + nan_sum_sq;
-                        
-                        let left_mse = mse_from_stats(left_non_nan_sum, left_non_nan_sum_sq, s2_left_count);
-                        let right_mse = mse_from_stats(s2_right_sum, s2_right_sum_sq, s2_right_count);
-                        let weighted = (s2_left_count * left_mse + s2_right_count * right_mse) / total_count;
-                        let gain = parent_mse - weighted;
-                        if gain > best_gain {
-                            best_gain = gain;
-                            best_split = Some((feat, bin as f64 + 0.5, false, vec![], vec![], vec![], false));
-                        }
-                    }
-                }
-            }
-
-            if let Some((feat, threshold, _, _, _, _, nans_go_left)) = best_split {
-                let mut left_idx = Vec::with_capacity(indices.len() / 2);
-                let mut right_idx = Vec::with_capacity(indices.len() / 2);
-                for &idx in indices {
-                    let val = unsafe { *X.uget((idx, feat)) };
-                    if val.is_nan() {
-                        if nans_go_left { left_idx.push(idx); } else { right_idx.push(idx); }
-                    } else if val <= threshold {
-                        left_idx.push(idx);
-                    } else {
-                        right_idx.push(idx);
-                    }
-                }
-                return Some((feat, threshold, false, vec![], left_idx, right_idx, nans_go_left));
-            }
-            return None;
-        }
-
         for &feat in candidate_features {
             if self.categorical_features.contains(&feat) {
                 let mut cat_stats = std::collections::HashMap::new();
@@ -853,13 +747,22 @@ impl DecisionTreeRegressor {
 
                     if gain > best_gain {
                         best_gain = gain;
+                        let mut left_idx = Vec::with_capacity(left_count as usize);
+                        let mut right_idx = Vec::with_capacity(right_count as usize);
+                        for &idx in indices {
+                            if current_left_cats.contains(&X[[idx, feat]]) {
+                                left_idx.push(idx);
+                            } else {
+                                right_idx.push(idx);
+                            }
+                        }
                         best_split = Some((
                             feat,
                             0.0,
                             true,
                             current_left_cats.clone(),
-                            vec![],
-                            vec![],
+                            left_idx,
+                            right_idx,
                             false,
                         ));
                     }
@@ -937,8 +840,11 @@ impl DecisionTreeRegressor {
                         if gain > best_gain {
                             best_gain = gain;
                             let threshold = (val + next_val) / 2.0;
+                            let mut left_idx = sorted[..=i].to_vec();
+                            left_idx.extend(&nan_indices);
+                            let right_idx = sorted[i + 1..].to_vec();
                             best_split =
-                                Some((feat, threshold, false, vec![], vec![], vec![], true));
+                                Some((feat, threshold, false, vec![], left_idx, right_idx, true));
                         }
                     }
 
@@ -963,31 +869,18 @@ impl DecisionTreeRegressor {
                         if gain > best_gain {
                             best_gain = gain;
                             let threshold = (val + next_val) / 2.0;
+                            let left_idx = sorted[..=i].to_vec();
+                            let mut right_idx = sorted[i + 1..].to_vec();
+                            right_idx.extend(&nan_indices);
                             best_split =
-                                Some((feat, threshold, false, vec![], vec![], vec![], false));
+                                Some((feat, threshold, false, vec![], left_idx, right_idx, false));
                         }
                     }
                 }
             }
         }
 
-        if let Some((feat, threshold, is_categorical, left_categories, _, _, nans_go_left)) = best_split {
-            let mut left_idx = Vec::with_capacity(indices.len() / 2);
-            let mut right_idx = Vec::with_capacity(indices.len() / 2);
-            for &idx in indices {
-                let val = X[[idx, feat]];
-                if val.is_nan() {
-                    if nans_go_left { left_idx.push(idx); } else { right_idx.push(idx); }
-                } else if is_categorical {
-                    if left_categories.contains(&val) { left_idx.push(idx); } else { right_idx.push(idx); }
-                } else {
-                    if val <= threshold { left_idx.push(idx); } else { right_idx.push(idx); }
-                }
-            }
-            return Some((feat, threshold, is_categorical, left_categories, left_idx, right_idx, nans_go_left));
-        }
-
-        None
+        best_split
     }
 
     pub fn predict(&self, X: &ArrayView2<f64>) -> Vec<f64> {
@@ -1010,7 +903,7 @@ impl DecisionTreeRegressor {
             if node.is_leaf() {
                 return node.value[0];
             }
-            let val = unsafe { *X.uget((sample_idx, node.feature_idx)) };
+            let val = X[[sample_idx, node.feature_idx]];
             if val.is_nan() {
                 if node.nan_go_left {
                     node_idx = node.left;
@@ -1050,7 +943,7 @@ pub fn traverse_tree<'a>(
         if node.is_leaf() {
             return &node.value;
         }
-        let val = unsafe { *X.uget((sample_idx, node.feature_idx)) };
+        let val = X[[sample_idx, node.feature_idx]];
         if val.is_nan() {
             if node.nan_go_left {
                 node_idx = node.left;

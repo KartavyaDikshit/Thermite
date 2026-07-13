@@ -36,7 +36,7 @@ from .recommender import ALS
 from .quantum import QSVC
 from .causal import TLearner
 
-__version__ = "1.8.0"
+__version__ = "2.6.5"
 __all__ = [
     "ping",
     "StandardScaler",

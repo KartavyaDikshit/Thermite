@@ -69,6 +69,10 @@ impl RandomForestClassifier {
                 for _ in 0..n_samples {
                     indices.push(rng.gen_range(0..n_samples));
                 }
+                let X_boot = X.select(Axis(0), &indices);
+                let y_boot = y.select(Axis(0), &indices);
+
+                // Default max_features to sqrt(n_features) for classification
                 let max_feat = self
                     .max_features
                     .unwrap_or_else(|| (n_features as f64).sqrt().ceil() as usize)
@@ -83,7 +87,7 @@ impl RandomForestClassifier {
                 );
                 tree.categorical_features = self.categorical_features.clone();
 
-                tree.fit_with_indices(X, y.as_slice().unwrap(), &indices);
+                tree.fit(&X_boot.view(), y_boot.as_slice().unwrap());
                 tree
             })
             .collect();
@@ -191,6 +195,10 @@ impl RandomForestRegressor {
                 for _ in 0..n_samples {
                     indices.push(rng.gen_range(0..n_samples));
                 }
+                let X_boot = X.select(Axis(0), &indices);
+                let y_boot = y.select(Axis(0), &indices);
+
+                // Default max_features to n_features for regression
                 let max_feat = self.max_features.unwrap_or(n_features).max(1);
 
                 let mut tree = DecisionTreeRegressor::new(
@@ -202,7 +210,7 @@ impl RandomForestRegressor {
                 );
                 tree.categorical_features = self.categorical_features.clone();
 
-                tree.fit_with_indices(X, y.as_slice().unwrap(), &indices);
+                tree.fit(&X_boot.view(), y_boot.as_slice().unwrap());
                 tree
             })
             .collect();
@@ -266,8 +274,6 @@ pub struct GradientBoostingRegressor {
     pub initial_prediction_: f64,
     pub estimators_: Vec<DecisionTreeRegressor>,
     pub categorical_features: Vec<usize>,
-    pub is_binned: bool,
-    pub max_bins: usize,
 }
 
 impl GradientBoostingRegressor {
@@ -285,8 +291,6 @@ impl GradientBoostingRegressor {
             initial_prediction_: 0.0,
             estimators_: Vec::new(),
             categorical_features: Vec::new(),
-            is_binned: false,
-            max_bins: 256,
         }
     }
 
@@ -314,8 +318,6 @@ impl GradientBoostingRegressor {
                 Some(seed),
             );
             tree.categorical_features = self.categorical_features.clone();
-            tree.is_binned = self.is_binned;
-            tree.max_bins = self.max_bins;
 
             tree.fit(&X.view(), residuals.as_slice().unwrap());
 
@@ -370,8 +372,6 @@ pub struct GradientBoostingClassifier {
     pub classes_: Option<Vec<f64>>,
     pub estimators_: Vec<DecisionTreeRegressor>, // uses regressor to predict residuals
     pub categorical_features: Vec<usize>,
-    pub is_binned: bool,
-    pub max_bins: usize,
 }
 
 impl GradientBoostingClassifier {
@@ -390,8 +390,6 @@ impl GradientBoostingClassifier {
             classes_: None,
             estimators_: Vec::new(),
             categorical_features: Vec::new(),
-            is_binned: false,
-            max_bins: 256,
         }
     }
 
@@ -454,8 +452,6 @@ impl GradientBoostingClassifier {
                 Some(seed),
             );
             tree.categorical_features = self.categorical_features.clone();
-            tree.is_binned = self.is_binned;
-            tree.max_bins = self.max_bins;
 
             tree.fit(&X.view(), residuals.as_slice().unwrap());
 
@@ -578,7 +574,7 @@ impl HistGradientBoostingRegressor {
         
         buffer.axis_iter_mut(Axis(0)).into_par_iter().enumerate().for_each(|(i, mut row)| {
             for j in 0..p {
-                let val = unsafe { *X.uget((i, j)) };
+                let val = X[[i, j]];
                 let min_val = mins[j];
                 let max_val = maxs[j];
                 
@@ -601,15 +597,13 @@ impl HistGradientBoostingRegressor {
         self.maxs = vec![std::f64::MIN; p];
         for j in 0..p {
             for i in 0..X.nrows() {
-                let val = unsafe { *X.uget((i, j)) };
+                let val = X[[i, j]];
                 if val < self.mins[j] { self.mins[j] = val; }
                 if val > self.maxs[j] { self.maxs[j] = val; }
             }
         }
         self.discretize_in_place(X);
         let X_binned = self.buffer.as_ref().unwrap().view();
-        self.core.is_binned = true;
-        self.core.max_bins = self.bins;
         self.core.fit(&X_binned, y)
     }
 
@@ -670,7 +664,7 @@ impl HistGradientBoostingClassifier {
         
         buffer.axis_iter_mut(Axis(0)).into_par_iter().enumerate().for_each(|(i, mut row)| {
             for j in 0..p {
-                let val = unsafe { *X.uget((i, j)) };
+                let val = X[[i, j]];
                 let min_val = mins[j];
                 let max_val = maxs[j];
                 
@@ -693,15 +687,13 @@ impl HistGradientBoostingClassifier {
         self.maxs = vec![std::f64::MIN; p];
         for j in 0..p {
             for i in 0..X.nrows() {
-                let val = unsafe { *X.uget((i, j)) };
+                let val = X[[i, j]];
                 if val < self.mins[j] { self.mins[j] = val; }
                 if val > self.maxs[j] { self.maxs[j] = val; }
             }
         }
         self.discretize_in_place(X);
         let X_binned = self.buffer.as_ref().unwrap().view();
-        self.core.is_binned = true;
-        self.core.max_bins = self.bins;
         self.core.fit(&X_binned, y)
     }
 

@@ -1,7 +1,5 @@
 #![allow(non_snake_case)]
-use ndarray::{Array1, Array2, ArrayView2, Axis};
-use rand::prelude::*;
-use rand::rngs::SmallRng;
+use ndarray::{Array1, Array2, ArrayView2};
 
 pub struct GaussianMixture {
     pub n_components: usize,
@@ -39,10 +37,10 @@ impl GaussianMixture {
             }
         }
         
-        let mut weights = Array1::<f64>::from_elem(self.n_components, 1.0 / (self.n_components as f64));
-        let mut covariances = Vec::new();
+        let weights = Array1::<f64>::from_elem(self.n_components, 1.0 / (self.n_components as f64));
+        let mut covariances = Vec::with_capacity(self.n_components);
         for _ in 0..self.n_components {
-            let mut cov = Array2::<f64>::eye(n_features);
+            let cov = Array2::<f64>::eye(n_features);
             covariances.push(cov);
         }
 

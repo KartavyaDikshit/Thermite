@@ -1,6 +1,6 @@
 [package]
 name = "thermite-core"
-version = "2.6.0"
+version = "2.6.5"
 edition = "2021"
 description = "Core Rust implementation of Thermite machine learning algorithms"
 

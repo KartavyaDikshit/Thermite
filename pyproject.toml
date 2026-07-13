@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "thermite-ml"
-version = "2.6.0"
+version = "2.6.5"
 description = "A Rust-accelerated, scikit-learn-compatible machine learning library — drop-in replacement with 2-18x speedups"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -59,6 +59,6 @@ Repository = "https://github.com/KartavyaDikshit/Thermite"
 Issues = "https://github.com/KartavyaDikshit/Thermite/issues"
 
 [tool.maturin]
-features = ["pyo3/extension-module"]
+features = ["pyo3/extension-module", "accelerate"]
 manifest-path = "crates/thermite-binding/Cargo.toml"
 module-name = "thermite._core"

@@ -16,22 +16,9 @@ fn check_finite_2d(X: &ArrayView2<f64>) -> Result<(), String> {
     Ok(())
 }
 
-fn compute_column_means_and_impute(X: &ArrayView2<f64>) -> (Vec<f64>, Option<Array2<f64>>) {
+fn compute_column_means_and_impute(X: &ArrayView2<f64>) -> (Vec<f64>, Array2<f64>) {
     let nrows = X.nrows();
     let ncols = X.ncols();
-    
-    let mut has_nan = false;
-    for &val in X.iter() {
-        if val.is_nan() {
-            has_nan = true;
-            break;
-        }
-    }
-
-    if !has_nan {
-        return (vec![0.0; ncols], None);
-    }
-
     let mut impute_values = vec![0.0; ncols];
     let mut X_imputed = Array2::<f64>::zeros((nrows, ncols));
     for j in 0..ncols {
@@ -51,7 +38,7 @@ fn compute_column_means_and_impute(X: &ArrayView2<f64>) -> (Vec<f64>, Option<Arr
             X_imputed[[i, j]] = if val.is_nan() { mean } else { val };
         }
     }
-    (impute_values, Some(X_imputed))
+    (impute_values, X_imputed)
 }
 
 fn impute_features(X: &ArrayView2<f64>, impute_values: &[f64]) -> Array2<f64> {
@@ -161,7 +148,7 @@ fn add_intercept_column(X: &ArrayView2<f64>) -> Array2<f64> {
 // ==========================================
 // Helper: mat-mul  (A^T * B)
 // ==========================================
-fn at_b(A: &ArrayView2<f64>, B: &ArrayView2<f64>) -> Array2<f64> {
+fn at_b(A: &Array2<f64>, B: &Array2<f64>) -> Array2<f64> {
     let n = A.nrows();
     let p = A.ncols();
     let m = B.ncols();
@@ -217,17 +204,10 @@ impl LinearRegression {
         let (impute, X_clean) = compute_column_means_and_impute(X);
         self.impute_values = Some(impute);
 
-        let X_view = match &X_clean {
-            Some(imputed) => imputed.view(),
-            None => X.view(),
-        };
-
-        let X_aug;
         let X_work = if self.fit_intercept {
-            X_aug = add_intercept_column(&X_view);
-            X_aug.view()
+            add_intercept_column(&X_clean.view())
         } else {
-            X_view
+            X_clean
         };
 
         // y as column vector (n, 1)
@@ -239,7 +219,7 @@ impl LinearRegression {
         // X^T X
         let XtX = at_b(&X_work, &X_work);
         // X^T y
-        let Xty = at_b(&X_work, &y_col.view());
+        let Xty = at_b(&X_work, &y_col);
 
         // Solve (X^T X) w = X^T y
         let w = solve_linear_system_cholesky(&XtX, &Xty)?;
@@ -353,17 +333,10 @@ impl Ridge {
         let (impute, X_clean) = compute_column_means_and_impute(X);
         self.impute_values = Some(impute);
 
-        let X_view = match &X_clean {
-            Some(imputed) => imputed.view(),
-            None => X.view(),
-        };
-
-        let X_aug;
         let X_work = if self.fit_intercept {
-            X_aug = add_intercept_column(&X_view);
-            X_aug.view()
+            add_intercept_column(&X_clean.view())
         } else {
-            X_view
+            X_clean
         };
 
         let y_col = y
@@ -380,7 +353,7 @@ impl Ridge {
             XtX[[i, i]] += self.alpha;
         }
 
-        let Xty = at_b(&X_work, &y_col.view());
+        let Xty = at_b(&X_work, &y_col);
         let w = solve_linear_system_cholesky(&XtX, &Xty)?;
 
         if self.fit_intercept {
@@ -504,10 +477,8 @@ impl Lasso {
         check_finite_2d(X)?;
         check_finite_1d(y)?;
 
-        let (impute, X_clean_opt) = compute_column_means_and_impute(X);
+        let (impute, X_clean) = compute_column_means_and_impute(X);
         self.impute_values = Some(impute);
-
-        let X_clean = X_clean_opt.unwrap_or_else(|| X.to_owned());
 
         let n = X_clean.nrows();
         let p = X_clean.ncols();
@@ -676,13 +647,13 @@ impl LogisticRegression {
     /// Returns (weights, bias).
     fn fit_binary(
         &self,
-        X: &ArrayView2<f64>,
+        X: &Array2<f64>,
         y_binary: &Array1<f64>, // 0/1 labels
         n_features: usize,
     ) -> Result<(Array1<f64>, f64), String> {
         let n = X.nrows();
         let n_f64 = n as f64;
-        let lambda = 1.0 / (self.C * n_f64);
+        let lambda = 1.0 / self.C;
 
         let p = n_features + 1;
         let mut w = Array1::<f64>::zeros(p);
@@ -693,68 +664,49 @@ impl LogisticRegression {
         let mut y_hist: Vec<Array1<f64>> = Vec::with_capacity(m);
         let mut rho_hist: Vec<f64> = Vec::with_capacity(m);
 
-        let mut z = Array1::<f64>::zeros(n);
-        let mut diff = Array1::<f64>::zeros(n);
-
-        let compute_z_and_loss = |w: &Array1<f64>, z: &mut Array1<f64>| -> f64 {
+        // Compute initial gradient
+        let compute_grad = |w: &Array1<f64>| -> Array1<f64> {
             let bias = w[0];
             let w_feat = w.slice(ndarray::s![1..]);
+            let z = X.dot(&w_feat) + bias;
+            let h = z.mapv(Self::sigmoid);
+            let diff = &h - y_binary;
 
-            ndarray::Zip::from(&mut *z)
-                .and(X.axis_iter(ndarray::Axis(0)))
-                .par_for_each(|zi, row| {
-                    let mut sum = bias;
-                    for j in 0..n_features {
-                        sum += row[j] * w_feat[j];
-                    }
-                    *zi = sum;
-                });
+            let mut grad = Array1::<f64>::zeros(p);
+            grad[0] = diff.sum() / n_f64;
 
-            let loss: f64 = ndarray::Zip::from(&*z).and(y_binary).into_par_iter().map(|(&zi, &y_b)| {
-                if zi >= 0.0 {
-                    (1.0 + (-zi).exp()).ln() - y_b * zi
-                } else {
-                    zi.exp().ln_1p() - y_b * zi
-                }
-            }).sum();
+            let mut grad_feat = X.t().dot(&diff);
+            grad_feat /= n_f64;
 
-            let mut total_loss = loss / n_f64;
             for j in 0..n_features {
-                total_loss += 0.5 * lambda * w_feat[j] * w_feat[j];
+                grad_feat[j] += lambda * w_feat[j];
             }
-            total_loss
+
+            grad.slice_mut(ndarray::s![1..]).assign(&grad_feat);
+            grad
         };
 
-        let compute_grad_from_z = |w: &Array1<f64>, z: &Array1<f64>, diff: &mut Array1<f64>, grad: &mut Array1<f64>| {
+        let compute_loss = |w: &Array1<f64>| -> f64 {
+            let bias = w[0];
             let w_feat = w.slice(ndarray::s![1..]);
-            ndarray::Zip::from(&mut *diff).and(z).and(y_binary).par_for_each(|d, &zi, &y_b| {
-                *d = Self::sigmoid(zi) - y_b;
-            });
-
-            let mut grad_sum = X.axis_iter(ndarray::Axis(0)).into_par_iter()
-                .zip(diff.as_slice().unwrap().par_iter())
-                .fold(|| Array1::<f64>::zeros(p), |mut acc, (row, &d)| {
-                    acc[0] += d;
-                    for j in 0..n_features {
-                        acc[j+1] += d * row[j];
-                    }
-                    acc
-                })
-                .reduce(|| Array1::<f64>::zeros(p), |mut a, b| {
-                    a += &b;
-                    a
-                });
-
-            grad_sum /= n_f64;
-            for j in 0..n_features {
-                grad_sum[j+1] += lambda * w_feat[j];
+            let z = X.dot(&w_feat) + bias;
+            let mut loss = 0.0;
+            for i in 0..n {
+                let zi = z[i];
+                if zi >= 0.0 {
+                    loss += (1.0 + (-zi).exp()).ln() - y_binary[i] * zi;
+                } else {
+                    loss += zi.exp().ln_1p() - y_binary[i] * zi;
+                }
             }
-            grad.assign(&grad_sum);
+            loss /= n_f64;
+            for j in 0..n_features {
+                loss += 0.5 * lambda * w_feat[j] * w_feat[j];
+            }
+            loss
         };
 
-        let mut current_loss = compute_z_and_loss(&w, &mut z);
-        let mut grad = Array1::<f64>::zeros(p);
-        compute_grad_from_z(&w, &z, &mut diff, &mut grad);
+        let mut grad = compute_grad(&w);
         let mut _prev_grad = grad.clone();
 
         for _iter in 0..self.max_iter {
@@ -796,31 +748,26 @@ impl LogisticRegression {
                 rho_hist.clear();
                 let lr = self.learning_rate;
                 w = &w - &(&grad * lr);
-                current_loss = compute_z_and_loss(&w, &mut z);
-                compute_grad_from_z(&w, &z, &mut diff, &mut grad);
+                grad = compute_grad(&w);
                 _prev_grad = grad.clone();
                 continue;
             }
 
             let mut step = 1.0;
             let c1 = 1e-4;
-            let mut w_new = Array1::<f64>::zeros(p);
-            let mut new_loss = 0.0;
-
+            let current_loss = compute_loss(&w);
             for _ in 0..20 {
-                w_new = &w + &(&direction * step);
-                new_loss = compute_z_and_loss(&w_new, &mut z);
+                let w_new = &w + &(&direction * step);
+                let new_loss = compute_loss(&w_new);
                 if new_loss <= current_loss + c1 * step * grad_dot_dir {
                     break;
                 }
                 step *= 0.5;
             }
 
-            // `z` now corresponds to `w_new`. Compute gradient at new point.
-            let mut new_grad = Array1::<f64>::zeros(p);
-            compute_grad_from_z(&w_new, &z, &mut diff, &mut new_grad);
-
             let s = &direction * step;
+            let w_new = &w + &s;
+            let new_grad = compute_grad(&w_new);
             let y_diff = &new_grad - &grad;
             let sy = s.dot(&y_diff);
 
@@ -835,13 +782,13 @@ impl LogisticRegression {
                 rho_hist.push(1.0 / sy);
             }
 
+            // Check convergence
+            let max_change = s.iter().map(|v| v.abs()).fold(0.0_f64, |a, b| a.max(b));
             w = w_new;
-            current_loss = new_loss;
             _prev_grad = grad.clone();
             grad = new_grad;
 
-            let max_grad = grad.iter().map(|v| v.abs()).fold(0.0_f64, |a, b| a.max(b));
-            if max_grad < self.tol {
+            if max_change < self.tol {
                 break;
             }
         }
@@ -861,7 +808,7 @@ impl LogisticRegression {
     ) -> Result<(Array1<f64>, f64), String> {
         let n = X.rows();
         let n_f64 = n as f64;
-        let lambda = 1.0 / (self.C * n_f64);
+        let lambda = 1.0 / self.C;
 
         let p = n_features + 1;
         let mut w = Array1::<f64>::zeros(p);
@@ -1116,11 +1063,8 @@ impl LogisticRegression {
         }
         classes.sort_unstable_by(|a, b| a.total_cmp(b));
 
-        let n_features = X.ncols();
-        let X_view = match &X_clean {
-            Some(imputed) => imputed.view(),
-            None => X.view(),
-        };
+        let n_features = X_clean.ncols();
+        let X_owned = X_clean;
 
         if classes.len() == 2 {
             // Binary: map to 0/1 where positive class is classes[1]
@@ -1136,7 +1080,7 @@ impl LogisticRegression {
                     })
                     .collect::<Vec<f64>>(),
             );
-            let (w, b) = self.fit_binary(&X_view, &y_binary, n_features)?;
+            let (w, b) = self.fit_binary(&X_owned, &y_binary, n_features)?;
             let mut coef = Array2::<f64>::zeros((1, n_features));
             for j in 0..n_features {
                 coef[[0, j]] = w[j];
@@ -1161,7 +1105,7 @@ impl LogisticRegression {
                         })
                         .collect::<Vec<f64>>(),
                 );
-                let (w, b) = self.fit_binary(&X_view, &y_binary, n_features)?;
+                let (w, b) = self.fit_binary(&X_owned, &y_binary, n_features)?;
                 for j in 0..n_features {
                     coef[[c_idx, j]] = w[j];
                 }
@@ -1191,17 +1135,15 @@ impl LogisticRegression {
         check_finite_1d(y)?;
 
         let (impute, X_clean) = compute_column_means_and_impute(X);
-        let X_clean = if self.impute_values.is_none() {
+        if self.impute_values.is_none() {
             self.impute_values = Some(impute);
-            X_clean.unwrap_or_else(|| X.to_owned())
         } else {
             if let Some(ref mut current_impute) = self.impute_values {
                 for (j, &val) in impute.iter().enumerate() {
                     current_impute[j] = 0.9 * current_impute[j] + 0.1 * val;
                 }
             }
-            impute_features(X, self.impute_values.as_ref().unwrap())
-        };
+        }
 
         let n_features = X_clean.ncols();
         let lambda = 1.0 / self.C;
@@ -1309,6 +1251,7 @@ impl LogisticRegression {
         Ok(())
     }
 
+    /// Predict class labels.
     pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
         let coef = self.coef_.as_ref().ok_or("Model is not fitted yet")?;
         let intercept = self.intercept_.as_ref().unwrap();
@@ -1328,25 +1271,32 @@ impl LogisticRegression {
             .impute_values
             .as_ref()
             .ok_or("Model is not fitted yet")?;
+        let X_clean = impute_features(X, impute);
+
+        let _n = X_clean.nrows();
 
         if classes.len() == 2 {
-            let preds: Vec<f64> = X
+            // Binary
+            let preds: Vec<f64> = X_clean
                 .axis_iter(Axis(0))
                 .into_par_iter()
                 .map(|row| {
                     let mut z = intercept[0];
                     for j in 0..n_features {
-                        let mut val = unsafe { *row.uget(j) };
-                        if val.is_nan() { val = impute[j]; }
-                        z += val * unsafe { *coef.uget((0, j)) };
+                        z += row[j] * coef[[0, j]];
                     }
-                    if Self::sigmoid(z) >= 0.5 { classes[1] } else { classes[0] }
+                    if Self::sigmoid(z) >= 0.5 {
+                        classes[1]
+                    } else {
+                        classes[0]
+                    }
                 })
                 .collect();
             Ok(Array1::from(preds))
         } else {
+            // Multiclass: argmax of OVR scores
             let n_classes = classes.len();
-            let preds: Vec<f64> = X
+            let preds: Vec<f64> = X_clean
                 .axis_iter(Axis(0))
                 .into_par_iter()
                 .map(|row| {
@@ -1355,9 +1305,7 @@ impl LogisticRegression {
                     for c in 0..n_classes {
                         let mut z = intercept[c];
                         for j in 0..n_features {
-                            let mut val = unsafe { *row.uget(j) };
-                            if val.is_nan() { val = impute[j]; }
-                            z += val * unsafe { *coef.uget((c, j)) };
+                            z += row[j] * coef[[c, j]];
                         }
                         if z > best_score {
                             best_score = z;
@@ -1391,45 +1339,44 @@ impl LogisticRegression {
             .impute_values
             .as_ref()
             .ok_or("Model is not fitted yet")?;
+        let X_clean = impute_features(X, impute);
 
-        let n = X.nrows();
+        let n = X_clean.nrows();
         let n_classes = classes.len();
 
         if n_classes == 2 {
             let mut proba = Array2::<f64>::zeros((n, 2));
-            proba.axis_iter_mut(Axis(0)).into_par_iter().enumerate().for_each(|(i, mut out_row)| {
-                let row = X.row(i);
+            for i in 0..n {
                 let mut z = intercept[0];
                 for j in 0..n_features {
-                    let mut val = unsafe { *row.uget(j) };
-                    if val.is_nan() { val = impute[j]; }
-                    z += val * unsafe { *coef.uget((0, j)) };
+                    z += X_clean[[i, j]] * coef[[0, j]];
                 }
                 let p1 = Self::sigmoid(z);
-                out_row[0] = 1.0 - p1;
-                out_row[1] = p1;
-            });
+                proba[[i, 0]] = 1.0 - p1;
+                proba[[i, 1]] = p1;
+            }
             Ok(proba)
         } else {
+            // OVR probabilities, then normalize per row
             let mut proba = Array2::<f64>::zeros((n, n_classes));
-            proba.axis_iter_mut(Axis(0)).into_par_iter().enumerate().for_each(|(i, mut out_row)| {
-                let row = X.row(i);
+            for i in 0..n {
                 let mut row_sum = 0.0;
                 for c in 0..n_classes {
                     let mut z = intercept[c];
                     for j in 0..n_features {
-                        let mut val = unsafe { *row.uget(j) };
-                        if val.is_nan() { val = impute[j]; }
-                        z += val * unsafe { *coef.uget((c, j)) };
+                        z += X_clean[[i, j]] * coef[[c, j]];
                     }
                     let p = Self::sigmoid(z);
-                    out_row[c] = p;
+                    proba[[i, c]] = p;
                     row_sum += p;
                 }
-                for c in 0..n_classes {
-                    out_row[c] /= row_sum;
+                // Normalize
+                if row_sum > 0.0 {
+                    for c in 0..n_classes {
+                        proba[[i, c]] /= row_sum;
+                    }
                 }
-            });
+            }
             Ok(proba)
         }
     }
