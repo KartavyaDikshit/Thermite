@@ -566,19 +566,24 @@ impl HistGradientBoostingRegressor {
         let mins = &self.mins;
         let maxs = &self.maxs;
         
+        let mut inv_widths = Vec::with_capacity(p);
+        for j in 0..p {
+            let width = if maxs[j] > mins[j] { (maxs[j] - mins[j]) / (bins as f64) } else { 1.0 };
+            inv_widths.push(1.0 / width);
+        }
+        
         buffer.axis_iter_mut(Axis(0)).into_par_iter().enumerate().for_each(|(i, mut row)| {
             for j in 0..p {
                 let val = X[[i, j]];
                 let min_val = mins[j];
                 let max_val = maxs[j];
-                let width = if max_val > min_val { (max_val - min_val) / (bins as f64) } else { 1.0 };
                 
                 if val <= min_val {
                     row[j] = 0.0;
                 } else if val >= max_val {
                     row[j] = (bins - 1) as f64;
                 } else {
-                    let mut bin = ((val - min_val) / width).floor() as usize;
+                    let mut bin = ((val - min_val) * inv_widths[j]) as usize;
                     if bin >= bins { bin = bins - 1; }
                     row[j] = bin as f64;
                 }
@@ -651,19 +656,24 @@ impl HistGradientBoostingClassifier {
         let mins = &self.mins;
         let maxs = &self.maxs;
         
+        let mut inv_widths = Vec::with_capacity(p);
+        for j in 0..p {
+            let width = if maxs[j] > mins[j] { (maxs[j] - mins[j]) / (bins as f64) } else { 1.0 };
+            inv_widths.push(1.0 / width);
+        }
+        
         buffer.axis_iter_mut(Axis(0)).into_par_iter().enumerate().for_each(|(i, mut row)| {
             for j in 0..p {
                 let val = X[[i, j]];
                 let min_val = mins[j];
                 let max_val = maxs[j];
-                let width = if max_val > min_val { (max_val - min_val) / (bins as f64) } else { 1.0 };
                 
                 if val <= min_val {
                     row[j] = 0.0;
                 } else if val >= max_val {
                     row[j] = (bins - 1) as f64;
                 } else {
-                    let mut bin = ((val - min_val) / width).floor() as usize;
+                    let mut bin = ((val - min_val) * inv_widths[j]) as usize;
                     if bin >= bins { bin = bins - 1; }
                     row[j] = bin as f64;
                 }

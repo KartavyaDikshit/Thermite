@@ -1,5 +1,5 @@
 use pyo3::prelude::*;
-use numpy::{PyArray1, PyArray2, PyReadonlyArray1, PyReadonlyArray2};
+use numpy::{PyArray1, PyArray2, PyReadonlyArray1, PyReadonlyArray2, PyArrayMethods};
 use thermite_core::linear_model::{LinearRegression as CoreLinearRegression, Ridge as CoreRidge, Lasso as CoreLasso, LogisticRegression as CoreLogisticRegression, LinearSVC as CoreLinearSVC};
 use thermite_core::sparse::build_csr;
 
@@ -52,10 +52,12 @@ impl LinearRegression {
 
     fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<f64>>> {
         let x_view = X.as_array();
-        let preds = py.allow_threads(|| {
-            self.core.predict(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        let py_array = unsafe { PyArray1::<f64>::new_bound(py, [x_view.nrows()], false) };
+        let out_slice = unsafe { py_array.as_slice_mut().unwrap() };
+        py.allow_threads(|| {
+            self.core.predict_in_place(&x_view, out_slice).map_err(pyo3::exceptions::PyValueError::new_err)
         })?;
-        Ok(PyArray1::from_array_bound(py, &preds))
+        Ok(py_array)
     }
 
     #[getter]
@@ -127,10 +129,12 @@ impl Ridge {
 
     fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<f64>>> {
         let x_view = X.as_array();
-        let preds = py.allow_threads(|| {
-            self.core.predict(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        let py_array = unsafe { PyArray1::<f64>::new_bound(py, [x_view.nrows()], false) };
+        let out_slice = unsafe { py_array.as_slice_mut().unwrap() };
+        py.allow_threads(|| {
+            self.core.predict_in_place(&x_view, out_slice).map_err(pyo3::exceptions::PyValueError::new_err)
         })?;
-        Ok(PyArray1::from_array_bound(py, &preds))
+        Ok(py_array)
     }
 
     #[getter]
@@ -196,10 +200,12 @@ impl Lasso {
 
     fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<f64>>> {
         let x_view = X.as_array();
-        let preds = py.allow_threads(|| {
-            self.core.predict(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        let py_array = unsafe { PyArray1::<f64>::new_bound(py, [x_view.nrows()], false) };
+        let out_slice = unsafe { py_array.as_slice_mut().unwrap() };
+        py.allow_threads(|| {
+            self.core.predict_in_place(&x_view, out_slice).map_err(pyo3::exceptions::PyValueError::new_err)
         })?;
-        Ok(PyArray1::from_array_bound(py, &preds))
+        Ok(py_array)
     }
 
     #[getter]

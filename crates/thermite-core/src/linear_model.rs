@@ -245,7 +245,7 @@ impl LinearRegression {
         Ok(())
     }
 
-    pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
+    pub fn predict_in_place(&self, X: &ArrayView2<f64>, out: &mut [f64]) -> Result<(), String> {
         let coef = self.coef_.as_ref().ok_or("Model is not fitted yet")?;
         if X.ncols() != coef.len() {
             return Err(format!(
@@ -262,10 +262,8 @@ impl LinearRegression {
             .ok_or("Model is not fitted yet")?;
 
         let intercept = self.intercept_;
-        let n = X.nrows();
-        let mut preds = Array1::<f64>::zeros(n);
 
-        preds.iter_mut().enumerate().for_each(|(i, p)| {
+        out.par_iter_mut().enumerate().for_each(|(i, p)| {
             let row = X.row(i);
             let mut val = intercept;
             for j in 0..row.len() {
@@ -278,6 +276,12 @@ impl LinearRegression {
             *p = val;
         });
 
+        Ok(())
+    }
+
+    pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
+        let mut preds = Array1::<f64>::zeros(X.nrows());
+        self.predict_in_place(X, preds.as_slice_mut().unwrap())?;
         Ok(preds)
     }
 
@@ -373,7 +377,7 @@ impl Ridge {
         Ok(())
     }
 
-    pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
+    pub fn predict_in_place(&self, X: &ArrayView2<f64>, out: &mut [f64]) -> Result<(), String> {
         let coef = self.coef_.as_ref().ok_or("Model is not fitted yet")?;
         if X.ncols() != coef.len() {
             return Err(format!(
@@ -388,22 +392,29 @@ impl Ridge {
             .impute_values
             .as_ref()
             .ok_or("Model is not fitted yet")?;
-        let X_clean = impute_features(X, impute);
 
         let intercept = self.intercept_;
-        let preds: Vec<f64> = X_clean
-            .axis_iter(Axis(0))
-            .into_par_iter()
-            .map(|row| {
-                let mut val = intercept;
-                for j in 0..row.len() {
-                    val += row[j] * coef[j];
-                }
-                val
-            })
-            .collect();
 
-        Ok(Array1::from(preds))
+        out.par_iter_mut().enumerate().for_each(|(i, p)| {
+            let row = X.row(i);
+            let mut val = intercept;
+            for j in 0..row.len() {
+                let mut x_val = row[j];
+                if x_val.is_nan() {
+                    x_val = impute[j];
+                }
+                val += x_val * coef[j];
+            }
+            *p = val;
+        });
+
+        Ok(())
+    }
+
+    pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
+        let mut preds = Array1::<f64>::zeros(X.nrows());
+        self.predict_in_place(X, preds.as_slice_mut().unwrap())?;
+        Ok(preds)
     }
 
     pub fn score(&self, X: &ArrayView2<f64>, y: &ArrayView1<f64>) -> Result<f64, String> {
@@ -544,7 +555,7 @@ impl Lasso {
         Ok(())
     }
 
-    pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
+    pub fn predict_in_place(&self, X: &ArrayView2<f64>, out: &mut [f64]) -> Result<(), String> {
         let coef = self.coef_.as_ref().ok_or("Model is not fitted yet")?;
         if X.ncols() != coef.len() {
             return Err(format!(
@@ -559,22 +570,29 @@ impl Lasso {
             .impute_values
             .as_ref()
             .ok_or("Model is not fitted yet")?;
-        let X_clean = impute_features(X, impute);
 
         let intercept = self.intercept_;
-        let preds: Vec<f64> = X_clean
-            .axis_iter(Axis(0))
-            .into_par_iter()
-            .map(|row| {
-                let mut val = intercept;
-                for j in 0..row.len() {
-                    val += row[j] * coef[j];
-                }
-                val
-            })
-            .collect();
 
-        Ok(Array1::from(preds))
+        out.par_iter_mut().enumerate().for_each(|(i, p)| {
+            let row = X.row(i);
+            let mut val = intercept;
+            for j in 0..row.len() {
+                let mut x_val = row[j];
+                if x_val.is_nan() {
+                    x_val = impute[j];
+                }
+                val += x_val * coef[j];
+            }
+            *p = val;
+        });
+
+        Ok(())
+    }
+
+    pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
+        let mut preds = Array1::<f64>::zeros(X.nrows());
+        self.predict_in_place(X, preds.as_slice_mut().unwrap())?;
+        Ok(preds)
     }
 
     pub fn score(&self, X: &ArrayView2<f64>, y: &ArrayView1<f64>) -> Result<f64, String> {

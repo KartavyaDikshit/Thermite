@@ -935,8 +935,51 @@ impl MiniBatchKMeans {
     pub fn fit(&mut self, X: &ArrayView2<f64>) -> Result<(), String> {
         self.cluster_centers_ = None;
         self.counts = None;
+        
+        let n_features = X.ncols();
+        let n_samples = X.nrows();
+        if n_samples == 0 { return Ok(()); }
+        
+        let mut centers = Array2::<f64>::zeros((self.n_clusters, n_features));
+        for i in 0..self.n_clusters {
+            for j in 0..n_features {
+                centers[[i, j]] = X[[i % n_samples, j]];
+            }
+        }
+        self.cluster_centers_ = Some(centers);
+        self.counts = Some(Array1::<f64>::zeros(self.n_clusters));
+
+        let mut rng = SmallRng::seed_from_u64(42);
+        let mut batch_indices = vec![0; self.batch_size];
+
+        let centers_ref = self.cluster_centers_.as_mut().unwrap();
+        let counts_ref = self.counts.as_mut().unwrap();
+
         for _ in 0..self.max_iter {
-            self.partial_fit(X)?;
+            for i in 0..self.batch_size {
+                batch_indices[i] = rng.gen_range(0..n_samples);
+            }
+            for &idx in &batch_indices {
+                let row = X.row(idx);
+                let mut best_k = 0;
+                let mut min_dist = f64::INFINITY;
+                for k in 0..self.n_clusters {
+                    let mut dist = 0.0;
+                    for j in 0..n_features {
+                        let d = row[j] - centers_ref[[k, j]];
+                        dist += d * d;
+                    }
+                    if dist < min_dist {
+                        min_dist = dist;
+                        best_k = k;
+                    }
+                }
+                counts_ref[best_k] += 1.0;
+                let lr = 1.0 / counts_ref[best_k];
+                for j in 0..n_features {
+                    centers_ref[[best_k, j]] = (1.0 - lr) * centers_ref[[best_k, j]] + lr * row[j];
+                }
+            }
         }
         Ok(())
     }
