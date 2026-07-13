@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 use pyo3::types::PyTuple;
-use numpy::{PyArray1, PyArray2, PyReadonlyArray1, PyReadonlyArray2};
+use numpy::{PyArray1, PyReadonlyArray1, PyReadonlyArray2};
 use thermite_core::rag::VectorStore as CoreVectorStore;
 
 #[pyclass]

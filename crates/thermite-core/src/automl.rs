@@ -1,5 +1,5 @@
 use crate::linear_model::Ridge;
-use ndarray::{Array1, Array2, ArrayView1, ArrayView2};
+use ndarray::{Array1, ArrayView1, ArrayView2};
 
 pub struct SurrogateOptimizer {
     model: Ridge,

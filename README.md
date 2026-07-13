@@ -75,12 +75,18 @@ Datasets were generated dynamically using `sklearn.datasets` with 20 features an
 ---
 
 ##  Installation
-
-Thermite v1.0.0 is distributed as pre-compiled wheels for macOS, Linux, and Windows. No Rust toolchain required!
-
 ```bash
-pip install thermite-ml
+pip install thermite-ml==2.5.0
 ```
+
+### What's new in v2.5.0:
+- **Boosting Supremacy**: Full support for `early_stopping_rounds`, `monotonic_cst` (Monotonic Constraints), and Fisher's exact categorical subsetting.
+- **Compiler & Edge**: Instant `.compile(language="c")` support for Ensembles to export raw C inference logic with zero overhead.
+- **Advanced Unsupervised Learning**: Added `GaussianMixture`, `AffinityPropagation`, `MeanShift`, `Isomap`, `LocallyLinearEmbedding`, and `DictionaryLearning`.
+- **Advanced Cross-Decomposition**: Added `PLSRegression` and `CCA`.
+- **Feature Selection**: Added `SequentialFeatureSelector`.
+- **Performance & GPU**: Added advanced Sparse Cholesky solvers and GPU-accelerated histogram binning.
+
 
 ---
 
@@ -132,7 +138,12 @@ Thermite is structured to provide safety, performance, and portability:
 1. **`thermite-core` (Rust):** The backbone. Implements the mathematical optimization routines using `ndarray` and `rayon`. Safe, memory-efficient, and brutally fast.
 2. **`thermite-gpu` (Rust):** WebGPU (`wgpu`) based compute shader dispatch system targeting Vulkan, Metal, and DX12 dynamically.
 3. **`thermite-binding` (Rust/PyO3):** The translation layer bridging Python NumPy arrays to Rust contiguous views with zero allocation.
-4. **`thermite` (Python):** The high-level Python wrappers that mimic `scikit-learn` estimator APIs, implementing input validation and `BaseEstimator` compatibility.
+4. **`thermite` (Python):** The high-level Python wrappers that mimic `scikit-learn` estimator APIs, implementing input validation and <div align="center">
+  <img src="https://raw.githubusercontent.com/KartavyaDikshit/Thermite/main/assets/thermite_logo.png" alt="Thermite Logo" width="200"/>
+  <h1>🔥 Thermite v2.5.0: The Ultimate Scikit-Learn/XGBoost Killer 🔥</h1>
+  <p><strong>A Rust-accelerated, scikit-learn-compatible machine learning library — drop-in replacement with 2-18x speedups and zero-overhead C compilation for edge inference.</strong></p>
+</div>
+ `BaseEstimator` compatibility.
 
 ---
 

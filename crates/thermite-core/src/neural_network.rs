@@ -65,7 +65,7 @@ impl MLPClassifier {
             }
             self.weights.push(w);
             
-            let mut b = vec![0.0f32; out_size];
+            let b = vec![0.0f32; out_size];
             self.biases.push(b);
         }
         

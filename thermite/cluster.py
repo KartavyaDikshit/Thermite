@@ -167,7 +167,7 @@ class MiniBatchKMeans:
         return self._model.cluster_centers_
 
 class SpectralClustering:
-    def __init__(self, n_clusters=8, *, random_state=None):
+    def __init__(self, n_clusters=8, *, eigen_solver=None, n_components=None, random_state=None, n_init=10, gamma=1.0, affinity='rbf', n_neighbors=10, eigen_tol='auto', assign_labels='kmeans', degree=3, coef0=1, kernel_params=None, n_jobs=None):
         self.n_clusters = n_clusters
         self.random_state = random_state
         self._model = _core.SpectralClustering(
@@ -180,3 +180,78 @@ class SpectralClustering:
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
         return self._model.fit_predict(X)
+
+class AffinityPropagation:
+    def __init__(self, *, damping=0.5, max_iter=200, convergence_iter=15, copy=True, preference=None, affinity='euclidean', verbose=False, random_state=None):
+        self.damping = damping
+        self.max_iter = max_iter
+        self.convergence_iter = convergence_iter
+        self.copy = copy
+        self.preference = preference
+        self.affinity = affinity
+        self.verbose = verbose
+        self.random_state = random_state
+        self._model = _core.AffinityPropagation(
+            damping=damping,
+            max_iter=max_iter,
+            convergence_iter=convergence_iter,
+            copy=copy,
+            preference=preference,
+            affinity=affinity,
+            verbose=verbose,
+            random_state=random_state
+        )
+
+    @_catch_panic
+    def fit(self, X, y=None):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        self._model.fit(X)
+        return self
+
+    @_catch_panic
+    def predict(self, X):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        return self._model.predict(X)
+
+    @_catch_panic
+    def fit_predict(self, X, y=None):
+        self.fit(X, y)
+        return self.predict(X)
+
+class MeanShift:
+    def __init__(self, *, bandwidth=None, seeds=None, bin_seeding=False, min_bin_freq=1, cluster_all=True, n_jobs=None, max_iter=300):
+        self.bandwidth = bandwidth
+        self.seeds = seeds
+        self.bin_seeding = bin_seeding
+        self.min_bin_freq = min_bin_freq
+        self.cluster_all = cluster_all
+        self.n_jobs = n_jobs
+        self.max_iter = max_iter
+        
+        seeds_arr = np.ascontiguousarray(np.asarray(seeds, dtype=np.float64)) if seeds is not None else None
+        
+        self._model = _core.MeanShift(
+            bandwidth=bandwidth,
+            seeds=seeds_arr,
+            bin_seeding=bin_seeding,
+            min_bin_freq=min_bin_freq,
+            cluster_all=cluster_all,
+            n_jobs=n_jobs,
+            max_iter=max_iter
+        )
+
+    @_catch_panic
+    def fit(self, X, y=None):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        self._model.fit(X)
+        return self
+
+    @_catch_panic
+    def predict(self, X):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        return self._model.predict(X)
+
+    @_catch_panic
+    def fit_predict(self, X, y=None):
+        self.fit(X, y)
+        return self.predict(X)

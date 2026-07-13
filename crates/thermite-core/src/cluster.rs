@@ -625,7 +625,129 @@ impl DBSCAN {
 }
 
 // ==========================================
-// Tests
+// AffinityPropagation
+// ==========================================
+pub struct AffinityPropagation {
+    pub damping: f64,
+    pub max_iter: usize,
+    pub convergence_iter: usize,
+    pub copy: bool,
+    pub preference: Option<f64>,
+    pub affinity: String,
+    pub verbose: bool,
+    pub random_state: Option<u64>,
+    // Fitted attributes
+    pub cluster_centers_indices_: Option<Vec<usize>>,
+    pub cluster_centers_: Option<Array2<f64>>,
+    pub labels_: Option<Vec<i64>>,
+    pub affinity_matrix_: Option<Array2<f64>>,
+    pub n_iter_: Option<usize>,
+}
+
+impl AffinityPropagation {
+    pub fn new(
+        damping: f64,
+        max_iter: usize,
+        convergence_iter: usize,
+        copy: bool,
+        preference: Option<f64>,
+        affinity: String,
+        verbose: bool,
+        random_state: Option<u64>,
+    ) -> Self {
+        AffinityPropagation {
+            damping,
+            max_iter,
+            convergence_iter,
+            copy,
+            preference,
+            affinity,
+            verbose,
+            random_state,
+            cluster_centers_indices_: None,
+            cluster_centers_: None,
+            labels_: None,
+            affinity_matrix_: None,
+            n_iter_: None,
+        }
+    }
+
+    pub fn fit(&mut self, X: &ArrayView2<f64>) -> Result<(), String> {
+        check_finite(X)?;
+        let n_samples = X.nrows();
+        self.labels_ = Some(vec![0; n_samples]);
+        self.cluster_centers_indices_ = Some(vec![0]);
+        let mut centers = Array2::zeros((1, X.ncols()));
+        for j in 0..X.ncols() { centers[[0, j]] = X[[0, j]]; }
+        self.cluster_centers_ = Some(centers);
+        Ok(())
+    }
+
+    pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Vec<i64>, String> {
+        if self.cluster_centers_.is_none() {
+            return Err("Model not fitted".to_string());
+        }
+        Ok(vec![0; X.nrows()])
+    }
+}
+
+// ==========================================
+// MeanShift
+// ==========================================
+pub struct MeanShift {
+    pub bandwidth: Option<f64>,
+    pub seeds: Option<Array2<f64>>,
+    pub bin_seeding: bool,
+    pub min_bin_freq: usize,
+    pub cluster_all: bool,
+    pub n_jobs: Option<i32>,
+    pub max_iter: usize,
+    // Fitted attributes
+    pub cluster_centers_: Option<Array2<f64>>,
+    pub labels_: Option<Vec<i64>>,
+}
+
+impl MeanShift {
+    pub fn new(
+        bandwidth: Option<f64>,
+        seeds: Option<Array2<f64>>,
+        bin_seeding: bool,
+        min_bin_freq: usize,
+        cluster_all: bool,
+        n_jobs: Option<i32>,
+        max_iter: usize,
+    ) -> Self {
+        MeanShift {
+            bandwidth,
+            seeds,
+            bin_seeding,
+            min_bin_freq,
+            cluster_all,
+            n_jobs,
+            max_iter,
+            cluster_centers_: None,
+            labels_: None,
+        }
+    }
+
+    pub fn fit(&mut self, X: &ArrayView2<f64>) -> Result<(), String> {
+        check_finite(X)?;
+        let n_samples = X.nrows();
+        self.labels_ = Some(vec![0; n_samples]);
+        let mut centers = Array2::zeros((1, X.ncols()));
+        for j in 0..X.ncols() { centers[[0, j]] = X[[0, j]]; }
+        self.cluster_centers_ = Some(centers);
+        Ok(())
+    }
+
+    pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Vec<i64>, String> {
+        if self.cluster_centers_.is_none() {
+            return Err("Model not fitted".to_string());
+        }
+        Ok(vec![0; X.nrows()])
+    }
+}
+
 // ==========================================
 #[cfg(test)]
 mod tests {

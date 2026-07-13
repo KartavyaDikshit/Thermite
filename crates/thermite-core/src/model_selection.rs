@@ -308,7 +308,7 @@ impl TimeSeriesSplit {
         let remainder = n_samples % (self.n_splits + 1);
         
         let mut splits = Vec::with_capacity(self.n_splits);
-        let mut offset = remainder;
+        let offset = remainder;
 
         for i in 1..=self.n_splits {
             let train_end = offset + i * fold_size;

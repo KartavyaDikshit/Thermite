@@ -1,4 +1,4 @@
-use ndarray::{Array1, Array2, Axis};
+use ndarray::{Array1, Array2};
 
 pub trait Estimator: Clone {
     fn fit(&mut self, x: &Array2<f64>, y: &Array1<f64>) -> Result<(), String>;

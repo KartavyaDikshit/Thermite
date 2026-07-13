@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 use numpy::{PyArray1, PyArray2, PyReadonlyArray1, PyReadonlyArray2, PyUntypedArrayMethods};
-use thermite_core::cluster::{KMeans as CoreKMeans, DBSCAN as CoreDBSCAN, SpectralClustering as CoreSpectralClustering};
+use thermite_core::cluster::{KMeans as CoreKMeans, DBSCAN as CoreDBSCAN, SpectralClustering as CoreSpectralClustering, AffinityPropagation as CoreAffinityPropagation, MeanShift as CoreMeanShift};
 use thermite_core::sparse::build_csr;
 #[pyclass]
 pub struct KMeans {
@@ -157,6 +157,8 @@ pub fn bind_cluster(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<DBSCAN>()?;
     m.add_class::<MiniBatchKMeans>()?;
     m.add_class::<SpectralClustering>()?;
+    m.add_class::<AffinityPropagation>()?;
+    m.add_class::<MeanShift>()?;
     Ok(())
 }
 use thermite_core::cluster::MiniBatchKMeans as CoreMiniBatchKMeans;
@@ -232,3 +234,82 @@ impl SpectralClustering {
     }
 }
 
+#[pyclass]
+pub struct AffinityPropagation {
+    core: CoreAffinityPropagation,
+}
+
+#[pymethods]
+impl AffinityPropagation {
+    #[new]
+    #[pyo3(signature = (damping=0.5, max_iter=200, convergence_iter=15, copy=true, preference=None, affinity="euclidean".to_string(), verbose=false, random_state=None))]
+    fn new(
+        damping: f64,
+        max_iter: usize,
+        convergence_iter: usize,
+        copy: bool,
+        preference: Option<f64>,
+        affinity: String,
+        verbose: bool,
+        random_state: Option<u64>,
+    ) -> Self {
+        AffinityPropagation {
+            core: CoreAffinityPropagation::new(damping, max_iter, convergence_iter, copy, preference, affinity, verbose, random_state),
+        }
+    }
+
+    fn fit(&mut self, py: Python<'_>, X: PyReadonlyArray2<f64>) -> PyResult<()> {
+        let x_view = X.as_array();
+        py.allow_threads(|| {
+            self.core.fit(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })
+    }
+
+    fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<i64>>> {
+        let x_view = X.as_array();
+        let preds = py.allow_threads(|| {
+            self.core.predict(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })?;
+        Ok(PyArray1::from_vec_bound(py, preds))
+    }
+}
+
+#[pyclass]
+pub struct MeanShift {
+    core: CoreMeanShift,
+}
+
+#[pymethods]
+impl MeanShift {
+    #[new]
+    #[pyo3(signature = (bandwidth=None, seeds=None, bin_seeding=false, min_bin_freq=1, cluster_all=true, n_jobs=None, max_iter=300))]
+    fn new(
+        bandwidth: Option<f64>,
+        seeds: Option<PyReadonlyArray2<f64>>,
+        bin_seeding: bool,
+        min_bin_freq: usize,
+        cluster_all: bool,
+        n_jobs: Option<i32>,
+        max_iter: usize,
+    ) -> Self {
+        let core_seeds = seeds.map(|s| s.as_array().to_owned());
+        MeanShift {
+            core: CoreMeanShift::new(bandwidth, core_seeds, bin_seeding, min_bin_freq, cluster_all, n_jobs, max_iter),
+        }
+    }
+
+    fn fit(&mut self, py: Python<'_>, X: PyReadonlyArray2<f64>) -> PyResult<()> {
+        let x_view = X.as_array();
+        py.allow_threads(|| {
+            self.core.fit(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })
+    }
+
+    fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<i64>>> {
+        let x_view = X.as_array();
+        let preds = py.allow_threads(|| {
+            self.core.predict(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })?;
+        Ok(PyArray1::from_vec_bound(py, preds))
+    }
+}

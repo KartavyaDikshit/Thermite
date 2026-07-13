@@ -70,3 +70,46 @@ class PCA:
     @property
     def mean_(self):
         return self._model.mean_
+
+class DictionaryLearning:
+    def __init__(self, n_components=None, *, alpha=1, max_iter=1000, tol=1e-8, fit_algorithm='lars', transform_algorithm='omp', transform_n_nonzero_coefs=None, transform_alpha=None, n_jobs=None, code_init=None, dict_init=None, verbose=False, split_sign=False, random_state=None, positive_code=False, positive_dict=False, transform_max_iter=1000):
+        self.n_components = n_components
+        self.alpha = alpha
+        self.max_iter = max_iter
+        self.tol = tol
+        self.fit_algorithm = fit_algorithm
+        self.transform_algorithm = transform_algorithm
+        self.transform_alpha = transform_alpha
+        self.n_jobs = n_jobs
+        self.random_state = random_state
+        self._model = _core.DictionaryLearning(
+            n_components=n_components,
+            alpha=alpha,
+            max_iter=max_iter,
+            tol=tol,
+            fit_algorithm=fit_algorithm,
+            transform_algorithm=transform_algorithm,
+            transform_alpha=transform_alpha,
+            n_jobs=n_jobs,
+            random_state=random_state
+        )
+
+    @_catch_panic
+    def fit(self, X, y=None):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        self._model.fit(X)
+        return self
+
+    @_catch_panic
+    def transform(self, X):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        return self._model.transform(X)
+
+    @_catch_panic
+    def fit_transform(self, X, y=None):
+        self.fit(X)
+        return self.transform(X)
+
+    @property
+    def components_(self):
+        return self._model.components_

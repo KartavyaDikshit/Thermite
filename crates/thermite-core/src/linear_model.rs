@@ -149,7 +149,20 @@ fn add_intercept_column(X: &ArrayView2<f64>) -> Array2<f64> {
 // Helper: mat-mul  (A^T * B)
 // ==========================================
 fn at_b(A: &Array2<f64>, B: &Array2<f64>) -> Array2<f64> {
-    A.t().dot(B)
+    let n = A.nrows();
+    let p = A.ncols();
+    let m = B.ncols();
+    let num_threads = rayon::current_num_threads();
+    if n < 1000 || num_threads <= 1 {
+        return A.t().dot(B);
+    }
+    let chunk_size = (n / num_threads).max(512);
+    
+    A.axis_chunks_iter(Axis(0), chunk_size)
+        .into_par_iter()
+        .zip(B.axis_chunks_iter(Axis(0), chunk_size).into_par_iter())
+        .map(|(a_chunk, b_chunk)| a_chunk.t().dot(&b_chunk))
+        .reduce(|| Array2::<f64>::zeros((p, m)), |acc, x| acc + x)
 }
 
 // ==========================================
@@ -247,10 +260,23 @@ impl LinearRegression {
             .impute_values
             .as_ref()
             .ok_or("Model is not fitted yet")?;
-        let X_clean = impute_features(X, impute);
 
         let intercept = self.intercept_;
-        let preds = X_clean.dot(coef) + intercept;
+        let n = X.nrows();
+        let mut preds = Array1::<f64>::zeros(n);
+
+        preds.iter_mut().enumerate().for_each(|(i, p)| {
+            let row = X.row(i);
+            let mut val = intercept;
+            for j in 0..row.len() {
+                let mut x_val = row[j];
+                if x_val.is_nan() {
+                    x_val = impute[j];
+                }
+                val += x_val * coef[j];
+            }
+            *p = val;
+        });
 
         Ok(preds)
     }

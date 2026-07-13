@@ -34,6 +34,9 @@ pub mod federated;
 pub mod rag;
 pub mod recommender;
 pub mod causal;
+pub mod compiler;
+pub mod mixture;
+pub mod cross_decomposition;
 
 pub fn core_ping() -> &'static str {
     "core_pong"

@@ -2035,7 +2035,7 @@ dependencies = [
 
 [[package]]
 name = "thermite-binding"
-version = "2.0.0"
+version = "2.5.0"
 dependencies = [
  "bincode",
  "ndarray 0.15.6",
@@ -2048,7 +2048,7 @@ dependencies = [
 
 [[package]]
 name = "thermite-core"
-version = "2.0.0"
+version = "2.5.0"
 dependencies = [
  "accelerate-src",
  "bincode",
@@ -2065,7 +2065,7 @@ dependencies = [
 
 [[package]]
 name = "thermite-gpu"
-version = "2.0.0"
+version = "2.5.0"
 dependencies = [
  "bytemuck",
  "ndarray 0.15.6",

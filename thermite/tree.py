@@ -56,6 +56,10 @@ class DecisionTreeClassifier:
     def to_onnx(self, filepath: str):
         self._model.to_onnx(filepath)
 
+    @_catch_panic
+    def compile(self, language: str = "c"):
+        return self._model.compile(language)
+
     @property
     def feature_importances_(self):
         try:
@@ -93,6 +97,10 @@ class DecisionTreeRegressor:
     def score(self, X, y):
         from .metrics import r2_score
         return r2_score(y, self.predict(X))
+
+    @_catch_panic
+    def compile(self, language: str = "c"):
+        return self._model.compile(language)
 
     @property
     def feature_importances_(self):

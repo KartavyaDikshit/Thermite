@@ -507,6 +507,14 @@ impl DecisionTreeClassifier {
         result
     }
 
+    pub fn compile(&self, language: &str) -> Result<String, String> {
+        if language == "c" {
+            Ok(crate::compiler::compile_tree_c(&self.nodes, 0, 1, true))
+        } else {
+            Err(format!("Unsupported language: {}", language))
+        }
+    }
+
     fn predict_proba_single(&self, X: &ArrayView2<f64>, sample_idx: usize) -> &[f64] {
         let mut node_idx = 0;
         loop {
@@ -878,6 +886,14 @@ impl DecisionTreeRegressor {
     pub fn predict(&self, X: &ArrayView2<f64>) -> Vec<f64> {
         assert!(!self.nodes.is_empty(), "Tree is not fitted");
         (0..X.nrows()).map(|i| self.predict_single(X, i)).collect()
+    }
+
+    pub fn compile(&self, language: &str) -> Result<String, String> {
+        if language == "c" {
+            Ok(crate::compiler::compile_tree_c(&self.nodes, 0, 1, false))
+        } else {
+            Err(format!("Unsupported language: {}", language))
+        }
     }
 
     fn predict_single(&self, X: &ArrayView2<f64>, sample_idx: usize) -> f64 {

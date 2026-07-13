@@ -61,7 +61,7 @@ pub struct SuccessiveHalvingSearchCV {
 impl SuccessiveHalvingSearchCV {
     #[new]
     #[pyo3(signature = (estimator, param_grid, min_resources=10, factor=3))]
-    fn new(py: Python<'_>, estimator: PyObject, param_grid: Vec<Bound<'_, PyDict>>, min_resources: usize, factor: usize) -> PyResult<Self> {
+    fn new(_py: Python<'_>, estimator: PyObject, param_grid: Vec<Bound<'_, PyDict>>, min_resources: usize, factor: usize) -> PyResult<Self> {
         let mut rust_param_grid = Vec::new();
         for dict in param_grid {
             let mut params = HashMap::new();

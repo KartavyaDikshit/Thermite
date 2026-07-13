@@ -72,6 +72,10 @@ impl HistGradientBoostingRegressor {
         })?;
         Ok(PyArray1::from_array_bound(py, &preds))
     }
+
+    fn compile(&self, language: &str) -> PyResult<String> {
+        self.core.compile(language).map_err(|e| pyo3::exceptions::PyValueError::new_err(e))
+    }
 }
 
 #[pyclass]
@@ -142,6 +146,10 @@ impl HistGradientBoostingClassifier {
             self.core.predict_proba(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
         })?;
         Ok(PyArray2::from_array_bound(py, &preds))
+    }
+
+    fn compile(&self, language: &str) -> PyResult<String> {
+        self.core.compile(language).map_err(|e| pyo3::exceptions::PyValueError::new_err(e))
     }
 }
 
@@ -219,6 +227,10 @@ impl RandomForestClassifier {
             self.core.predict(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
         })?;
         Ok(PyArray1::from_array_bound(py, &preds))
+    }
+
+    fn compile(&self, language: &str) -> PyResult<String> {
+        self.core.compile(language).map_err(|e| pyo3::exceptions::PyValueError::new_err(e))
     }
 
     #[getter]
@@ -331,6 +343,10 @@ impl RandomForestRegressor {
             self.core.predict(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
         })?;
         Ok(PyArray1::from_array_bound(py, &preds))
+    }
+
+    fn compile(&self, language: &str) -> PyResult<String> {
+        self.core.compile(language).map_err(|e| pyo3::exceptions::PyValueError::new_err(e))
     }
 
     #[getter]
@@ -469,6 +485,10 @@ impl GradientBoostingRegressor {
         })?;
         Ok(PyArray1::from_array_bound(py, &preds))
     }
+
+    fn compile(&self, language: &str) -> PyResult<String> {
+        self.core.compile(language).map_err(|e| pyo3::exceptions::PyValueError::new_err(e))
+    }
 }
 
 #[pyclass]
@@ -543,5 +563,9 @@ impl GradientBoostingClassifier {
             self.core.predict_proba(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
         })?;
         Ok(PyArray2::from_array_bound(py, &preds))
+    }
+
+    fn compile(&self, language: &str) -> PyResult<String> {
+        self.core.compile(language).map_err(|e| pyo3::exceptions::PyValueError::new_err(e))
     }
 }

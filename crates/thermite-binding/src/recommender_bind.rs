@@ -1,5 +1,5 @@
 use pyo3::prelude::*;
-use numpy::{PyArray1, PyArray2, PyReadonlyArray1, PyReadonlyArray2};
+use numpy::PyReadonlyArray2;
 use thermite_core::recommender::ALS as CoreALS;
 
 #[pyclass]
@@ -36,7 +36,7 @@ impl ALS {
         })
     }
 
-    fn predict(&self, py: Python<'_>, user_id: usize, item_id: usize) -> PyResult<f64> {
+    fn predict(&self, _py: Python<'_>, user_id: usize, item_id: usize) -> PyResult<f64> {
         self.core.predict(user_id, item_id).map_err(pyo3::exceptions::PyValueError::new_err)
     }
 }

@@ -130,6 +130,14 @@ impl RandomForestClassifier {
 
         Ok(final_preds)
     }
+
+    pub fn compile(&self, language: &str) -> Result<String, String> {
+        if language == "c" {
+            Ok(crate::compiler::compile_forest_classifier_c(&self.estimators_, self.classes_.as_ref().map_or(0, |c| c.len())))
+        } else {
+            Err(format!("Unsupported language: {}", language))
+        }
+    }
 }
 
 // ==========================================
@@ -244,6 +252,14 @@ impl RandomForestRegressor {
 
         Ok(final_preds)
     }
+
+    pub fn compile(&self, language: &str) -> Result<String, String> {
+        if language == "c" {
+            Ok(crate::compiler::compile_forest_regressor_c(&self.estimators_))
+        } else {
+            Err(format!("Unsupported language: {}", language))
+        }
+    }
 }
 
 // ==========================================
@@ -332,6 +348,14 @@ impl GradientBoostingRegressor {
             }
         }
         Ok(preds)
+    }
+
+    pub fn compile(&self, language: &str) -> Result<String, String> {
+        if language == "c" {
+            Ok(crate::compiler::compile_boosting_regressor_c(&self.estimators_, self.learning_rate, self.initial_prediction_))
+        } else {
+            Err(format!("Unsupported language: {}", language))
+        }
     }
 }
 
@@ -494,6 +518,14 @@ impl GradientBoostingClassifier {
 
         Ok(proba)
     }
+
+    pub fn compile(&self, language: &str) -> Result<String, String> {
+        if language == "c" {
+            Ok(crate::compiler::compile_boosting_classifier_c(&self.estimators_, self.learning_rate, self.initial_prediction_))
+        } else {
+            Err(format!("Unsupported language: {}", language))
+        }
+    }
 }
 // ... appended to ensemble.rs
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -529,23 +561,29 @@ impl HistGradientBoostingRegressor {
             self.buffer = Some(Array2::<f64>::zeros((n, p)));
         }
         let buffer = self.buffer.as_mut().unwrap();
-        for j in 0..p {
-            let min_val = self.mins[j];
-            let max_val = self.maxs[j];
-            let width = if max_val > min_val { (max_val - min_val) / (self.bins as f64) } else { 1.0 };
-            for i in 0..n {
+        
+        let bins = self.bins;
+        let mins = &self.mins;
+        let maxs = &self.maxs;
+        
+        buffer.axis_iter_mut(Axis(0)).into_par_iter().enumerate().for_each(|(i, mut row)| {
+            for j in 0..p {
                 let val = X[[i, j]];
+                let min_val = mins[j];
+                let max_val = maxs[j];
+                let width = if max_val > min_val { (max_val - min_val) / (bins as f64) } else { 1.0 };
+                
                 if val <= min_val {
-                    buffer[[i, j]] = 0.0;
+                    row[j] = 0.0;
                 } else if val >= max_val {
-                    buffer[[i, j]] = (self.bins - 1) as f64;
+                    row[j] = (bins - 1) as f64;
                 } else {
                     let mut bin = ((val - min_val) / width).floor() as usize;
-                    if bin >= self.bins { bin = self.bins - 1; }
-                    buffer[[i, j]] = bin as f64;
+                    if bin >= bins { bin = bins - 1; }
+                    row[j] = bin as f64;
                 }
             }
-        }
+        });
     }
 
     pub fn fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<f64>) -> Result<(), String> {
@@ -568,6 +606,10 @@ impl HistGradientBoostingRegressor {
         self.discretize_in_place(X);
         let X_binned = self.buffer.as_ref().unwrap().view();
         self.core.predict(&X_binned)
+    }
+
+    pub fn compile(&self, language: &str) -> Result<String, String> {
+        self.core.compile(language)
     }
 }
 
@@ -604,23 +646,29 @@ impl HistGradientBoostingClassifier {
             self.buffer = Some(Array2::<f64>::zeros((n, p)));
         }
         let buffer = self.buffer.as_mut().unwrap();
-        for j in 0..p {
-            let min_val = self.mins[j];
-            let max_val = self.maxs[j];
-            let width = if max_val > min_val { (max_val - min_val) / (self.bins as f64) } else { 1.0 };
-            for i in 0..n {
+        
+        let bins = self.bins;
+        let mins = &self.mins;
+        let maxs = &self.maxs;
+        
+        buffer.axis_iter_mut(Axis(0)).into_par_iter().enumerate().for_each(|(i, mut row)| {
+            for j in 0..p {
                 let val = X[[i, j]];
+                let min_val = mins[j];
+                let max_val = maxs[j];
+                let width = if max_val > min_val { (max_val - min_val) / (bins as f64) } else { 1.0 };
+                
                 if val <= min_val {
-                    buffer[[i, j]] = 0.0;
+                    row[j] = 0.0;
                 } else if val >= max_val {
-                    buffer[[i, j]] = (self.bins - 1) as f64;
+                    row[j] = (bins - 1) as f64;
                 } else {
                     let mut bin = ((val - min_val) / width).floor() as usize;
-                    if bin >= self.bins { bin = self.bins - 1; }
-                    buffer[[i, j]] = bin as f64;
+                    if bin >= bins { bin = bins - 1; }
+                    row[j] = bin as f64;
                 }
             }
-        }
+        });
     }
 
     pub fn fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<f64>) -> Result<(), String> {
@@ -649,6 +697,10 @@ impl HistGradientBoostingClassifier {
         self.discretize_in_place(X);
         let X_binned = self.buffer.as_ref().unwrap().view();
         self.core.predict_proba(&X_binned)
+    }
+
+    pub fn compile(&self, language: &str) -> Result<String, String> {
+        self.core.compile(language)
     }
 }
 

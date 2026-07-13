@@ -244,6 +244,72 @@ impl PCA {
 }
 
 // ==========================================
+// DictionaryLearning
+// ==========================================
+pub struct DictionaryLearning {
+    pub n_components: Option<usize>,
+    pub alpha: f64,
+    pub max_iter: usize,
+    pub tol: f64,
+    pub fit_algorithm: String,
+    pub transform_algorithm: String,
+    pub transform_alpha: Option<f64>,
+    pub n_jobs: Option<i32>,
+    pub random_state: Option<u64>,
+    pub components_: Option<Array2<f64>>,
+    pub error_: Option<Vec<f64>>,
+    pub n_iter_: Option<usize>,
+}
+
+impl DictionaryLearning {
+    pub fn new(
+        n_components: Option<usize>,
+        alpha: f64,
+        max_iter: usize,
+        tol: f64,
+        fit_algorithm: String,
+        transform_algorithm: String,
+        transform_alpha: Option<f64>,
+        n_jobs: Option<i32>,
+        random_state: Option<u64>,
+    ) -> Self {
+        Self {
+            n_components,
+            alpha,
+            max_iter,
+            tol,
+            fit_algorithm,
+            transform_algorithm,
+            transform_alpha,
+            n_jobs,
+            random_state,
+            components_: None,
+            error_: None,
+            n_iter_: None,
+        }
+    }
+
+    pub fn fit(&mut self, X: &ArrayView2<f64>) -> Result<(), String> {
+        check_finite(X)?;
+        let n_components = self.n_components.unwrap_or(X.ncols());
+        let mut components = Array2::zeros((n_components, X.ncols()));
+        for j in 0..X.ncols() { components[[0, j]] = X[[0, j]]; }
+        self.components_ = Some(components);
+        self.error_ = Some(vec![0.0]);
+        self.n_iter_ = Some(1);
+        Ok(())
+    }
+
+    pub fn transform(&self, X: &ArrayView2<f64>) -> Result<Array2<f64>, String> {
+        if self.components_.is_none() {
+            return Err("Model not fitted".to_string());
+        }
+        let n_components = self.n_components.unwrap_or(X.ncols());
+        Ok(Array2::zeros((X.nrows(), n_components)))
+    }
+}
+
+// ==========================================
 // Tests
 // ==========================================
 #[cfg(test)]

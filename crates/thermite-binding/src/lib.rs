@@ -435,6 +435,8 @@ pub mod model_selection_bind;
 pub mod rag_bind;
 pub mod recommender_bind;
 pub mod causal_bind;
+pub mod mixture_bind;
+pub mod cross_decomposition_bind;
 
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -469,6 +471,8 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     rag_bind::bind_rag(m)?;
     recommender_bind::bind_recommender(m)?;
     causal_bind::bind_causal(m)?;
+    mixture_bind::bind_mixture(m)?;
+    cross_decomposition_bind::bind_cross_decomposition(m)?;
     Ok(())
 }
 

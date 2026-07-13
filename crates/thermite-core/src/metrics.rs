@@ -460,7 +460,7 @@ pub fn mean_absolute_percentage_error(y_true: &[f64], y_pred: &[f64]) -> Result<
         .zip(y_pred.iter())
         .map(|(&t, &p)| {
             if t.abs() < eps {
-                ((t - p).abs() / eps.max(t.abs()))
+                (t - p).abs() / eps.max(t.abs())
             } else {
                 ((t - p) / t).abs()
             }
@@ -483,49 +483,61 @@ pub fn pairwise_distances(
     if x.len() != n_samples_x * n_features || y.len() != n_samples_y * n_features {
         return Err("Dimensions do not match".to_string());
     }
-    let mut distances = Vec::with_capacity(n_samples_x * n_samples_y);
-    for i in 0..n_samples_x {
-        let x_row = &x[i * n_features..(i + 1) * n_features];
-        for j in 0..n_samples_y {
-            let y_row = &y[j * n_features..(j + 1) * n_features];
-            match metric {
-                "cosine" => {
-                    let mut dot = 0.0;
-                    let mut norm_x = 0.0;
-                    let mut norm_y = 0.0;
-                    for (&xi, &yi) in x_row.iter().zip(y_row.iter()) {
-                        dot += xi * yi;
-                        norm_x += xi * xi;
-                        norm_y += yi * yi;
-                    }
-                    if norm_x == 0.0 || norm_y == 0.0 {
-                        distances.push(1.0);
-                    } else {
-                        distances.push(1.0 - (dot / (norm_x.sqrt() * norm_y.sqrt())));
-                    }
-                }
-                "manhattan" => {
-                    let dist: f64 = x_row.iter().zip(y_row.iter()).map(|(xi, yi)| (xi - yi).abs()).sum();
-                    distances.push(dist);
-                }
-                "haversine" => {
-                    if n_features != 2 {
-                        return Err("Haversine requires exactly 2 dimensions".to_string());
-                    }
-                    let lat1 = x_row[0];
-                    let lon1 = x_row[1];
-                    let lat2 = y_row[0];
-                    let lon2 = y_row[1];
-                    let dlat = lat2 - lat1;
-                    let dlon = lon2 - lon1;
-                    let a = (dlat / 2.0).sin().powi(2) + lat1.cos() * lat2.cos() * (dlon / 2.0).sin().powi(2);
-                    let c = 2.0 * a.sqrt().asin();
-                    distances.push(c);
-                }
-                _ => return Err(format!("Unsupported metric: {}", metric))
-            }
-        }
+    if metric != "cosine" && metric != "manhattan" && metric != "haversine" {
+        return Err(format!("Unsupported metric: {}", metric));
     }
+    if metric == "haversine" && n_features != 2 {
+        return Err("Haversine requires exactly 2 dimensions".to_string());
+    }
+
+    use rayon::prelude::*;
+    let distances: Vec<f64> = (0..n_samples_x)
+        .into_par_iter()
+        .flat_map(|i| {
+            let x_row = &x[i * n_features..(i + 1) * n_features];
+            let mut row_dists = Vec::with_capacity(n_samples_y);
+            for j in 0..n_samples_y {
+                let y_row = &y[j * n_features..(j + 1) * n_features];
+                match metric {
+                    "cosine" => {
+                        let mut dot = 0.0;
+                        let mut norm_x = 0.0;
+                        let mut norm_y = 0.0;
+                        for (&xi, &yi) in x_row.iter().zip(y_row.iter()) {
+                            dot += xi * yi;
+                            norm_x += xi * xi;
+                            norm_y += yi * yi;
+                        }
+                        if norm_x == 0.0 || norm_y == 0.0 {
+                            row_dists.push(1.0);
+                        } else {
+                            row_dists.push(1.0 - (dot / (norm_x.sqrt() * norm_y.sqrt())));
+                        }
+                    }
+                    "manhattan" => {
+                        let mut dist = 0.0;
+                        for (&xi, &yi) in x_row.iter().zip(y_row.iter()) {
+                            dist += (xi - yi).abs();
+                        }
+                        row_dists.push(dist);
+                    }
+                    "haversine" => {
+                        let lat1 = x_row[0];
+                        let lon1 = x_row[1];
+                        let lat2 = y_row[0];
+                        let lon2 = y_row[1];
+                        let dlat = lat2 - lat1;
+                        let dlon = lon2 - lon1;
+                        let a = (dlat / 2.0).sin().powi(2) + lat1.cos() * lat2.cos() * (dlon / 2.0).sin().powi(2);
+                        let c = 2.0 * a.sqrt().asin();
+                        row_dists.push(c);
+                    }
+                    _ => unreachable!(),
+                }
+            }
+            row_dists
+        })
+        .collect();
     Ok(distances)
 }
 

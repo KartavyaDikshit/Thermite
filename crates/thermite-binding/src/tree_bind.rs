@@ -93,6 +93,10 @@ impl DecisionTreeClassifier {
         Ok(())
     }
 
+    fn compile(&self, language: &str) -> PyResult<String> {
+        self.core.compile(language).map_err(|e| pyo3::exceptions::PyValueError::new_err(e))
+    }
+
     #[getter]
     fn tree_(&self) -> PyResult<PyTree> {
         let n = self.core.nodes.len();
@@ -185,6 +189,10 @@ impl DecisionTreeRegressor {
             self.core.predict(&x_view)
         });
         Ok(PyArray1::from_vec_bound(py, preds))
+    }
+
+    fn compile(&self, language: &str) -> PyResult<String> {
+        self.core.compile(language).map_err(|e| pyo3::exceptions::PyValueError::new_err(e))
     }
 
     #[getter]

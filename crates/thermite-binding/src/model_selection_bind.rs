@@ -22,7 +22,7 @@ impl StratifiedKFold {
         }
     }
 
-    fn split<'py>(&self, py: Python<'py>, X: Bound<'py, PyAny>, y: PyReadonlyArray1<i64>) -> PyResult<Vec<Bound<'py, PyTuple>>> {
+    fn split<'py>(&self, py: Python<'py>, _X: Bound<'py, PyAny>, y: PyReadonlyArray1<i64>) -> PyResult<Vec<Bound<'py, PyTuple>>> {
         let y_arr = y.as_array();
         let y_slice = y_arr.as_slice().ok_or_else(|| pyo3::exceptions::PyValueError::new_err("y must be contiguous"))?;
         let splits = self.core.split(y_slice).map_err(pyo3::exceptions::PyValueError::new_err)?;
@@ -87,7 +87,7 @@ impl GroupKFold {
         }
     }
 
-    fn split<'py>(&self, py: Python<'py>, X: Bound<'py, PyAny>, y: Bound<'py, PyAny>, groups: PyReadonlyArray1<i64>) -> PyResult<Vec<Bound<'py, PyTuple>>> {
+    fn split<'py>(&self, py: Python<'py>, _X: Bound<'py, PyAny>, _y: Bound<'py, PyAny>, groups: PyReadonlyArray1<i64>) -> PyResult<Vec<Bound<'py, PyTuple>>> {
         let g_arr = groups.as_array();
         let g_slice = g_arr.as_slice().ok_or_else(|| pyo3::exceptions::PyValueError::new_err("groups must be contiguous"))?;
         let splits = self.core.split(g_slice).map_err(pyo3::exceptions::PyValueError::new_err)?;
