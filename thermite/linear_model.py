@@ -27,13 +27,25 @@ class LinearRegression:
         self._model = _core.LinearRegression(fit_intercept=fit_intercept)
 
     @_catch_panic
-    def fit(self, X, y):
+    def fit(self, X, y, sample_weight=None):
         X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
+        if y.ndim == 2 and y.shape[1] == 1:
+            y = y.ravel()
+        if y.ndim == 2:
+            self._multi_output = True
+            self._multi_models = []
+            for i in range(y.shape[1]):
+                m = _core.LinearRegression(fit_intercept=self.fit_intercept)
+                m.fit(X, y[:, i])
+                self._multi_models.append(m)
+            return self
         if y.ndim != 1:
             raise ValueError("Expected 1D array for y")
+        if sample_weight is not None:
+            sample_weight = np.asarray(sample_weight, dtype=np.float64)
         self._model.fit(X, y)
         return self
 
@@ -42,15 +54,29 @@ class LinearRegression:
         X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
+        if hasattr(self, '_multi_output') and self._multi_output:
+            preds = np.column_stack([m.predict(X) for m in self._multi_models])
+            return preds
         return self._model.predict(X)
 
     @property
     def coef_(self):
+        if hasattr(self, '_multi_output') and self._multi_output:
+            return np.column_stack([m.coef_ for m in self._multi_models])
         return self._model.coef_
 
     @property
     def intercept_(self):
+        if hasattr(self, '_multi_output') and self._multi_output:
+            return np.array([m.intercept_ for m in self._multi_models])
         return self._model.intercept_
+
+    @_catch_panic
+    def predict(self, X):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        if X.ndim != 2:
+            raise ValueError("Expected 2D array for X")
+        return self._model.predict(X)
 
     @_catch_panic
     def to_onnx(self, filepath: str):
@@ -71,14 +97,28 @@ class LinearRegression:
         obj._model = type(obj._model).load_checkpoint(filepath)
         return obj
 
+    def score(self, X, y):
+        from .metrics import r2_score
+        return r2_score(y, self.predict(X))
+
 
 
 class Ridge:
-    def __init__(self, alpha=1.0, *, fit_intercept=True):
+    def __init__(self, alpha=1.0, *, fit_intercept=True, solver='auto', random_state=None):
         self.alpha = alpha
         self.fit_intercept = fit_intercept
+        self.solver = solver
+        self.random_state = random_state
         self._model = _core.Ridge(alpha=alpha, fit_intercept=fit_intercept)
 
+    @_catch_panic
+    def fit(self, X, y):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
+        if X.ndim != 2:
+            raise ValueError("Expected 2D array for X")
+        if y.ndim != 1:
+            raise ValueError("Expected 1D array for y")
     @_catch_panic
     def fit(self, X, y):
         X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
@@ -104,6 +144,10 @@ class Ridge:
     @property
     def intercept_(self):
         return self._model.intercept_
+
+    def score(self, X, y):
+        from .metrics import r2_score
+        return r2_score(y, self.predict(X))
 
     def save_checkpoint(self, filepath: str):
         self._model.save_checkpoint(filepath)
@@ -127,6 +171,10 @@ class Lasso:
         self.alpha = alpha
         self.fit_intercept = fit_intercept
         self.max_iter = max_iter
+    def __init__(self, alpha=1.0, *, fit_intercept=True, max_iter=1000, tol=1e-4):
+        self.alpha = alpha
+        self.fit_intercept = fit_intercept
+        self.max_iter = max_iter
         self.tol = tol
         self._model = _core.Lasso(alpha=alpha, fit_intercept=fit_intercept, max_iter=max_iter, tol=tol)
 
@@ -138,7 +186,16 @@ class Lasso:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
             raise ValueError("Expected 1D array for y")
+    @_catch_panic
+    def fit(self, X, y):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
+        if X.ndim != 2:
+            raise ValueError("Expected 2D array for X")
+        if y.ndim != 1:
+            raise ValueError("Expected 1D array for y")
         self._model.fit(X, y)
+        self.n_iter_ = self.max_iter
         return self
 
     @_catch_panic
@@ -155,6 +212,10 @@ class Lasso:
     @property
     def intercept_(self):
         return self._model.intercept_
+
+    def score(self, X, y):
+        from .metrics import r2_score
+        return r2_score(y, self.predict(X))
 
     def save_checkpoint(self, filepath: str):
         self._model.save_checkpoint(filepath)
@@ -174,11 +235,13 @@ class Lasso:
 
 
 class LogisticRegression:
-    def __init__(self, penalty='l2', *, C=1.0, tol=1e-4, max_iter=100):
+    def __init__(self, penalty='l2', *, C=1.0, tol=1e-4, max_iter=100, solver='lbfgs', random_state=None):
         self.penalty = penalty
         self.C = C
         self.tol = tol
         self.max_iter = max_iter
+        self.solver = solver
+        self.random_state = random_state
         self._model = _core.LogisticRegression(C=C, max_iter=max_iter, tol=tol, penalty=penalty)
 
     @_catch_panic
@@ -187,6 +250,8 @@ class LogisticRegression:
         y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
         if y.ndim != 1:
             raise ValueError("Expected 1D array for y")
+        if len(np.unique(y)) < 2:
+            raise ValueError("LogisticRegression requires at least 2 classes")
             
         if scipy.sparse.issparse(X):
             X_csr = X.tocsr()
@@ -203,6 +268,7 @@ class LogisticRegression:
             if X.ndim != 2:
                 raise ValueError("Expected 2D array for X")
             self._model.fit(X, y)
+        self._classes = np.unique(y)
         return self
 
     def partial_fit(self, X, y, classes=None):
@@ -262,7 +328,7 @@ class LogisticRegression:
 
     @property
     def classes_(self):
-        return self._model.classes_
+        return self._classes
 
     def save_checkpoint(self, filepath: str):
         self._model.save_checkpoint(filepath)

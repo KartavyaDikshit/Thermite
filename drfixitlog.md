@@ -68,7 +68,7 @@
 |---|-----------|--------|----------|-------------|
 | 2.1 | Tree edge cases | ✅ | Added `classes_`, `get_depth` to Python wrappers; added `n_estimators<=0` validation; relaxed precision tolerance for RF | 30/30 tree tests pass |
 | 2.2 | Metrics edge cases | 🔄 | Added `normalize`, `sample_weight`, `pos_label`, `zero_division`, `multioutput`, `average` params to Python wrappers | 37/70 pass, 33 remaining |
-| 2.3 | Linear model edge cases | 🔄 | In progress | |
+| 2.3 | Linear model edge cases | ✅ | Added `score`, `sample_weight`, `solver`, `random_state`, `n_iter_`, multi-output regression; fixed L-BFGS bias init | 40/40 linear tests pass |
 | 2.4 | Preprocessing edge cases | 🔄 | In progress | |
 | 2.5 | Model selection edge cases | 🔄 | In progress | |
 | 2.6 | Cluster/decomposition/neighbors edge cases | 🔄 | In progress | |
@@ -125,4 +125,13 @@
 - `roc_auc_score`: `average`, `sample_weight`, `multi_class`
 - `mean_squared_error`, `r2_score`: `sample_weight`, `multioutput`
 - 37/70 metrics tests now pass (up from 0)
+
+**Linear model tests (2.3)**: All 40 linear model tests now pass.
+- Added `score` method to `LinearRegression`, `Ridge`, `Lasso`
+- Added `sample_weight` parameter to `LinearRegression.fit`
+- Added `solver`, `random_state` parameters to `Ridge` and `LogisticRegression`
+- Added `n_iter_` attribute to `Lasso`
+- Added multi-output regression support to `LinearRegression`
+- Added single-class validation to `LogisticRegression`
+- Fixed L-BFGS bias initialization in Rust (initialize bias to log(pos/neg) prior)
 

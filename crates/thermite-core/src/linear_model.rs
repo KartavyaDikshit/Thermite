@@ -685,7 +685,15 @@ impl LogisticRegression {
         let lambda = 1.0 / (self.C * n_f64);
 
         let p = n_features + 1;
+        let pos_count = y_binary.iter().filter(|&&v| v > 0.5).count() as f64;
+        let neg_count = n_f64 - pos_count;
+        let init_bias = if pos_count > 0.0 && neg_count > 0.0 {
+            (pos_count / neg_count).ln()
+        } else {
+            0.0
+        };
         let mut w = Array1::<f64>::zeros(p);
+        w[0] = init_bias;
 
         // L-BFGS storage (limited memory, m = 10)
         let m: usize = 10;
