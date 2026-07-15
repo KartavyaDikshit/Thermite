@@ -212,7 +212,6 @@ def test_one_hot_encoder_ignore_unknown():
     np.testing.assert_array_equal(X_encoded, [[0.0, 1.0], [0.0, 0.0], [1.0, 0.0]])
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_one_hot_encoder_drop_first():
     """drop='first' option, check shape and drop behavior."""
     ohe = preprocessing.OneHotEncoder(drop="first", sparse_output=False)
@@ -224,7 +223,6 @@ def test_one_hot_encoder_drop_first():
     np.testing.assert_array_equal(X_encoded, [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_one_hot_encoder_custom_categories():
     """Passing custom categories list, check result."""
     ohe = preprocessing.OneHotEncoder(categories=[["apple", "banana", "cherry"]], sparse_output=False)

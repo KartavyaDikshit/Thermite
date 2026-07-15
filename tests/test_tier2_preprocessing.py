@@ -128,7 +128,6 @@ def test_min_max_scaler_invalid_inputs():
 # LabelEncoder Boundary Cases
 # =====================================================================
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_label_encoder_empty_input():
     """1. Fitting on empty list or array should result in empty classes_."""
     le = preprocessing.LabelEncoder()
@@ -209,7 +208,6 @@ def test_one_hot_encoder_unseen_value_ignore():
     np.testing.assert_array_equal(X_encoded, [[0.0, 0.0], [1.0, 0.0]])
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_one_hot_encoder_single_category_drop_first():
     """4. If drop='first' is specified and a feature has only 1 category, it returns 0 columns."""
     ohe = preprocessing.OneHotEncoder(drop="first", sparse_output=False)
@@ -219,7 +217,6 @@ def test_one_hot_encoder_single_category_drop_first():
     assert X_encoded.shape == (3, 0)
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_one_hot_encoder_custom_categories():
     """5. Specifying custom categories that may or may not exist in the training data."""
     ohe = preprocessing.OneHotEncoder(categories=[["apple", "banana", "cherry"]], sparse_output=False)

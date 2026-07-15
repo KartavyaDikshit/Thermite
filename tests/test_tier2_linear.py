@@ -17,7 +17,6 @@ def test_linear_regression_empty_input():
         lr.fit(np.empty((0, 2)), np.empty(0))
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_linear_regression_underdetermined():
     """2. Fitting underdetermined system (fewer samples than features) should fit perfectly."""
     lr = linear_model.LinearRegression()
@@ -30,7 +29,6 @@ def test_linear_regression_underdetermined():
     np.testing.assert_allclose(pred, y, rtol=1e-5)
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_linear_regression_perfect_collinearity():
     """3. Fitting on perfectly collinear features should not crash and should predict correctly."""
     lr = linear_model.LinearRegression()
@@ -188,7 +186,6 @@ def test_logistic_regression_empty_input():
         clf.fit(np.empty((0, 2)), np.empty(0))
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_logistic_regression_single_class_target():
     """2. Fitting with only 1 class in target raises ValueError."""
     clf = linear_model.LogisticRegression()

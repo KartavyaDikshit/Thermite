@@ -33,10 +33,9 @@ from .survival import SurvivalForest
 from .multi_output import MultiOutputRegressor
 from .graph import Node2Vec
 from .recommender import ALS
-from .quantum import QSVC
 from .causal import TLearner
 
-__version__ = "2.6.5"
+__version__ = "0.1.0"
 __all__ = [
     "ping",
     "StandardScaler",
@@ -99,7 +98,6 @@ __all__ = [
     "TimeSeriesSplit",
     "GroupKFold",
     "ALS",
-    "QSVC",
     "TLearner",
 ]
 

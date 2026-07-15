@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Rust](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org/)
-[![PyPI](https://img.shields.io/badge/PyPI-v2.6.6-blue)](https://pypi.org/project/thermite-ml/)
+[![PyPI](https://img.shields.io/badge/PyPI-v0.1.0-blue)](https://pypi.org/project/thermite-ml/)
 
 ---
 
@@ -97,22 +97,49 @@ model.fit(df.select(pl.exclude("target")), df["target"])
 
 ---
 
+[![PyPI](https://img.shields.io/badge/PyPI-v0.1.0-blue)](https://pypi.org/project/thermite-ml/)
+
+> **Status**: Early development (v0.1.0). Core algorithms are real; some peripheral modules are stubs. See [STATUS.md](STATUS.md) for per-module implementation status.
+
 ## Supported Algorithms
 
-- **Linear Models:** `LinearRegression`, `Ridge`, `Lasso`, `LogisticRegression` (Binary & Multinomial OvR), `LinearSVC`.
-- **Ensembles:** `RandomForestClassifier`, `RandomForestRegressor`, `GradientBoostingClassifier`, `GradientBoostingRegressor`, `HistGradientBoostingClassifier`, `HistGradientBoostingRegressor`, `IsolationForest`.
-- **Support Vector Machines:** `SVC` (Kernel SVMs via direct C-bindings for maximal speed).
-- **Trees:** `DecisionTreeClassifier`, `DecisionTreeRegressor`.
-- **Clustering:** `KMeans`, `MiniBatchKMeans`, `DBSCAN`, `SpectralClustering`.
-- **Decomposition:** `PCA`.
-- **Probabilistic:** `GaussianNB`.
-- **Preprocessing:** `StandardScaler`, `MinMaxScaler`, `OneHotEncoder`, `LabelEncoder`.
-- **Pipelines:** `Pipeline`, `ColumnTransformer`, `GridSearchCV`, `RandomizedSearchCV`, `SuccessiveHalvingSearchCV`.
-- **Next-Gen Extensions:** `TLearner` (Causal Inference), `VectorStore` (RAG Retrieval), `ParameterServer` (Federated Learning), `QSVC` (Quantum SVM).
-- **Deep Learning Connectivity:** Native `__dlpack__` integrations for PyTorch/JAX `from_dlpack` zero-copy tensor passing.
-- **NLP & Text:** `CountVectorizer`, `TfidfVectorizer`, `Word2Vec`.
-- **AutoML:** Rust native `BayesianOptimizer` utilizing `Ridge` surrogates.
-- **Manifold Learning:** `TSNE`, `UMAP`.
+> **Legend**: ✅ Real implementation | ⚠️ Partial/limited | ❌ Stub (placeholder)
+
+| Category | Algorithms | Status |
+|----------|-----------|--------|
+| **Linear Models** | `LinearRegression`, `Ridge`, `Lasso`, `LogisticRegression`, `ElasticNet`, `SGDClassifier` | ✅ Real |
+| **Trees** | `DecisionTreeClassifier`, `DecisionTreeRegressor` | ✅ Real |
+| **Ensembles** | `RandomForestClassifier`, `RandomForestRegressor`, `GradientBoostingClassifier`, `GradientBoostingRegressor`, `HistGradientBoostingClassifier`, `HistGradientBoostingRegressor`, `IsolationForest` | ✅ Real |
+| **SVM** | `SVC` (Kernel SVMs via C++ libsvm FFI) | ✅ Real |
+| **Clustering** | `KMeans`, `MiniBatchKMeans`, `DBSCAN`, `SpectralClustering` | ✅ Real |
+| **Decomposition** | `PCA`, `TruncatedSVD` | ✅ Real |
+| **Neighbors** | `KNeighborsClassifier`, `KNeighborsRegressor`, `LocalOutlierFactor` | ✅ Real |
+| **Naive Bayes** | `GaussianNB` | ✅ Real |
+| **Neural Network** | `MLPClassifier` | ✅ Real |
+| **Preprocessing** | `StandardScaler`, `MinMaxScaler`, `MaxAbsScaler`, `LabelEncoder`, `OneHotEncoder`, `PolynomialFeatures`, `FunctionTransformer` | ✅ Real |
+| **Metrics** | `accuracy_score`, `precision_score`, `recall_score`, `f1_score`, `roc_auc_score`, `log_loss`, `mean_squared_error`, `r2_score`, `mean_absolute_percentage_error`, `pairwise_distances` | ✅ Real |
+| **Text** | `CountVectorizer`, `TfidfVectorizer`, `Word2Vec` | ✅ Real |
+| **Impute** | `IterativeImputer` (MICE-like) | ✅ Real |
+| **Feature Selection** | `RFE`, `SequentialFeatureSelector` | ⚠️ Partial |
+| **Model Selection** | `train_test_split`, `KFold`, `StratifiedKFold`, `GridSearchCV` | ✅ Real |
+| **Hyperband** | `SuccessiveHalvingSearchCV` | ⚠️ Partial |
+| **Causal** | `TLearner` | ✅ Real |
+| **Federated** | `FederatedAveraging` | ✅ Real |
+| **RAG** | `VectorStore` | ✅ Real |
+| **AutoML** | `SurrogateOptimizer` | ⚠️ Partial |
+| **Time Series** | `AutoRegressive` | ⚠️ Partial |
+| **Manifold** | `TSNE`, `UMAP`, `Isomap`, `LLE` | ❌ Stub — returns zeros |
+| **Mixture** | `GaussianMixture` | ❌ Stub — returns zeros |
+| **Survival** | `SurvivalForest` | ❌ Stub — returns all 1.0 |
+| **Cross Decomposition** | `PLSRegression`, `CCA` | ❌ Stub — returns zeros |
+| **Graph** | `Node2Vec` | ❌ Stub — random embeddings |
+| **Recommender** | `ALS` | ❌ Stub — dummy update |
+| **Quantum** | `QSVC` | ❌ Stub — returns zeros |
+
+### Installation
+```bash
+pip install thermite-ml==0.1.0
+```
 
 ---
 

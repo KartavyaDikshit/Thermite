@@ -24,6 +24,8 @@ def _catch_panic(func):
 
 class RandomForestClassifier:
     def __init__(self, n_estimators=100, *, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, n_jobs=None, device='cpu', monotonic_cst=None):
+        if n_estimators <= 0:
+            raise ValueError("n_estimators must be > 0")
         self.n_estimators = n_estimators
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split
@@ -54,9 +56,14 @@ class RandomForestClassifier:
         if y.ndim != 1:
             raise ValueError("Expected 1D array for y")
         self._model.fit(X, y, categorical_features)
+        self._classes = np.unique(y)
         if generate_model_card:
             ModelCard.generate(self, f"{self.__class__.__name__}_model_card.md")
         return self
+
+    @property
+    def classes_(self):
+        return self._classes
 
     def compile(self, language="c"):
         if language != "c": raise ValueError("Only C compilation supported.")
@@ -98,7 +105,9 @@ class RandomForestClassifier:
 
 
 class RandomForestRegressor:
-    def __init__(self, n_estimators=100, *, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, n_jobs=None, device='cpu', monotonic_cst=None):
+    def __init__(self, n_estimators=100, *, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, n_jobs=None, device='cpu', monotonic_cst=None, bootstrap=True):
+        if n_estimators <= 0:
+            raise ValueError("n_estimators must be > 0")
         self.n_estimators = n_estimators
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split
@@ -174,6 +183,8 @@ class RandomForestRegressor:
 
 class GradientBoostingClassifier:
     def __init__(self, n_estimators=100, learning_rate=0.1, *, max_depth=3, random_state=None, early_stopping_rounds=None, monotonic_cst=None):
+        if n_estimators <= 0:
+            raise ValueError("n_estimators must be > 0")
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.max_depth = max_depth
@@ -236,6 +247,8 @@ class GradientBoostingClassifier:
 
 class GradientBoostingRegressor:
     def __init__(self, n_estimators=100, learning_rate=0.1, *, max_depth=3, random_state=None, loss=None, early_stopping_rounds=None, monotonic_cst=None):
+        if n_estimators <= 0:
+            raise ValueError("n_estimators must be > 0")
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.max_depth = max_depth

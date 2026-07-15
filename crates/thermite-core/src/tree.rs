@@ -147,6 +147,15 @@ impl DecisionTreeClassifier {
         self.fit_with_indices(X, y, &indices);
     }
 
+    pub fn get_depth(&self) -> usize {
+        if self.nodes.is_empty() { return 0; }
+        fn depth(nodes: &[TreeNode], idx: usize) -> usize {
+            if idx >= nodes.len() || nodes[idx].is_leaf() { return 0; }
+            1 + depth(nodes, nodes[idx].left).max(depth(nodes, nodes[idx].right))
+        }
+        depth(&self.nodes, 0)
+    }
+
     pub fn fit_with_indices(&mut self, X: &ArrayView2<f64>, y: &[f64], indices: &[usize]) {
         let n_samples = indices.len();
         assert!(n_samples > 0, "Cannot fit on empty data");
@@ -444,13 +453,16 @@ impl DecisionTreeClassifier {
             let mut right_idx = Vec::with_capacity(indices.len() / 2);
             for &idx in indices {
                 let val = X[[idx, feat]];
-                if val.is_nan() {
+                if val.is_nan() || val.is_infinite() {
                     if nans_go_left { left_idx.push(idx); } else { right_idx.push(idx); }
                 } else if is_categorical {
                     if left_categories.contains(&val) { left_idx.push(idx); } else { right_idx.push(idx); }
                 } else {
                     if val <= threshold { left_idx.push(idx); } else { right_idx.push(idx); }
                 }
+            }
+            if left_idx.is_empty() || right_idx.is_empty() {
+                return None;
             }
             return Some((feat, threshold, is_categorical, left_categories, left_idx, right_idx, nans_go_left));
         }
@@ -571,6 +583,15 @@ impl DecisionTreeRegressor {
         let n_samples = X.nrows();
         let indices: Vec<usize> = (0..n_samples).collect();
         self.fit_with_indices(X, y, &indices);
+    }
+
+    pub fn get_depth(&self) -> usize {
+        if self.nodes.is_empty() { return 0; }
+        fn depth(nodes: &[TreeNode], idx: usize) -> usize {
+            if idx >= nodes.len() || nodes[idx].is_leaf() { return 0; }
+            1 + depth(nodes, nodes[idx].left).max(depth(nodes, nodes[idx].right))
+        }
+        depth(&self.nodes, 0)
     }
 
     pub fn fit_with_indices(&mut self, X: &ArrayView2<f64>, y: &[f64], indices: &[usize]) {
@@ -976,13 +997,16 @@ impl DecisionTreeRegressor {
             let mut right_idx = Vec::with_capacity(indices.len() / 2);
             for &idx in indices {
                 let val = X[[idx, feat]];
-                if val.is_nan() {
+                if val.is_nan() || val.is_infinite() {
                     if nans_go_left { left_idx.push(idx); } else { right_idx.push(idx); }
                 } else if is_categorical {
                     if left_categories.contains(&val) { left_idx.push(idx); } else { right_idx.push(idx); }
                 } else {
                     if val <= threshold { left_idx.push(idx); } else { right_idx.push(idx); }
                 }
+            }
+            if left_idx.is_empty() || right_idx.is_empty() {
+                return None;
             }
             return Some((feat, threshold, is_categorical, left_categories, left_idx, right_idx, nans_go_left));
         }

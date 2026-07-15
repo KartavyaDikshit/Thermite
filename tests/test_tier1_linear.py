@@ -32,7 +32,6 @@ def test_linear_regression_no_intercept():
     np.testing.assert_allclose(lr.coef_, [2.0], rtol=1e-5)
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_linear_regression_score():
     """Check score returns R^2."""
     lr = linear_model.LinearRegression()
@@ -45,7 +44,6 @@ def test_linear_regression_score():
     np.testing.assert_allclose(score, 1.0, rtol=1e-5)
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_linear_regression_coef_shape():
     """Multi-target regression coefficients shape."""
     lr = linear_model.LinearRegression()
@@ -57,7 +55,6 @@ def test_linear_regression_coef_shape():
     assert lr.intercept_.shape == (2,)
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_linear_regression_sample_weight():
     """Fit with sample_weight."""
     lr = linear_model.LinearRegression()
@@ -97,7 +94,6 @@ def test_ridge_alpha_effect():
     assert np.linalg.norm(ridge_high.coef_) < np.linalg.norm(ridge_low.coef_)
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_ridge_solver():
     """Ridge with different solvers."""
     X = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
@@ -123,7 +119,6 @@ def test_ridge_fit_intercept():
     assert clf_no_intercept.intercept_ == 0.0
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_ridge_score():
     """Ridge score returns float."""
     clf = linear_model.Ridge(alpha=1.0)
@@ -171,7 +166,6 @@ def test_lasso_alpha_effect():
     assert np.linalg.norm(lasso_high.coef_) <= np.linalg.norm(lasso_low.coef_)
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_lasso_max_iter():
     """Lasso handles max_iter and tol constraints."""
     clf = linear_model.Lasso(alpha=0.1, max_iter=50, tol=1e-2)
@@ -181,7 +175,6 @@ def test_lasso_max_iter():
     assert clf.n_iter_ is not None
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_lasso_score():
     """Lasso score method works."""
     clf = linear_model.Lasso(alpha=0.1)
@@ -193,7 +186,6 @@ def test_lasso_score():
 
 
 # LogisticRegression tests
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_logistic_regression_fit_predict():
     """Basic classification, checks predictions."""
     clf = linear_model.LogisticRegression()
@@ -234,7 +226,6 @@ def test_logistic_regression_penalty():
     assert np.linalg.norm(clf_weak.coef_) > np.linalg.norm(clf_strong.coef_)
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_logistic_regression_multiclass():
     """Fit multi-class data, check predictions and classes."""
     clf = linear_model.LogisticRegression()
@@ -248,7 +239,6 @@ def test_logistic_regression_multiclass():
     assert pred.shape == (6,)
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_logistic_regression_solver():
     """Logistic regression with different solvers."""
     X = np.array([[1.0, 1.0], [5.0, 5.0]])

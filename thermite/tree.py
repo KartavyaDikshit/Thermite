@@ -31,6 +31,13 @@ class DecisionTreeClassifier:
             random_state=random_state
         )
 
+    @property
+    def classes_(self):
+        return self._model.classes_
+
+    def get_depth(self):
+        return self._model.get_depth()
+
     @_catch_panic
     def fit(self, X, y, categorical_features=None):
         X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
@@ -81,6 +88,9 @@ class DecisionTreeRegressor:
             max_features=max_features,
             random_state=random_state
         )
+
+    def get_depth(self):
+        return self._model.get_depth()
 
     @_catch_panic
     def fit(self, X, y, categorical_features=None):

@@ -20,7 +20,6 @@ def test_kmeans_fit_predict():
     assert km.cluster_centers_.shape == (2, 2)
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_kmeans_init():
     """Check KMeans with different init values."""
     X = np.array([[1.0, 2.0], [1.5, 1.8], [10.0, 12.0], [11.0, 11.5]])
@@ -48,7 +47,6 @@ def test_kmeans_inertia():
     assert km.inertia_ >= 0.0
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_kmeans_transform():
     """Verify transform method returns distance matrix of shape (n_samples, n_clusters)."""
     km = cluster.KMeans(n_clusters=2, random_state=42, n_init=3)
@@ -71,7 +69,6 @@ def test_dbscan_fit():
     assert len(set(db.labels_) - {-1}) == 2
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_dbscan_core_samples():
     """Verify DBSCAN core sample attributes."""
     db = cluster.DBSCAN(eps=1.5, min_samples=2)
@@ -92,7 +89,6 @@ def test_dbscan_noise():
     assert db.labels_[2] == -1
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_dbscan_metric():
     """Check DBSCAN with different metrics."""
     X = np.array([[1.0, 2.0], [1.1, 2.1], [10.0, 12.0], [10.1, 11.9]])
@@ -158,7 +154,6 @@ def test_pca_inverse_transform():
     np.testing.assert_allclose(X, X_inv, atol=1e-5)
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_pca_singular_values():
     """Check singular_values_ are non-negative and matching shape."""
     pca = decomposition.PCA(n_components=2)
@@ -195,7 +190,6 @@ def test_knn_classifier_predict_proba():
     np.testing.assert_allclose(proba[0], [0.5, 0.5])
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_knn_classifier_k_neighbors():
     """Verify kneighbors method outputs shapes."""
     knn = neighbors.KNeighborsClassifier(n_neighbors=2)
@@ -209,7 +203,6 @@ def test_knn_classifier_k_neighbors():
     assert indices[0, 0] == 0  # Nearest neighbor should be itself (index 0)
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_knn_classifier_weights():
     """Check KNN weights parameter combinations."""
     X = np.array([[1.0, 1.0], [1.1, 1.1], [5.0, 5.0]])
@@ -221,7 +214,6 @@ def test_knn_classifier_weights():
         assert knn.score(X, y) > 0.5
 
 
-@pytest.mark.skip(reason='Not supported in thermite')
 def test_knn_classifier_algorithm():
     """Check KNN with different algorithm configurations."""
     X = np.array([[1.0, 1.0], [1.1, 1.1], [5.0, 5.0]])
