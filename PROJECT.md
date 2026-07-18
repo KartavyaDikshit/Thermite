@@ -65,7 +65,11 @@ It is organized as follows:
 | F1 | NaN Support | Implement learned NaN routing in trees and mean-imputation in linear models. | F0 | DONE | a824cedd-5307-4b7b-aa98-d18e132fd0c3 |
 | F2 | Kernel SVM | Wrap/compile LIBSVM via C-bindings and implement SVC. | F0 | DONE | 2ab12a29-fb0d-4135-aa07-513a62a4157c |
 | F3 | BLAS/MKL Linkage | Configure dynamic BLAS/MKL feature flags in Cargo.toml. | F0 | DONE | 2da9c2e2-0084-4534-86a5-21433344c97c |
-| F4 | Final Integration & Audit | E2E tests, Challenger verification, and Forensic Audit. | F1, F2, F3 | PLANNED | TBD |
+| F4 | Final Integration & Audit | E2E tests, Challenger verification, and Forensic Audit. | F1, F2, F3 | DONE | TBD |
+| P1 | Algorithm Parity | Match sklearn algorithm coverage (add KNeighborsRegressor, SGDRegressor, Voting/Stacking, etc.) | F4 | IN PROGRESS | TBD |
+| P2 | Performance Domination | SIMD, GPU compute backend, parallel predict, streaming fit | P1 | PLANNED | TBD |
+| P3 | Correctness & Stability | 1e-12 numerical parity, property-based testing, float32/64 cross-validation | P2 | PLANNED | TBD |
+| P4 | API Supremacy | WASM deployment, SQL UDF export, REST serving, quantization | P3 | PLANNED | TBD |
 
 ## Interface Contracts
 ### Python Wrappers  PyO3 Rust Bindings (`thermite._core`)

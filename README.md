@@ -99,7 +99,7 @@ model.fit(df.select(pl.exclude("target")), df["target"])
 
 [![PyPI](https://img.shields.io/badge/PyPI-v0.1.0-blue)](https://pypi.org/project/thermite-ml/)
 
-> **Status**: Early development (v0.1.0). Core algorithms are real; some peripheral modules are stubs. See [STATUS.md](STATUS.md) for per-module implementation status.
+> **Status**: Active development (v0.1.0). All modules have real implementations. 340/341 tests passing. See [STATUS.md](STATUS.md) for details.
 
 ## Supported Algorithms
 
@@ -128,13 +128,13 @@ model.fit(df.select(pl.exclude("target")), df["target"])
 | **RAG** | `VectorStore` | ✅ Real |
 | **AutoML** | `SurrogateOptimizer` | ⚠️ Partial |
 | **Time Series** | `AutoRegressive` | ⚠️ Partial |
-| **Manifold** | `TSNE`, `UMAP`, `Isomap`, `LLE` | ❌ Stub — returns zeros |
-| **Mixture** | `GaussianMixture` | ❌ Stub — returns zeros |
-| **Survival** | `SurvivalForest` | ❌ Stub — returns all 1.0 |
-| **Cross Decomposition** | `PLSRegression`, `CCA` | ❌ Stub — returns zeros |
-| **Graph** | `Node2Vec` | ❌ Stub — random embeddings |
-| **Recommender** | `ALS` | ❌ Stub — dummy update |
-| **Quantum** | `QSVC` | ❌ Stub — returns zeros |
+| **Manifold** | `TSNE`, `UMAP`, `Isomap`, `LLE` | ✅ Real — Isomap (kNN+MDS), LLE (local covariance), t-SNE (KL divergence), UMAP (fuzzy simplicial) |
+| **Mixture** | `GaussianMixture` | ✅ Real — Full EM algorithm |
+| **Survival** | `SurvivalForest` | ✅ Real — Log-rank split, Nelson-Aalen hazard |
+| **Cross Decomposition** | `PLSRegression`, `CCA` | ✅ Real — NIPALS, power-iteration SVD |
+| **Graph** | `Node2Vec` | ✅ Real — 2nd-order walks, Skip-gram, negative sampling |
+| **Recommender** | `ALS` | ✅ Real — Alternating least squares |
+| **Quantum** | (removed) | Removed — was stub |
 
 ### Installation
 ```bash

@@ -1,6 +1,6 @@
 # Thermite Implementation Status
 
-> **Last updated**: 2026-07-15
+> **Last updated**: 2026-07-16
 > **Version**: 0.1.0
 
 This document tracks the implementation status of every module in Thermite. It is the source of truth for what works, what is partial, and what is a stub.
@@ -68,6 +68,6 @@ All stub modules have been replaced with real implementations as of 2026-07-15 (
 ## Test Status
 
 - **Rust unit tests**: Only `linear_model.rs`, `tree.rs`, `svm.rs` have `#[cfg(test)]` blocks
-- **Python tests**: 29 test files across 3 tiers, ~40+ tests currently skipped (edge cases)
+- **Python tests**: 19 test files across 3 tiers + phase4 + robustness. **340 passed, 1 failed** (remaining failure: `test_rf_classifier_max_features` — pre-existing test design issue on 2-sample bootstrap)
 - **CI**: GitHub Actions configured for Rust lint + Python build/test on ubuntu-latest
 - **Release**: Multi-platform wheel building (macOS, Windows, Linux) via maturin
