@@ -99,7 +99,7 @@ model.fit(df.select(pl.exclude("target")), df["target"])
 
 [![PyPI](https://img.shields.io/badge/PyPI-v0.1.0-blue)](https://pypi.org/project/thermite-ml/)
 
-> **Status**: Active development (v0.1.0). All modules have real implementations. 340/341 tests passing. See [STATUS.md](STATUS.md) for details.
+> **Status**: Active development (v0.1.0). All modules have real implementations. 341/342 tests passing. See [STATUS.md](STATUS.md) for details.
 
 ## Supported Algorithms
 
@@ -107,13 +107,13 @@ model.fit(df.select(pl.exclude("target")), df["target"])
 
 | Category | Algorithms | Status |
 |----------|-----------|--------|
-| **Linear Models** | `LinearRegression`, `Ridge`, `Lasso`, `LogisticRegression`, `ElasticNet`, `SGDClassifier` | ✅ Real |
+| **Linear Models** | `LinearRegression`, `Ridge`, `Lasso`, `LogisticRegression`, `ElasticNet`, `SGDClassifier`, `SGDRegressor` | ✅ Real |
 | **Trees** | `DecisionTreeClassifier`, `DecisionTreeRegressor` | ✅ Real |
 | **Ensembles** | `RandomForestClassifier`, `RandomForestRegressor`, `GradientBoostingClassifier`, `GradientBoostingRegressor`, `HistGradientBoostingClassifier`, `HistGradientBoostingRegressor`, `IsolationForest` | ✅ Real |
 | **SVM** | `SVC` (Kernel SVMs via C++ libsvm FFI) | ✅ Real |
 | **Clustering** | `KMeans`, `MiniBatchKMeans`, `DBSCAN`, `SpectralClustering` | ✅ Real |
 | **Decomposition** | `PCA`, `TruncatedSVD` | ✅ Real |
-| **Neighbors** | `KNeighborsClassifier`, `KNeighborsRegressor`, `LocalOutlierFactor` | ✅ Real |
+| **Neighbors** | `KNeighborsClassifier`, `KNeighborsRegressor`, `KNeighborsTransformer`, `LocalOutlierFactor` | ✅ Real |
 | **Naive Bayes** | `GaussianNB` | ✅ Real |
 | **Neural Network** | `MLPClassifier` | ✅ Real |
 | **Preprocessing** | `StandardScaler`, `MinMaxScaler`, `MaxAbsScaler`, `LabelEncoder`, `OneHotEncoder`, `PolynomialFeatures`, `FunctionTransformer` | ✅ Real |

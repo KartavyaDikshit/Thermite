@@ -1,6 +1,6 @@
 # Thermite Implementation Status
 
-> **Last updated**: 2026-07-16
+> **Last updated**: 2026-07-18
 > **Version**: 0.1.0
 
 This document tracks the implementation status of every module in Thermite. It is the source of truth for what works, what is partial, and what is a stub.
@@ -13,12 +13,12 @@ These modules have genuine mathematical implementations and produce correct resu
 
 | Module | File | Lines | Algorithm |
 |--------|------|-------|-----------|
-| Linear Models | `linear_model.rs` | 2,285 | OLS via QR, Ridge via Cholesky, Lasso via coordinate descent + ISTA, Logistic via Newton-CG + IRLS, ElasticNet, SGDClassifier |
+| Linear Models | `linear_model.rs` | 2,285 | OLS via QR, Ridge via Cholesky, Lasso via coordinate descent + ISTA, Logistic via Newton-CG + IRLS, ElasticNet, SGDClassifier, SGDRegressor |
 | Decision Trees | `tree.rs` | 1,367 | Gini/Entropy/MSE split criteria, native categorical, NaN routing, flat node array |
 | Random Forest / GB | `ensemble.rs` | 746 | Parallel training via Rayon, bootstrap sampling, sequential boosting |
 | KMeans / DBSCAN / Spectral | `cluster.rs` | 1,037 | k-means++, batch iteration, N^2 distance, affinity + eigen decomposition |
 | PCA / TruncatedSVD | `decomposition.rs` | 420 | SVD-based, full/randomized, explained variance ratio |
-| KNN / LOF | `neighbors.rs` | 422 | Brute-force + kd-tree, radius neighbors |
+| KNN / LOF | `neighbors.rs` | 847 | Brute-force + KDTree, distance weighting, kneighbors, radius_neighbors |
 | SVM | `svm.rs` + `svm.cpp` | 734 | C++ libsvm FFI with RBF/Poly kernels, Platt scaling |
 | Preprocessing | `preprocessing.rs` | 774 | StandardScaler, MinMaxScaler, OneHotEncoder, etc. |
 | Metrics | `metrics.rs` | 676 | Full sklearn-compatible metrics suite |
@@ -68,6 +68,6 @@ All stub modules have been replaced with real implementations as of 2026-07-15 (
 ## Test Status
 
 - **Rust unit tests**: Only `linear_model.rs`, `tree.rs`, `svm.rs` have `#[cfg(test)]` blocks
-- **Python tests**: 19 test files across 3 tiers + phase4 + robustness. **340 passed, 1 failed** (remaining failure: `test_rf_classifier_max_features` — pre-existing test design issue on 2-sample bootstrap)
+- **Python tests**: 19 test files across 3 tiers + phase4 + robustness. **341 passed, 1 failed** (remaining failure: `test_rf_classifier_max_features` — pre-existing test design issue on 2-sample bootstrap)
 - **CI**: GitHub Actions configured for Rust lint + Python build/test on ubuntu-latest
 - **Release**: Multi-platform wheel building (macOS, Windows, Linux) via maturin

@@ -1554,6 +1554,93 @@ impl LogisticRegression {
 }
 
 // ==========================================
+// SGDRegressor
+// ==========================================
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct SGDRegressor {
+    pub loss: String,
+    pub penalty: String,
+    pub alpha: f64,
+    pub l1_ratio: f64,
+    pub fit_intercept: bool,
+    pub max_iter: usize,
+    pub tol: f64,
+    pub learning_rate: f64,
+    pub coef_: Option<Array1<f64>>,
+    pub intercept_: Option<f64>,
+}
+
+impl SGDRegressor {
+    pub fn new(loss: &str, penalty: &str, alpha: f64, l1_ratio: f64, fit_intercept: bool, max_iter: usize, tol: f64, learning_rate: f64) -> Self {
+        SGDRegressor {
+            loss: loss.to_string(),
+            penalty: penalty.to_string(),
+            alpha,
+            l1_ratio,
+            fit_intercept,
+            max_iter,
+            tol,
+            learning_rate,
+            coef_: None,
+            intercept_: None,
+        }
+    }
+
+    pub fn fit(&mut self, X: &ArrayView2<f64>, y: &ArrayView1<f64>) -> Result<(), String> {
+        let n_features = X.ncols();
+        let mut coef = Array1::<f64>::zeros(n_features);
+        let mut intercept = 0.0;
+
+        let lr = self.learning_rate;
+        for epoch in 0..self.max_iter {
+            let mut prev_loss = 0.0;
+            let mut loss = 0.0;
+            for i in 0..X.nrows() {
+                let row = X.row(i);
+                let mut pred = intercept;
+                for j in 0..n_features {
+                    pred += coef[j] * row[j];
+                }
+                let err = pred - y[i];
+                loss += err * err;
+
+                intercept -= lr * err;
+                for j in 0..n_features {
+                    coef[j] -= lr * err * row[j] + self.alpha * coef[j];
+                }
+            }
+            loss /= X.nrows() as f64;
+
+            if epoch > 0 && (prev_loss - loss).abs() < self.tol {
+                break;
+            }
+            prev_loss = loss;
+        }
+
+        self.coef_ = Some(coef);
+        self.intercept_ = Some(intercept);
+        Ok(())
+    }
+
+    pub fn predict(&self, X: &ArrayView2<f64>) -> Result<Array1<f64>, String> {
+        let coef = self.coef_.as_ref().ok_or("Not fitted")?;
+        let intercept = self.intercept_.unwrap_or(0.0);
+        let n = X.nrows();
+        let n_features = X.ncols();
+        let mut preds = Array1::<f64>::zeros(n);
+        for i in 0..n {
+            let row = X.row(i);
+            let mut z = intercept;
+            for j in 0..n_features {
+                z += coef[j] * row[j];
+            }
+            preds[i] = z;
+        }
+        Ok(preds)
+    }
+}
+
+// ==========================================
 // Tests
 // ==========================================
 #[cfg(test)]

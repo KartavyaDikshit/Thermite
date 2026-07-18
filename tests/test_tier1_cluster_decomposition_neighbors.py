@@ -224,3 +224,15 @@ def test_knn_classifier_algorithm():
         knn.fit(X, y)
         pred = knn.predict(X)
         assert pred.shape == (3,)
+
+
+def test_knn_regressor_basic():
+    """Basic KNN regression."""
+    knn = neighbors.KNeighborsRegressor(n_neighbors=2)
+    X = np.array([[1.0, 1.0], [1.1, 1.1], [1.2, 1.2], [5.0, 5.0], [5.1, 5.1], [5.2, 5.2]])
+    y = np.array([1.0, 1.1, 1.2, 5.0, 5.1, 5.2])
+    knn.fit(X, y)
+    pred = knn.predict([[1.05, 1.05], [4.9, 4.9]])
+    np.testing.assert_allclose(pred, [1.05, 5.05], atol=1e-10)
+    assert isinstance(knn.score(X, y), float)
+    assert knn.score(X, y) > 0.9

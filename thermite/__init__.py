@@ -1,7 +1,7 @@
 from ._core import ping
 from .preprocessing import StandardScaler, MinMaxScaler, LabelEncoder, OneHotEncoder
 from .model_selection import train_test_split, cross_val_score, GridSearchCV, KFold, SuccessiveHalvingSearchCV, StratifiedKFold, TimeSeriesSplit, GroupKFold
-from .linear_model import LinearRegression, Ridge, Lasso, LogisticRegression, LinearSVC
+from .linear_model import LinearRegression, Ridge, Lasso, LogisticRegression, LinearSVC, SGDClassifier, SGDRegressor
 from .metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
     roc_auc_score, mean_squared_error, r2_score,
@@ -11,7 +11,7 @@ from .tree import DecisionTreeClassifier, DecisionTreeRegressor
 from .cluster import KMeans, DBSCAN, SpectralClustering
 from .manifold import TSNE, UMAP
 from .decomposition import PCA
-from .neighbors import KNeighborsClassifier, LocalOutlierFactor
+from .neighbors import KNeighborsClassifier, KNeighborsRegressor, KNeighborsTransformer, LocalOutlierFactor
 from .text import CountVectorizer, TfidfVectorizer, Word2Vec
 from .impute import IterativeImputer
 from .ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier, GradientBoostingRegressor, HistGradientBoostingClassifier, HistGradientBoostingRegressor, IsolationForest

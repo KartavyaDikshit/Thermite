@@ -376,6 +376,7 @@ pub fn bind_linear_model(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<LogisticRegression>()?;
     m.add_class::<LinearSVC>()?;
     m.add_class::<SGDClassifier>()?;
+    m.add_class::<SGDRegressor>()?;
     Ok(())
 }
 
@@ -470,6 +471,54 @@ impl LinearSVC {
         self.core.classes_.clone()
     }
 }
+
+use thermite_core::linear_model::SGDRegressor as CoreSGDRegressor;
+
+#[pyclass]
+pub struct SGDRegressor {
+    pub core: CoreSGDRegressor,
+}
+
+#[pymethods]
+impl SGDRegressor {
+    #[new]
+    #[pyo3(signature = (loss="squared_error", penalty="l2", alpha=0.0001, l1_ratio=0.15, fit_intercept=true, max_iter=1000, tol=1e-3, learning_rate=0.01))]
+    fn new(loss: &str, penalty: &str, alpha: f64, l1_ratio: f64, fit_intercept: bool, max_iter: usize, tol: f64, learning_rate: f64) -> Self {
+        SGDRegressor {
+            core: CoreSGDRegressor::new(loss, penalty, alpha, l1_ratio, fit_intercept, max_iter, tol, learning_rate),
+        }
+    }
+
+    fn fit(&mut self, py: Python<'_>, X: PyReadonlyArray2<f64>, y: PyReadonlyArray1<f64>) -> PyResult<()> {
+        let x_view = X.as_array();
+        let y_view = y.as_array();
+        py.allow_threads(|| {
+            self.core.fit(&x_view, &y_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })
+    }
+
+    fn predict<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray1<f64>>> {
+        let x_view = X.as_array();
+        let preds = py.allow_threads(|| {
+            self.core.predict(&x_view).map_err(pyo3::exceptions::PyValueError::new_err)
+        })?;
+        Ok(PyArray1::from_array_bound(py, &preds))
+    }
+
+    #[getter]
+    fn coef_<'py>(&self, py: Python<'py>) -> PyResult<Option<Bound<'py, PyArray1<f64>>>> {
+        match &self.core.coef_ {
+            Some(c) => Ok(Some(PyArray1::from_array_bound(py, c))),
+            None => Ok(None),
+        }
+    }
+
+    #[getter]
+    fn intercept_(&self) -> Option<f64> {
+        self.core.intercept_
+    }
+}
+
 use thermite_core::linear_model::SGDClassifier as CoreSGDClassifier;
 
 #[pyclass]
