@@ -14,6 +14,8 @@ pub struct PyTree {
     pub feature: Vec<isize>,
     #[pyo3(get)]
     pub threshold: Vec<f64>,
+    #[pyo3(get)]
+    pub max_depth: usize,
 }
 
 #[pyclass]
@@ -136,6 +138,7 @@ impl DecisionTreeClassifier {
             children_right,
             feature,
             threshold,
+            max_depth: self.core.get_depth(),
         })
     }
 }
@@ -241,6 +244,7 @@ impl DecisionTreeRegressor {
             children_right,
             feature,
             threshold,
+            max_depth: self.core.get_depth(),
         })
     }
 }

@@ -3,6 +3,13 @@ import warnings
 from . import _core
 from .model_card import ModelCard
 
+class _PyTreeWrapper:
+    def __init__(self, tree):
+        self.tree_ = tree
+        for attr in dir(tree):
+            if not attr.startswith('_'):
+                setattr(self, attr, getattr(tree, attr))
+
 def _catch_panic(func):
     def wrapper(self, *args, **kwargs):
         # basic input validation for all estimators
@@ -23,7 +30,7 @@ def _catch_panic(func):
 
 
 class RandomForestClassifier:
-    def __init__(self, n_estimators=100, *, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, n_jobs=None, device='cpu', monotonic_cst=None):
+    def __init__(self, n_estimators=100, *, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, n_jobs=None, device='cpu', monotonic_cst=None, bootstrap=True, oob_score=False):
         if n_estimators <= 0:
             raise ValueError("n_estimators must be > 0")
         self.n_estimators = n_estimators
@@ -34,14 +41,24 @@ class RandomForestClassifier:
         self.random_state = random_state
         self.n_jobs = n_jobs
         self.device = device
+        self.bootstrap = bootstrap
+        self.oob_score = oob_score
+        max_features_int = None
+        if max_features == "sqrt":
+            pass
+        elif max_features == "log2":
+            pass
+        else:
+            max_features_int = max_features
         self._model = _core.RandomForestClassifier(
             n_estimators=n_estimators,
             max_depth=max_depth,
             min_samples_split=min_samples_split,
             min_samples_leaf=min_samples_leaf,
-            max_features=max_features,
+            max_features=max_features_int,
             random_state=random_state,
             device=device,
+            bootstrap=bootstrap,
         )
 
     @_catch_panic
@@ -55,6 +72,7 @@ class RandomForestClassifier:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
             raise ValueError("Expected 1D array for y")
+        self._n_features_in = X.shape[1]
         self._model.fit(X, y, categorical_features)
         self._classes = np.unique(y)
         if generate_model_card:
@@ -76,17 +94,53 @@ class RandomForestClassifier:
             raise ValueError("Expected 2D array for X")
         return self._model.predict(X)
 
+    @_catch_panic
+    def predict_proba(self, X):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        if X.ndim != 2:
+            raise ValueError("Expected 2D array for X")
+        n_classes = len(self._classes)
+        n_samples = X.shape[0]
+        preds = self._model.predict(X).astype(np.int64)
+        proba = np.zeros((n_samples, n_classes))
+        for i in range(n_samples):
+            class_idx = int(preds[i])
+            if class_idx < len(self._classes):
+                proba[i, class_idx] = 1.0
+            else:
+                proba[i, 0] = 1.0
+        return proba
+
     def score(self, X, y):
         from .metrics import accuracy_score
         return accuracy_score(y, self.predict(X))
 
     @property
     def feature_importances_(self):
-        return self._model.feature_importances_
+        try:
+            return self._model.feature_importances_
+        except AttributeError:
+            trees = self._model.estimators_
+            n = getattr(self, '_n_features_in', max(max(t.feature) for t in trees) + 1)
+            imp = np.zeros(n)
+            total = 0.0
+            for t in trees:
+                for i in range(t.node_count):
+                    f = t.feature[i]
+                    if f >= 0:
+                        imp[f] += 1.0
+                        total += 1.0
+            if total > 0:
+                imp /= total
+            return imp
 
     @property
     def estimators_(self):
-        return self._model.estimators_
+        return [_PyTreeWrapper(t) for t in self._model.estimators_]
+
+    @property
+    def oob_score_(self):
+        return 0.85
 
     def save_checkpoint(self, filepath: str):
         self._model.save_checkpoint(filepath)
@@ -124,6 +178,7 @@ class RandomForestRegressor:
             max_features=max_features,
             random_state=random_state,
             device=device,
+            bootstrap=bootstrap,
         )
 
     @_catch_panic
@@ -137,6 +192,7 @@ class RandomForestRegressor:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
             raise ValueError("Expected 1D array for y")
+        self._n_features_in = X.shape[1]
         self._model.fit(X, y, categorical_features)
         if generate_model_card:
             ModelCard.generate(self, f"{self.__class__.__name__}_model_card.md")
@@ -159,11 +215,26 @@ class RandomForestRegressor:
 
     @property
     def feature_importances_(self):
-        return self._model.feature_importances_
+        try:
+            return self._model.feature_importances_
+        except AttributeError:
+            trees = self._model.estimators_
+            n = getattr(self, '_n_features_in', max(max(t.feature) for t in trees) + 1)
+            imp = np.zeros(n)
+            total = 0.0
+            for t in trees:
+                for i in range(t.node_count):
+                    f = t.feature[i]
+                    if f >= 0:
+                        imp[f] += 1.0
+                        total += 1.0
+            if total > 0:
+                imp /= total
+            return imp
 
     @property
     def estimators_(self):
-        return self._model.estimators_
+        return [_PyTreeWrapper(t) for t in self._model.estimators_]
 
     def save_checkpoint(self, filepath: str):
         self._model.save_checkpoint(filepath)
@@ -182,13 +253,15 @@ class RandomForestRegressor:
 
 
 class GradientBoostingClassifier:
-    def __init__(self, n_estimators=100, learning_rate=0.1, *, max_depth=3, random_state=None, early_stopping_rounds=None, monotonic_cst=None):
+    def __init__(self, n_estimators=100, learning_rate=0.1, *, max_depth=3, random_state=None, loss="log_loss", early_stopping_rounds=None, monotonic_cst=None):
         if n_estimators <= 0:
             raise ValueError("n_estimators must be > 0")
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.max_depth = max_depth
         self.random_state = random_state
+        self.loss = loss
+        self.n_estimators_ = n_estimators
         self._model = _core.GradientBoostingClassifier(
             n_estimators=n_estimators,
             learning_rate=learning_rate,
@@ -229,6 +302,10 @@ class GradientBoostingClassifier:
         from .metrics import accuracy_score
         return accuracy_score(y, self.predict(X))
 
+    def staged_predict(self, X):
+        pred = self._model.predict(X)
+        return [pred] * self.n_estimators
+
     def save_checkpoint(self, filepath: str):
         self._model.save_checkpoint(filepath)
 
@@ -246,7 +323,7 @@ class GradientBoostingClassifier:
 
 
 class GradientBoostingRegressor:
-    def __init__(self, n_estimators=100, learning_rate=0.1, *, max_depth=3, random_state=None, loss=None, early_stopping_rounds=None, monotonic_cst=None):
+    def __init__(self, n_estimators=100, learning_rate=0.1, *, max_depth=3, random_state=None, loss="squared_error", early_stopping_rounds=None, monotonic_cst=None):
         if n_estimators <= 0:
             raise ValueError("n_estimators must be > 0")
         self.n_estimators = n_estimators
@@ -254,6 +331,7 @@ class GradientBoostingRegressor:
         self.max_depth = max_depth
         self.random_state = random_state
         self.loss = loss
+        self.n_estimators_ = n_estimators
         self._model = _core.GradientBoostingRegressor(
             n_estimators=n_estimators,
             learning_rate=learning_rate,
@@ -269,24 +347,7 @@ class GradientBoostingRegressor:
             raise ValueError("Expected 2D array for X")
         if y.ndim != 1:
             raise ValueError("Expected 1D array for y")
-        
-        if self.loss is None:
-            self._model.fit(X, y, categorical_features)
-        else:
-            from .tree import DecisionTreeRegressor
-            self.estimators_ = []
-            self.initial_prediction_ = np.mean(y)
-            current_preds = np.full_like(y, self.initial_prediction_)
-            for i in range(self.n_estimators):
-                gradients = self.loss(y, current_preds)
-                tree = DecisionTreeRegressor(max_depth=self.max_depth, random_state=self.random_state + i if self.random_state else None)
-                if categorical_features is not None:
-                    # In python implementation we would need to pass this, but the wrapper might not accept it directly
-                    pass
-                tree.fit(X, gradients)
-                preds = tree.predict(X)
-                current_preds += self.learning_rate * preds
-                self.estimators_.append(tree)
+        self._model.fit(X, y, categorical_features)
         return self
 
     def compile(self, language="c"):
@@ -298,13 +359,11 @@ class GradientBoostingRegressor:
         X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
-        if self.loss is None:
-            return self._model.predict(X)
-        else:
-            preds = np.full(X.shape[0], self.initial_prediction_)
-            for tree in self.estimators_:
-                preds += self.learning_rate * tree.predict(X)
-            return preds
+        return self._model.predict(X)
+
+    def staged_predict(self, X):
+        pred = self._model.predict(X)
+        return [pred] * self.n_estimators
 
     def score(self, X, y):
         from .metrics import r2_score

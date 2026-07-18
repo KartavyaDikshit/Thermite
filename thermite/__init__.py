@@ -1,6 +1,6 @@
 from ._core import ping
 from .preprocessing import StandardScaler, MinMaxScaler, LabelEncoder, OneHotEncoder
-from .model_selection import train_test_split, GridSearchCV, KFold, SuccessiveHalvingSearchCV, StratifiedKFold, TimeSeriesSplit, GroupKFold
+from .model_selection import train_test_split, cross_val_score, GridSearchCV, KFold, SuccessiveHalvingSearchCV, StratifiedKFold, TimeSeriesSplit, GroupKFold
 from .linear_model import LinearRegression, Ridge, Lasso, LogisticRegression, LinearSVC
 from .metrics import (
     accuracy_score, precision_score, recall_score, f1_score,

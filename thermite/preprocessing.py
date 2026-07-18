@@ -108,6 +108,14 @@ class MinMaxScaler:
         return self._scaler.data_max
         
     @property
+    def feature_range(self):
+        return self._scaler.feature_range
+
+    @feature_range.setter
+    def feature_range(self, value):
+        self._scaler.feature_range = value
+
+    @property
     def scale_(self):
         return self._scaler.scale
         
@@ -120,9 +128,11 @@ class LabelEncoder:
         self._encoder = _core.LabelEncoder()
         self.classes_ = None
         
-    @_catch_panic
     def fit(self, y):
         y = np.asarray(y)
+        if y.size == 0:
+            self.classes_ = np.array([])
+            return self
         if y.ndim != 1:
             raise ValueError("Expected 1D array for y")
             
@@ -140,9 +150,10 @@ class LabelEncoder:
             self.classes_ = np.array(self._encoder.get_classes_str())
         return self
         
-    @_catch_panic
     def transform(self, y):
         y = np.asarray(y)
+        if y.size == 0:
+            return np.array([])
         if y.ndim != 1:
             raise ValueError("Expected 1D array for y")
             
@@ -175,38 +186,74 @@ class OneHotEncoder:
     def __init__(self, *, categories="auto", drop=None, sparse_output=True, handle_unknown="error", **kwargs):
         if handle_unknown not in ("error", "ignore"):
             raise ValueError("handle_unknown must be 'error' or 'ignore'")
-        self._encoder = _core.OneHotEncoder(handle_unknown=handle_unknown)
+        self._categories_param = categories
+        self.drop = drop
+        self.sparse_output = sparse_output
+        self.handle_unknown = handle_unknown
+        self._encoder = _core.OneHotEncoder(handle_unknown=handle_unknown) if categories == "auto" else None
         self.categories_ = None
         
-    @_catch_panic
+    def _one_hot_encode(self, X, categories):
+        n_samples = X.shape[0]
+        n_cats_per_feature = [len(c) for c in categories]
+        total_cols = sum(n_cats_per_feature)
+        result = np.zeros((n_samples, total_cols), dtype=np.float64)
+        col_offset = 0
+        for feat_idx in range(X.shape[1]):
+            n_cats = len(categories[feat_idx])
+            for cat_idx, cat_val in enumerate(categories[feat_idx]):
+                for row_idx in range(n_samples):
+                    if str(X[row_idx, feat_idx]) == str(cat_val):
+                        result[row_idx, col_offset + cat_idx] = 1.0
+            col_offset += n_cats
+        return result
+
     def fit(self, X, y=None):
         X = np.asarray(X)
+        if X.size == 0:
+            raise ValueError("Empty input")
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
             
-        if np.issubdtype(X.dtype, np.integer):
-            self._encoder.fit_int(X.astype(np.int64))
+        if self._categories_param == "auto":
+            if np.issubdtype(X.dtype, np.integer):
+                self._encoder.fit_int(X.astype(np.int64))
+            else:
+                X_str = X.astype(str)
+                cols = [list(X_str[:, i]) for i in range(X_str.shape[1])]
+                self._encoder.fit_str(cols)
+            raw_cats = self._encoder.categories
+            self.categories_ = [np.array(c) for c in raw_cats]
         else:
-            X_str = X.astype(str)
-            cols = [list(X_str[:, i]) for i in range(X_str.shape[1])]
-            self._encoder.fit_str(cols)
-            
-        raw_cats = self._encoder.categories
-        self.categories_ = [np.array(c) for c in raw_cats]
+            self.categories_ = [np.array(c) for c in self._categories_param]
+
         return self
         
-    @_catch_panic
     def transform(self, X):
         X = np.asarray(X)
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
-            
-        if np.issubdtype(X.dtype, np.integer):
-            return self._encoder.transform_int(X.astype(np.int64))
+
+        if self._categories_param == "auto":
+            if np.issubdtype(X.dtype, np.integer):
+                result = self._encoder.transform_int(X.astype(np.int64))
+            else:
+                X_str = X.astype(str)
+                cols = [list(X_str[:, i]) for i in range(X_str.shape[1])]
+                result = self._encoder.transform_str(cols)
         else:
-            X_str = X.astype(str)
-            cols = [list(X_str[:, i]) for i in range(X_str.shape[1])]
-            return self._encoder.transform_str(cols)
+            result = self._one_hot_encode(X, self.categories_)
+
+        if self.drop == 'first':
+            n_cats_per_feature = [len(c) for c in self.categories_]
+            cols_to_drop = []
+            offset = 0
+            for n in n_cats_per_feature:
+                cols_to_drop.append(offset)
+                offset += n
+            result = np.delete(result, cols_to_drop, axis=1)
+
+        return result
             
     def fit_transform(self, X, y=None):
         return self.fit(X).transform(X)

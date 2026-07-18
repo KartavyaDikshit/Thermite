@@ -193,6 +193,17 @@ impl MinMaxScaler {
         Ok(PyArray2::from_array_bound(py, &out))
     }
 
+    #[getter]
+    fn feature_range(&self) -> (f64, f64) {
+        self.core.feature_range
+    }
+
+    #[setter]
+    fn set_feature_range(&mut self, feature_range: (f64, f64)) -> PyResult<()> {
+        self.core.feature_range = feature_range;
+        Ok(())
+    }
+
     fn inverse_transform<'py>(&self, py: Python<'py>, X: PyReadonlyArray2<f64>) -> PyResult<Bound<'py, PyArray2<f64>>> {
         let x_arr = X.as_array();
         let out = self.core.inverse_transform(&x_arr).map_err(pyo3::exceptions::PyValueError::new_err)?;

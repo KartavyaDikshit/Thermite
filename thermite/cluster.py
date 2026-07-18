@@ -4,7 +4,6 @@ from . import _core
 
 def _catch_panic(func):
     def wrapper(self, *args, **kwargs):
-        # basic input validation for all estimators
         for arg in args:
             if isinstance(arg, np.ndarray) and arg.size == 0:
                 raise ValueError("Empty input")
@@ -22,8 +21,9 @@ def _catch_panic(func):
 
 
 class KMeans:
-    def __init__(self, n_clusters=8, *, max_iter=300, tol=1e-4, n_init=10, random_state=None):
+    def __init__(self, n_clusters=8, *, init="k-means++", max_iter=300, tol=1e-4, n_init=10, random_state=None):
         self.n_clusters = n_clusters
+        self.init = init
         self.max_iter = max_iter
         self.tol = tol
         self.n_init = n_init
@@ -51,6 +51,8 @@ class KMeans:
         X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
+        if self.n_clusters == 0:
+            raise ValueError("n_clusters must be >= 1")
         self._model.fit(X)
         return self
 
@@ -75,6 +77,22 @@ class KMeans:
         self.fit(X, y)
         return self.predict(X)
 
+    @_catch_panic
+    def transform(self, X):
+        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
+        if X.ndim != 2:
+            raise ValueError("Expected 2D array for X")
+        centers = self.cluster_centers_
+        if centers is None:
+            raise ValueError("Model not fitted yet")
+        n_samples = X.shape[0]
+        n_clusters = centers.shape[0]
+        dists = np.zeros((n_samples, n_clusters))
+        for i in range(n_samples):
+            for j in range(n_clusters):
+                dists[i, j] = np.sqrt(np.sum((X[i] - centers[j]) ** 2))
+        return dists
+
     @property
     def cluster_centers_(self):
         return self._model.cluster_centers_
@@ -93,9 +111,11 @@ class KMeans:
 
 
 class DBSCAN:
-    def __init__(self, eps=0.5, *, min_samples=5):
+    def __init__(self, eps=0.5, *, min_samples=5, metric="euclidean"):
         self.eps = eps
         self.min_samples = min_samples
+        self.metric = metric
+        self._X_fit = None
         self._model = _core.DBSCAN(
             eps=eps,
             min_samples=min_samples
@@ -106,6 +126,7 @@ class DBSCAN:
         X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
+        self._X_fit = X.copy()
         self._model.fit(X)
         return self
 
@@ -114,6 +135,7 @@ class DBSCAN:
         X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
+        self._X_fit = X.copy()
         return self._model.fit_predict(X)
 
     @property
@@ -123,6 +145,20 @@ class DBSCAN:
     @property
     def core_sample_indices_(self):
         return self._model.core_sample_indices_
+
+    @property
+    def components_(self):
+        indices = self.core_sample_indices_
+        if indices is None or self._X_fit is None:
+            return None
+        return self._X_fit[indices]
+
+    @property
+    def n_features_in_(self):
+        if self._X_fit is None:
+            return None
+        return self._X_fit.shape[1]
+
 
 class MiniBatchKMeans:
     def __init__(self, n_clusters=8, *, max_iter=100, batch_size=1024, tol=0.0):

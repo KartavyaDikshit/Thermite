@@ -21,13 +21,25 @@ def _catch_panic(func):
     return wrapper
 
 class Pipeline:
-    def __init__(self, steps):
+    def __init__(self, steps=None):
         self.steps = steps
 
     @_catch_panic
     def fit(self, X, y=None, **fit_params):
+        if len(self.steps) == 0:
+            raise ValueError("Pipeline must have at least one step")
+        names = [s[0] for s in self.steps]
+        if len(names) != len(set(names)):
+            raise ValueError("Step names must be unique")
+        for name, step in self.steps[:-1]:
+            if step is None or step == 'passthrough':
+                continue
+            if not hasattr(step, 'fit') or not hasattr(step, 'transform'):
+                raise TypeError(f"Intermediate step '{name}' does not have a fit/transform methods")
         Xt = X
         for name, transform in self.steps[:-1]:
+            if transform is None or transform == 'passthrough':
+                continue
             if hasattr(transform, "fit_transform"):
                 Xt = transform.fit_transform(Xt, y, **fit_params)
             else:
@@ -39,6 +51,8 @@ class Pipeline:
     def predict(self, X):
         Xt = X
         for name, transform in self.steps[:-1]:
+            if transform is None or transform == 'passthrough':
+                continue
             Xt = transform.transform(Xt)
         return self.steps[-1][1].predict(Xt)
 
@@ -80,6 +94,24 @@ class Pipeline:
             Xt = transform.transform(Xt)
         return Xt
         
+    def set_params(self, **kwargs):
+        for name, val in kwargs.items():
+            found = False
+            for i, (step_name, _) in enumerate(self.steps):
+                if name.startswith(step_name + '__'):
+                    param_name = name[len(step_name) + 2:]
+                    if hasattr(self.steps[i][1], param_name):
+                        setattr(self.steps[i][1], param_name, val)
+                        found = True
+                    break
+                elif name == step_name:
+                    self.steps[i] = (step_name, val)
+                    found = True
+                    break
+            if not found:
+                setattr(self, name, val)
+        return self
+
     @property
     def named_steps(self):
         return dict(self.steps)

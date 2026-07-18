@@ -22,6 +22,7 @@ pub struct RandomForestClassifier {
     pub classes_: Option<Vec<f64>>,
     pub categorical_features: Vec<usize>,
     pub device: DeviceKind,
+    pub bootstrap: bool,
 }
 
 impl RandomForestClassifier {
@@ -44,6 +45,7 @@ impl RandomForestClassifier {
             classes_: None,
             categorical_features: Vec::new(),
             device: DeviceKind::Cpu,
+            bootstrap: true,
         }
     }
 
@@ -63,11 +65,16 @@ impl RandomForestClassifier {
             .map(|i| {
                 let seed = base_seed.wrapping_add(i as u64);
                 let mut rng = SmallRng::seed_from_u64(seed);
-
                 // Bootstrap sample using fast index mapping
                 let mut indices = Vec::with_capacity(n_samples);
-                for _ in 0..n_samples {
-                    indices.push(rng.gen_range(0..n_samples));
+                if self.bootstrap {
+                    for _ in 0..n_samples {
+                        indices.push(rng.gen_range(0..n_samples));
+                    }
+                } else {
+                    for i in 0..n_samples {
+                        indices.push(i);
+                    }
                 }
                 let max_feat = self
                     .max_features
@@ -150,6 +157,7 @@ pub struct RandomForestRegressor {
     pub estimators_: Vec<DecisionTreeRegressor>,
     pub categorical_features: Vec<usize>,
     pub device: DeviceKind,
+    pub bootstrap: bool,
 }
 
 impl RandomForestRegressor {
@@ -171,6 +179,7 @@ impl RandomForestRegressor {
             estimators_: Vec::new(),
             categorical_features: Vec::new(),
             device: DeviceKind::Cpu,
+            bootstrap: true,
         }
     }
 
@@ -185,11 +194,16 @@ impl RandomForestRegressor {
             .map(|i| {
                 let seed = base_seed.wrapping_add(i as u64);
                 let mut rng = SmallRng::seed_from_u64(seed);
-
                 // Bootstrap sample using fast index mapping
                 let mut indices = Vec::with_capacity(n_samples);
-                for _ in 0..n_samples {
-                    indices.push(rng.gen_range(0..n_samples));
+                if self.bootstrap {
+                    for _ in 0..n_samples {
+                        indices.push(rng.gen_range(0..n_samples));
+                    }
+                } else {
+                    for i in 0..n_samples {
+                        indices.push(i);
+                    }
                 }
                 let max_feat = self.max_features.unwrap_or(n_features).max(1);
 

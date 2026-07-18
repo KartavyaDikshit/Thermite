@@ -48,6 +48,16 @@ pub fn compute_split_indices(
             label_to_indices.entry(label.clone()).or_default().push(idx);
         }
 
+        // Check each class has enough members for the split
+        for (label, indices) in &label_to_indices {
+            if indices.len() < 2 {
+                return Err(format!(
+                    "The least populated class in y has only {} members, which is too few",
+                    indices.len()
+                ));
+            }
+        }
+
         // Shuffle each group if shuffle is enabled
         if shuffle {
             for indices_group in label_to_indices.values_mut() {
@@ -171,6 +181,9 @@ fn determine_split_sizes(
             (n_train, n_test)
         }
         (Some(ts), None) => {
+            if ts == 0.0 || ts == 1.0 {
+                return Err("test_size must be between 0 and 1 (exclusive) or an integer".to_string());
+            }
             let n_test = if ts >= 1.0 {
                 ts as usize
             } else if ts > 0.0 && ts < 1.0 {

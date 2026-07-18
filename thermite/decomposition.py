@@ -4,7 +4,6 @@ from . import _core
 
 def _catch_panic(func):
     def wrapper(self, *args, **kwargs):
-        # basic input validation for all estimators
         for arg in args:
             if isinstance(arg, np.ndarray) and arg.size == 0:
                 raise ValueError("Empty input")
@@ -22,17 +21,28 @@ def _catch_panic(func):
 
 
 class PCA:
-    def __init__(self, n_components=2, *, random_state=None):
-        self._model = _core.PCA(
-            n_components=n_components,
-            random_state=random_state
-        )
+    def __init__(self, n_components=None, *, random_state=None):
+        self.n_components = n_components
+        self.random_state = random_state
+        self._model = None
 
     @_catch_panic
     def fit(self, X, y=None):
         X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         if X.ndim != 2:
             raise ValueError("Expected 2D array for X")
+        n_components = self.n_components
+        if n_components is None:
+            n_components = min(X.shape[0], X.shape[1])
+        if n_components <= 0:
+            raise ValueError("n_components must be >= 1")
+        if n_components > min(X.shape[0], X.shape[1]):
+            raise ValueError("n_components must be <= min(n_samples, n_features)")
+        self._n_samples = X.shape[0]
+        self._model = _core.PCA(
+            n_components=n_components,
+            random_state=self.random_state
+        )
         self._model.fit(X)
         return self
 
@@ -44,10 +54,8 @@ class PCA:
         return self._model.transform(X)
 
     def fit_transform(self, X, y=None):
-        X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
-        if X.ndim != 2:
-            raise ValueError("Expected 2D array for X")
-        return self._model.fit_transform(X)
+        self.fit(X, y)
+        return self.transform(X)
 
     def inverse_transform(self, X):
         X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
@@ -61,7 +69,10 @@ class PCA:
 
     @property
     def explained_variance_(self):
-        return self._model.explained_variance_
+        ev = self._model.explained_variance_
+        if ev is not None and self._n_samples == 1:
+            ev = np.array([np.nan] * len(ev))
+        return ev
 
     @property
     def explained_variance_ratio_(self):
@@ -70,6 +81,16 @@ class PCA:
     @property
     def mean_(self):
         return self._model.mean_
+
+    @property
+    def singular_values_(self):
+        ev = self.explained_variance_
+        if ev is None:
+            return None
+        n_samples = getattr(self, '_n_samples', None)
+        if n_samples is None:
+            return None
+        return np.sqrt(ev * (n_samples - 1))
 
 class DictionaryLearning:
     def __init__(self, n_components=None, *, alpha=1, max_iter=1000, tol=1e-8, fit_algorithm='lars', transform_algorithm='omp', transform_n_nonzero_coefs=None, transform_alpha=None, n_jobs=None, code_init=None, dict_init=None, verbose=False, split_sign=False, random_state=None, positive_code=False, positive_dict=False, transform_max_iter=1000):

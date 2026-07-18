@@ -104,24 +104,94 @@ class GroupKFold:
             yield train, test
 
 
-class GridSearchCV:
-    def __init__(self, estimator, param_grid, cv=5, n_jobs=None):
-        self.estimator = estimator
-        self.param_grid = param_grid
-        self.cv = cv
-        self.n_jobs = n_jobs if n_jobs is not None else 1
-        self.best_estimator_ = None
-        self.best_params_ = None
-        self.best_score_ = -np.inf
+_SCORERS = {
+    "accuracy": lambda m, X, y: np.mean(m.predict(X) == y),
+    "f1": lambda m, X, y: _f1_score(y, m.predict(X)),
+    "precision": lambda m, X, y: _precision_score(y, m.predict(X)),
+    "recall": lambda m, X, y: _recall_score(y, m.predict(X)),
+    "neg_mean_squared_error": lambda m, X, y: -np.mean((m.predict(X) - y) ** 2),
+    "r2": lambda m, X, y: _r2_score(y, m.predict(X)),
+}
+
+def _precision_score(y_true, y_pred):
+    tp = np.sum((y_true == 1) & (y_pred == 1))
+    fp = np.sum((y_true == 0) & (y_pred == 1))
+    return tp / (tp + fp) if (tp + fp) > 0 else 0
+
+def _recall_score(y_true, y_pred):
+    tp = np.sum((y_true == 1) & (y_pred == 1))
+    fn = np.sum((y_true == 1) & (y_pred == 0))
+    return tp / (tp + fn) if (tp + fn) > 0 else 0
+
+def _f1_score(y_true, y_pred):
+    tp = np.sum((y_true == 1) & (y_pred == 1))
+    fp = np.sum((y_true == 0) & (y_pred == 1))
+    fn = np.sum((y_true == 1) & (y_pred == 0))
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+    return 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
+
+def _r2_score(y_true, y_pred):
+    ss_res = np.sum((y_true - y_pred) ** 2)
+    ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
+    return 1 - ss_res / ss_tot if ss_tot > 0 else 0
+
+def cross_val_score(estimator, X, y, cv=5, scoring=None, n_jobs=None):
+    X = np.asarray(X, dtype=np.float64)
+    y = np.asarray(y, dtype=np.float64)
+    if X.size == 0 or y.size == 0:
+        raise ValueError("Empty input")
+    if len(X) != len(y):
+        raise ValueError("Mismatch in number of samples")
+    if isinstance(cv, int):
+        if cv < 2:
+            raise ValueError("cv must be >= 2")
+        unique_y = np.unique(y)
+        if len(unique_y) <= 2 and len(unique_y) > 0:
+            cv_obj = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
+        else:
+            cv_obj = KFold(n_splits=cv)
+    elif hasattr(cv, 'split'):
+        cv_obj = cv
+    else:
+        raise ValueError("cv must be an int or a CV splitter")
+    scores = []
+    for train_idx, test_idx in cv_obj.split(X, y):
+        model = estimator.__class__()
+        init_args = {}
+        for k in dir(estimator):
+            if not k.startswith('_') and not k.endswith('_') and k not in ('fit', 'predict', 'score', 'predict_proba', 'named_steps'):
+                val = getattr(estimator, k)
+                if not callable(val):
+                    init_args[k] = val
+        model.__init__(**init_args)
+        model.fit(X[train_idx], y[train_idx])
+        if scoring is not None:
+            if callable(scoring):
+                score = scoring(model, X[test_idx], y[test_idx])
+            elif scoring in _SCORERS:
+                score = _SCORERS[scoring](model, X[test_idx], y[test_idx])
+            else:
+                raise ValueError(f"Unknown scoring metric: {scoring}")
+        elif hasattr(model, 'score'):
+            score = model.score(X[test_idx], y[test_idx])
+        else:
+            preds = model.predict(X[test_idx])
+            score = np.mean(preds == y[test_idx])
+        scores.append(score)
+    return np.array(scores)
 
 def _fit_and_score_standalone(estimator_class, base_params, params, X, y, train_idx, test_idx):
-    # Combine base params with current params
-    init_args = base_params.copy()
-    init_args.update(params)
-    
-    model = estimator_class(**init_args)
+    if hasattr(estimator_class, 'steps') or 'steps' in base_params:
+        steps = base_params.get('steps', [])
+        model = estimator_class(steps=steps)
+        if params:
+            model.set_params(**params)
+    else:
+        init_args = base_params.copy()
+        init_args.update(params)
+        model = estimator_class(**init_args)
     model.fit(X[train_idx], y[train_idx])
-    
     if hasattr(model, 'score'):
         score = model.score(X[test_idx], y[test_idx])
     else:
@@ -130,35 +200,50 @@ def _fit_and_score_standalone(estimator_class, base_params, params, X, y, train_
     return score
 
 class GridSearchCV:
-    def __init__(self, estimator, param_grid, cv=5, n_jobs=None):
+    def __init__(self, estimator, param_grid, cv=5, n_jobs=None, scoring=None, refit=True):
         self.estimator = estimator
         self.param_grid = param_grid
         self.cv = cv
         self.n_jobs = n_jobs if n_jobs is not None else 1
+        self.scoring = scoring
+        self.refit = refit
         self.best_estimator_ = None
         self.best_params_ = None
         self.best_score_ = -np.inf
+        self.cv_results_ = {}
 
     @_catch_panic
     def fit(self, X, y):
         X = np.asarray(X)
         y = np.asarray(y)
-
-        keys, values = zip(*self.param_grid.items())
-        experiments = [dict(zip(keys, v)) for v in itertools.product(*values)]
+        if len(X) != len(y):
+            raise ValueError("Mismatch in number of samples")
 
         if isinstance(self.cv, int):
+            if self.cv < 2:
+                raise ValueError("cv must be >= 2")
+            if self.cv > len(X):
+                raise ValueError("cv must be <= number of samples")
             cv_obj = KFold(n_splits=self.cv)
         else:
             cv_obj = self.cv
 
         folds = list(cv_obj.split(X, y))
         
+        if not self.param_grid:
+            self.best_params_ = {}
+            self.best_estimator_ = self.estimator
+            self.best_score_ = 0.0
+            self.cv_results_ = {"mean_test_score": [0.0], "params": [{}]}
+            return self
+
+        keys, values = zip(*self.param_grid.items())
+        experiments = [dict(zip(keys, v)) for v in itertools.product(*values)]
+
         best_avg_score = -np.inf
         best_params = None
         
         estimator_class = self.estimator.__class__
-        # get the original non-grid params from the estimator to rebuild it
         base_params = {}
         for k in dir(self.estimator):
             if not k.startswith('_') and not k.endswith('_') and k not in ('fit', 'predict', 'score', 'predict_proba'):
@@ -166,6 +251,7 @@ class GridSearchCV:
                 if not callable(val):
                     base_params[k] = val
 
+        mean_scores = []
         if self.n_jobs == 1:
             for params in experiments:
                 scores = []
@@ -173,11 +259,11 @@ class GridSearchCV:
                     score = _fit_and_score_standalone(estimator_class, base_params, params, X, y, train_idx, test_idx)
                     scores.append(score)
                 avg_score = np.mean(scores)
+                mean_scores.append(avg_score)
                 if avg_score > best_avg_score:
                     best_avg_score = avg_score
                     best_params = params
         else:
-            # Parallel execution
             tasks = []
             for p_idx, params in enumerate(experiments):
                 for f_idx, (train_idx, test_idx) in enumerate(folds):
@@ -187,7 +273,6 @@ class GridSearchCV:
                 futures = [executor.submit(_fit_and_score_standalone, estimator_class, base_params, t[1], X, y, t[2], t[3]) for t in tasks]
                 results = [f.result() for f in futures]
             
-            # Aggregate results
             scores_by_param = {i: [] for i in range(len(experiments))}
             for i, res in enumerate(results):
                 p_idx = tasks[i][0]
@@ -195,30 +280,39 @@ class GridSearchCV:
             
             for p_idx, scores in scores_by_param.items():
                 avg_score = np.mean(scores)
+                mean_scores.append(avg_score)
                 if avg_score > best_avg_score:
                     best_avg_score = avg_score
                     best_params = experiments[p_idx]
 
         self.best_params_ = best_params
         self.best_score_ = best_avg_score
+        self.cv_results_ = {"mean_test_score": mean_scores, "params": experiments}
 
-        # Refit on full dataset
-        self.best_estimator_ = self.estimator.__class__()
-        init_args = {}
-        if hasattr(self.best_estimator_, "_model"):
-            import inspect
-            sig = inspect.signature(self.best_estimator_.__class__.__init__)
-            for k in sig.parameters:
-                if k != 'self':
-                    init_args[k] = self.best_params_.get(k, getattr(self.estimator, k, None))
-        self.best_estimator_.__init__(**init_args)
-        
-        self.best_estimator_.fit(X, y)
+        if self.refit:
+            if hasattr(self.estimator, 'steps'):
+                self.best_estimator_ = self.estimator.__class__(steps=self.estimator.steps)
+                if best_params:
+                    self.best_estimator_.set_params(**best_params)
+            else:
+                self.best_estimator_ = self.estimator.__class__()
+                init_args = base_params.copy()
+                if best_params:
+                    init_args.update(best_params)
+                self.best_estimator_.__init__(**init_args)
+            self.best_estimator_.fit(X, y)
         return self
 
     @_catch_panic
     def predict(self, X):
-        return self.best_estimator_.predict(X)
+        if self.best_estimator_ is not None:
+            return self.best_estimator_.predict(X)
+        return self.estimator.predict(X)
+
+    def score(self, X, y):
+        if self.best_estimator_ is not None:
+            return self.best_estimator_.score(X, y)
+        return self.estimator.score(X, y)
 
 class SuccessiveHalvingSearchCV:
     def __init__(self, estimator, param_grid, min_resources=10, factor=3):

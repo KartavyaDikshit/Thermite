@@ -185,7 +185,7 @@ impl RandomForestClassifier {
         Ok(RandomForestClassifier { core })
     }
     #[new]
-    #[pyo3(signature = (n_estimators=100, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, device="cpu"))]
+    #[pyo3(signature = (n_estimators=100, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, device="cpu", bootstrap=true))]
     fn new(
         n_estimators: usize,
         max_depth: Option<usize>,
@@ -194,6 +194,7 @@ impl RandomForestClassifier {
         max_features: Option<usize>,
         random_state: Option<u64>,
         device: &str,
+        bootstrap: bool,
     ) -> Self {
         let mut core = CoreRandomForestClassifier::new(
             n_estimators,
@@ -204,6 +205,7 @@ impl RandomForestClassifier {
             random_state,
         );
         core.device = DeviceKind::from_string(device);
+        core.bootstrap = bootstrap;
         RandomForestClassifier { core }
     }
 
@@ -263,6 +265,7 @@ impl RandomForestClassifier {
                 children_right,
                 feature,
                 threshold,
+                max_depth: est.get_depth(),
             });
         }
         Ok(res)
@@ -301,7 +304,7 @@ impl RandomForestRegressor {
         Ok(RandomForestRegressor { core })
     }
     #[new]
-    #[pyo3(signature = (n_estimators=100, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, device="cpu"))]
+    #[pyo3(signature = (n_estimators=100, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, device="cpu", bootstrap=true))]
     fn new(
         n_estimators: usize,
         max_depth: Option<usize>,
@@ -310,6 +313,7 @@ impl RandomForestRegressor {
         max_features: Option<usize>,
         random_state: Option<u64>,
         device: &str,
+        bootstrap: bool,
     ) -> Self {
         let mut core = CoreRandomForestRegressor::new(
             n_estimators,
@@ -320,6 +324,7 @@ impl RandomForestRegressor {
             random_state,
         );
         core.device = DeviceKind::from_string(device);
+        core.bootstrap = bootstrap;
         RandomForestRegressor { core }
     }
 
@@ -379,6 +384,7 @@ impl RandomForestRegressor {
                 children_right,
                 feature,
                 threshold,
+                max_depth: est.get_depth(),
             });
         }
         Ok(res)

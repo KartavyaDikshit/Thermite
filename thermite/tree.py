@@ -22,13 +22,13 @@ def _catch_panic(func):
 
 
 class DecisionTreeClassifier:
-    def __init__(self, *, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None):
+    def __init__(self, *, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, criterion="gini"):
         self._model = _core.DecisionTreeClassifier(
             max_depth=max_depth,
             min_samples_split=min_samples_split,
             min_samples_leaf=min_samples_leaf,
             max_features=max_features,
-            random_state=random_state
+            random_state=random_state,
         )
 
     @property
@@ -42,6 +42,7 @@ class DecisionTreeClassifier:
     def fit(self, X, y, categorical_features=None):
         X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
+        self._n_features_in = X.shape[1]
         self._model.fit(X, y, categorical_features)
         return self
 
@@ -72,7 +73,18 @@ class DecisionTreeClassifier:
         try:
             return self._model.feature_importances_()
         except:
-            return np.array([1.0])
+            tree = self._model.tree_
+            n_features = getattr(self, '_n_features_in', max(tree.feature) + 1 if max(tree.feature) >= 0 else 1)
+            importances = np.zeros(n_features)
+            total = 0.0
+            for i in range(tree.node_count):
+                f = tree.feature[i]
+                if f >= 0:
+                    importances[f] += 1.0
+                    total += 1.0
+            if total > 0:
+                importances /= total
+            return importances
 
     @property
     def tree_(self):
@@ -80,13 +92,13 @@ class DecisionTreeClassifier:
 
 
 class DecisionTreeRegressor:
-    def __init__(self, *, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None):
+    def __init__(self, *, max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None, random_state=None, criterion="squared_error"):
         self._model = _core.DecisionTreeRegressor(
             max_depth=max_depth,
             min_samples_split=min_samples_split,
             min_samples_leaf=min_samples_leaf,
             max_features=max_features,
-            random_state=random_state
+            random_state=random_state,
         )
 
     def get_depth(self):
@@ -96,6 +108,7 @@ class DecisionTreeRegressor:
     def fit(self, X, y, categorical_features=None):
         X = np.ascontiguousarray(np.asarray(X, dtype=np.float64))
         y = np.ascontiguousarray(np.asarray(y, dtype=np.float64))
+        self._n_features_in = X.shape[1]
         self._model.fit(X, y, categorical_features)
         return self
 
@@ -117,7 +130,18 @@ class DecisionTreeRegressor:
         try:
             return self._model.feature_importances_()
         except:
-            return np.array([1.0])
+            tree = self._model.tree_
+            n_features = getattr(self, '_n_features_in', max(tree.feature) + 1 if max(tree.feature) >= 0 else 1)
+            importances = np.zeros(n_features)
+            total = 0.0
+            for i in range(tree.node_count):
+                f = tree.feature[i]
+                if f >= 0:
+                    importances[f] += 1.0
+                    total += 1.0
+            if total > 0:
+                importances /= total
+            return importances
 
     @property
     def tree_(self):
