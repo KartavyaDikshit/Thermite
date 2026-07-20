@@ -135,9 +135,6 @@ impl StandardScaler {
 
     #[getter]
     fn var<'py>(&self, py: Python<'py>) -> PyResult<Option<Bound<'py, PyArray1<f64>>>> {
-        if !self.core.with_std {
-            return Ok(None);
-        }
         match &self.core.var {
             Some(v) => Ok(Some(PyArray1::from_array_bound(py, v))),
             None => Ok(None),
@@ -146,9 +143,6 @@ impl StandardScaler {
 
     #[getter]
     fn scale<'py>(&self, py: Python<'py>) -> PyResult<Option<Bound<'py, PyArray1<f64>>>> {
-        if !self.core.with_std {
-            return Ok(None);
-        }
         match &self.core.scale {
             Some(s) => Ok(Some(PyArray1::from_array_bound(py, s))),
             None => Ok(None),
